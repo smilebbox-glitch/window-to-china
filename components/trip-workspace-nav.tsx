@@ -1,10 +1,9 @@
 import Link from "next/link";
-import { Calculator, ShieldCheck, UserRound } from "lucide-react";
+import { Calculator, ShieldCheck } from "lucide-react";
 
 const items = [
   { id: "budget", href: "/trip-planner", label: "Расчёт", icon: Calculator },
   { id: "rules", href: "/travel-guide", label: "Правила", icon: ShieldCheck },
-  { id: "my", href: "/my", label: "Моя поездка", icon: UserRound },
 ] as const;
 
 export function TripWorkspaceNav({ active }: { active: (typeof items)[number]["id"] }) {
