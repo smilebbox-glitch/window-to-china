@@ -14,7 +14,7 @@ if "%ERRORLEVEL%"=="0" if exist ".git" (
 )
 
 echo Starting Okno v Kitai for this PC and other PCs on the same LAN...
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\one-click-start.ps1" -ForceLan
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\start-lan.ps1"
 set RC=%ERRORLEVEL%
 if not "%RC%"=="0" (
   echo.
