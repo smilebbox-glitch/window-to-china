@@ -21,10 +21,10 @@ export type NewsWebsiteSource = {
 /**
  * Source policy for Window to China v1.7.
  *
- * Priority is intentionally editorial, not a judgement of general media quality:
- * primary/official data beats secondary reporting for duplicate stories; specialist
- * automotive originals beat broad aggregators; Telegram is kept for speed but loses
- * duplicate conflicts to an identifiable primary source.
+ * Priority is editorial for duplicate resolution, not a general media-quality score:
+ * primary/official data beats secondary reporting; specialist automotive originals
+ * beat broad aggregators; Telegram stays useful for speed but loses duplicate conflicts
+ * to an identifiable original or official publication.
  */
 export const newsWebsiteSources: readonly NewsWebsiteSource[] = Object.freeze([
   {
@@ -54,6 +54,32 @@ export const newsWebsiteSources: readonly NewsWebsiteSource[] = Object.freeze([
     note: "Ассоциация автопроизводителей Китая: продажи, производство, экспорт, коммерческий транспорт.",
   },
   {
+    id: "miit-auto",
+    name: "MIIT China · Automotive Industry",
+    url: "https://www.miit.gov.cn/jgsj/zbys/qcgy/",
+    market: "Китай",
+    language: "zh",
+    sourceType: "official",
+    priority: 100,
+    focus: ["auto", "ev", "technology", "policy"],
+    maxCandidates: 3,
+    enabledByDefault: true,
+    note: "Министерство промышленности КНР: автомобильная политика, стандарты, продуктовые допуски, NEV и smart vehicles.",
+  },
+  {
+    id: "mofcom-news",
+    name: "MOFCOM China",
+    url: "https://english.mofcom.gov.cn/News/index.html",
+    market: "Китай",
+    language: "en",
+    sourceType: "official",
+    priority: 100,
+    focus: ["trade", "economy", "policy"],
+    maxCandidates: 2,
+    enabledByDefault: true,
+    note: "Министерство коммерции КНР: экспорт, импорт, инвестиции, международная торговля и меры регулирования.",
+  },
+  {
     id: "nbs-china",
     name: "National Bureau of Statistics of China",
     url: "https://www.stats.gov.cn/english/PressRelease/",
@@ -65,6 +91,20 @@ export const newsWebsiteSources: readonly NewsWebsiteSource[] = Object.freeze([
     maxCandidates: 2,
     enabledByDefault: true,
     note: "Официальная макростатистика Китая: промышленность, производство, инвестиции и внешняя торговля.",
+  },
+  {
+    id: "cada",
+    name: "China Automobile Dealers Association",
+    url: "https://www.cada.cn/",
+    market: "Китай",
+    language: "zh",
+    sourceType: "official",
+    priority: 98,
+    focus: ["auto", "ev", "policy"],
+    maxCandidates: 3,
+    enabledByDefault: true,
+    note: "Рынок новых и подержанных автомобилей, дилерские запасы, passenger-car market reports и отраслевые правила.",
+    hostAliases: ["data.cada.cn"],
   },
   {
     id: "people-auto",
@@ -118,6 +158,7 @@ export const newsWebsiteSources: readonly NewsWebsiteSource[] = Object.freeze([
     maxCandidates: 3,
     enabledByDefault: true,
     note: "Специализированные новости китайского автопрома, Tier-1/Tier-2, батареи и рынок.",
+    hostAliases: ["www.gasgoo.com", "gasgoo.com"],
   },
   {
     id: "cnevpost",
