@@ -6,10 +6,8 @@ import {
   CalendarDays,
   Newspaper,
   Radar,
-  Radio,
   Sparkles,
   Settings,
-  UserRound,
 } from "lucide-react";
 
 const navigation = [
@@ -18,7 +16,6 @@ const navigation = [
   { href: "/analysis", label: "ИИ-анализ", icon: Sparkles },
   { href: "/market", label: "Рынок", icon: ChartNoAxesCombined },
   { href: "/travel-guide", label: "Перед поездкой", icon: BriefcaseBusiness },
-  { href: "/my", label: "Моё", icon: UserRound },
 ];
 
 export function SiteShell({ children }: { children: React.ReactNode }) {
@@ -62,11 +59,6 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
           >
             <Settings className="size-4" />
           </Link>
-
-          <div className="hidden items-center gap-2 border border-emerald-400/25 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.1em] text-emerald-300 xl:flex">
-            <Radio className="size-3.5" />
-            15 мин
-          </div>
         </div>
       </header>
       <MaintenanceBanner />
