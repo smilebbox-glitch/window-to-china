@@ -1,4 +1,4 @@
-# Окно в Китай — локальный запуск Pilot v1.6.1
+# Окно в Китай — локальный/LAN запуск Pilot v1.6.1
 
 ## Самый простой запуск
 
@@ -13,6 +13,20 @@
 ```
 
 Первый запуск сам создаёт `.env`, генерирует обязательные secrets, собирает image, запускает web + scheduler и ждёт readiness. Данные администратора сохраняются локально в `.pilot-access.txt`.
+
+По умолчанию сервис доступен не только на текущем компьютере, но и другим компьютерам в той же доверенной локальной/корпоративной сети. После запуска консоль показывает два адреса:
+
+- `This PC: http://127.0.0.1:3000` — адрес для компьютера, где запущен Docker;
+- `Other PCs on the same LAN: http://<IPv4-компьютера>:3000` — этот адрес нужно открыть на другом ПК.
+
+Если LAN-адрес не открылся, проверьте, что оба компьютера находятся в одной сети и что firewall хоста разрешает входящий TCP на `APP_PORT` (по умолчанию `3000`) для доверенного профиля Domain/Private. Не публикуйте этот порт напрямую в интернет. Для корпоративного production-развёртывания используйте reverse proxy, HTTPS и SSO.
+
+Чтобы вернуть режим «только этот компьютер», задайте в `.env`:
+
+```env
+APP_BIND_ADDRESS=127.0.0.1
+ALLOW_PUBLIC_BIND=NO
+```
 
 `STOP.bat` / `./stop.sh` останавливает сервис без удаления persistent volume. `STATUS.bat` / `./status.sh` показывает состояние.
 
@@ -29,6 +43,14 @@ cp .env.example .env
 - `ADMIN_API_TOKEN` — если SSO ещё не подключён;
 - `AUDIT_HMAC_KEY`;
 - `SCHEDULER_TOKEN`.
+
+По умолчанию `.env.example` включает доступ из доверенной LAN:
+
+```env
+APP_BIND_ADDRESS=0.0.0.0
+ALLOW_PUBLIC_BIND=YES
+APP_PORT=3000
+```
 
 ## 2. Ручная проверка хоста
 
@@ -64,7 +86,6 @@ Named volume `okno-runtime-data` содержит:
 ## 5. Admin
 
 `/admin` показывает источники, audit, reliability snapshots/history и managed content. В `AUTH_MODE=disabled` admin/editor операции доступны по `ADMIN_API_TOKEN`; в `AUTH_MODE=proxy` права приходят из SSO-групп.
-
 
 ## v1.6 acceptance
 
