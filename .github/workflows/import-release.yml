@@ -1,0 +1,49 @@
+name: Import Okno v Kitai v1.6.1
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/import-release.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download and verify release snapshot
+        shell: bash
+        run: |
+          set -euo pipefail
+          url='https://29400895-0c18-43bb-98fc-e5b201364164.sandbox.floot.app/_cdn/static/d3f0176d-094e-4a30-87fa-fbbbd5d84d0d-okno-v1.6.1.tar.xz'
+          curl --fail --location --retry 3 --output /tmp/release.tar.xz "$url"
+          echo '10494b166306be8099263699fcc427358dbbaf861dff4883fa7141efcb195461  /tmp/release.tar.xz' | sha256sum -c -
+          xz -t /tmp/release.tar.xz
+
+      - name: Replace bootstrap README with canonical source tree
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -f README.md
+          tar -xJf /tmp/release.tar.xz -C . --strip-components=2
+          count="$(find . -type f -not -path './.git/*' -not -path './.github/workflows/import-release.yml' | wc -l)"
+          echo "SOURCE_FILE_COUNT=$count"
+          test "$count" -eq 245
+          grep -q '1.6.1' README.md
+          rm -f .github/workflows/import-release.yml
+
+      - name: Commit canonical release
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'feat: import Okno v Kitai v1.6.1-pilot'
+          git push origin main
