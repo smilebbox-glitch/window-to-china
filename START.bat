@@ -1,8 +1,20 @@
 @echo off
 setlocal
 cd /d "%~dp0"
-echo Starting Okno v Kitai Pilot...
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\one-click-start.ps1"
+
+echo ==============================================
+echo   Okno v Kitai - LAN start
+echo ==============================================
+
+where git >nul 2>nul
+if "%ERRORLEVEL%"=="0" if exist ".git" (
+  echo Updating project from GitHub...
+  git pull --ff-only origin main
+  if not "%ERRORLEVEL%"=="0" echo WARNING: Git update was skipped. Starting current local copy.
+)
+
+echo Starting Okno v Kitai for this PC and other PCs on the same LAN...
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\one-click-start.ps1" -ForceLan
 set RC=%ERRORLEVEL%
 if not "%RC%"=="0" (
   echo.
@@ -10,6 +22,9 @@ if not "%RC%"=="0" (
   pause
   exit /b %RC%
 )
+
 echo.
 echo Okno v Kitai is ready.
+echo If another PC still cannot open the LAN URL, run START.bat once as Administrator
+echo so Windows Firewall can allow port 3000 for the local network.
 pause
