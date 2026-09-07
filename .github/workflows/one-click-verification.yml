@@ -7,6 +7,7 @@ on:
     paths:
       - '.github/workflows/one-click-verification.yml'
       - '.devcontainer/**'
+      - '.env.example'
 
 permissions:
   contents: read
