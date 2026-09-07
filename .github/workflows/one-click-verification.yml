@@ -8,6 +8,7 @@ on:
       - '.github/workflows/one-click-verification.yml'
       - '.devcontainer/**'
       - '.env.example'
+      - '.gitattributes'
       - 'Dockerfile'
       - 'compose.yaml'
       - 'package.json'
@@ -30,6 +31,19 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
+      - name: Verify Windows CRLF security preflight
+        run: |
+          cp compose.yaml compose.yaml.lf
+          trap 'mv compose.yaml.lf compose.yaml' EXIT
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('compose.yaml')
+          text = path.read_text(encoding='utf-8').replace('\r\n', '\n').replace('\r', '\n')
+          path.write_bytes(text.replace('\n', '\r\n').encode('utf-8'))
+          PY
+          node scripts/pilot-security-preflight.mjs
+          mv compose.yaml.lf compose.yaml
+          trap - EXIT
       - name: Start pilot
         run: |
           chmod +x start.sh stop.sh status.sh scripts/*.sh
