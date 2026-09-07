@@ -1,0 +1,30 @@
+name: One-click verification
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Start pilot
+        run: |
+          chmod +x start.sh stop.sh status.sh scripts/*.sh
+          NO_BROWSER=1 ./start.sh
+      - name: Verify health
+        run: |
+          curl --fail --show-error http://127.0.0.1:3000/api/health
+          curl --fail --show-error http://127.0.0.1:3000/api/ready
+      - name: Show status
+        run: ./status.sh
+      - name: Diagnostics
+        if: always()
+        run: docker compose logs --tail=150 || true
+      - name: Stop
+        if: always()
+        run: ./stop.sh || true

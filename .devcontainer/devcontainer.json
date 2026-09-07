@@ -1,0 +1,22 @@
+{
+  "name": "Okno v Kitai Pilot v1.6.1",
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {}
+  },
+  "forwardPorts": [3000],
+  "portsAttributes": {
+    "3000": {
+      "label": "Окно в Китай",
+      "onAutoForward": "openBrowser",
+      "protocol": "http"
+    }
+  },
+  "hostRequirements": {
+    "cpus": 2,
+    "memory": "4gb",
+    "storage": "16gb"
+  },
+  "postCreateCommand": "chmod +x start.sh stop.sh status.sh scripts/*.sh .devcontainer/codespaces-start.sh",
+  "postStartCommand": "bash .devcontainer/codespaces-start.sh"
+}
