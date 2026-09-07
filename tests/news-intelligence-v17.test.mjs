@@ -13,18 +13,22 @@ function captures(pattern, text) {
 test("v1.7 source catalog is broad and contains no duplicate IDs or URLs", () => {
   const ids = captures(/\bid:\s*"([^"]+)"/g, sources);
   const urls = captures(/\burl:\s*"(https:[^"]+)"/g, sources);
-  assert.ok(ids.length >= 17, `expected >=17 sources, got ${ids.length}`);
+  assert.ok(ids.length >= 20, `expected >=20 sources, got ${ids.length}`);
   assert.equal(new Set(ids).size, ids.length);
   assert.equal(new Set(urls).size, urls.length);
 
-  for (const id of ["caam", "gasgoo", "cnevpost", "yicai-auto", "china-briefing", "nbs-china", "36kr-en", "carnewschina"]) {
-    assert.match(sources, new RegExp(`id: \\"${id}\\"`));
-  }
+  for (const id of [
+    "caam", "miit-auto", "mofcom-news", "cada", "nbs-china",
+    "gasgoo", "cnevpost", "yicai-auto", "china-briefing", "36kr-en", "carnewschina",
+  ]) assert.ok(sources.includes(`id: "${id}"`), id);
 });
 
 test("official and specialist sources outrank broad secondary feeds", () => {
   assert.match(sources, /id: "caam"[\s\S]*?priority: 100/);
+  assert.match(sources, /id: "miit-auto"[\s\S]*?priority: 100/);
+  assert.match(sources, /id: "mofcom-news"[\s\S]*?priority: 100/);
   assert.match(sources, /id: "nbs-china"[\s\S]*?priority: 100/);
+  assert.match(sources, /id: "cada"[\s\S]*?priority: 98/);
   assert.match(sources, /id: "gasgoo"[\s\S]*?priority: 91/);
   assert.match(sources, /id: "cnevpost"[\s\S]*?priority: 90/);
   assert.match(sources, /id: "china-daily-motoring"[\s\S]*?enabledByDefault: false/);
@@ -65,6 +69,9 @@ test("news feed rejects unbounded stale content and exposes dedup diagnostics", 
 test("outbound SSRF policy explicitly allows active curated sources", () => {
   for (const host of [
     "www.caam.org.cn",
+    "www.miit.gov.cn",
+    "english.mofcom.gov.cn",
+    "www.cada.cn",
     "autonews.gasgoo.com",
     "cnevpost.com",
     "www.yicaiglobal.com",
@@ -72,5 +79,5 @@ test("outbound SSRF policy explicitly allows active curated sources", () => {
     "www.china-briefing.com",
     "www.stats.gov.cn",
     "carnewschina.com",
-  ]) assert.ok(outbound.includes(`\"${host}\"`), host);
+  ]) assert.ok(outbound.includes(`"${host}"`), host);
 });
