@@ -1,5 +1,5 @@
-import { NewsDashboard } from "@/components/news-dashboard";
+import { NewsDashboardLive } from "@/components/news-dashboard-live";
 
 export default function HomePage() {
-  return <NewsDashboard />;
+  return <NewsDashboardLive />;
 }
