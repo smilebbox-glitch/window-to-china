@@ -8,7 +8,9 @@ function check(condition, label) {
   if (!condition) failures.push(label);
 }
 
-const compose = await readFile("compose.yaml", "utf8");
+// Normalize line endings so the same security checks behave identically on
+// Windows (CRLF), macOS, Linux, GitHub Actions, and GitHub Codespaces.
+const compose = (await readFile("compose.yaml", "utf8")).replace(/\r\n?/gu, "\n");
 check(compose.includes("read_only: true"), "compose read-only root filesystem");
 check(compose.includes("no-new-privileges:true"), "compose no-new-privileges");
 check(compose.includes("cap_drop:\n      - ALL"), "compose drops all capabilities");
