@@ -5,7 +5,14 @@ COPY package.json package-lock.json ./
 RUN npm ci
 
 COPY . .
-RUN npm run pilot:preflight && npm run build && node --test tests/*.test.mjs
+# Windows checkouts may carry CRLF into the Docker build context even when
+# .gitattributes requires LF. Normalize shell entrypoints inside the image so
+# Bash always receives valid Unix line endings.
+RUN find scripts -type f -name '*.sh' -exec sed -i 's/\r$//' {} + \
+    && find . -maxdepth 1 -type f -name '*.sh' -exec sed -i 's/\r$//' {} + \
+    && npm run pilot:preflight \
+    && npm run build \
+    && node --test tests/*.test.mjs
 
 FROM node:22-bookworm-slim AS runtime
 
