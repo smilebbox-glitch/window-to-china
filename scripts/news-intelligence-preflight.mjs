@@ -14,16 +14,22 @@ const check = (condition, message) => {
 
 const ids = [...sources.matchAll(/\bid:\s*"([^"]+)"/g)].map((match) => match[1]);
 const urls = [...sources.matchAll(/\burl:\s*"(https:[^"]+)"/g)].map((match) => match[1]);
-check(ids.length >= 17, `expected >=17 curated web sources, found ${ids.length}`);
+check(ids.length >= 20, `expected >=20 curated web sources, found ${ids.length}`);
 check(new Set(ids).size === ids.length, "news source IDs must be unique");
 check(new Set(urls).size === urls.length, "news source URLs must be unique");
 
-for (const id of ["caam", "gasgoo", "cnevpost", "yicai-auto", "china-briefing", "nbs-china", "36kr-en", "carnewschina"]) {
+for (const id of [
+  "caam", "miit-auto", "mofcom-news", "cada", "nbs-china",
+  "gasgoo", "cnevpost", "yicai-auto", "china-briefing", "36kr-en", "carnewschina",
+]) {
   check(sources.includes(`id: "${id}"`), `missing source ${id}`);
 }
 
 for (const host of [
   "www.caam.org.cn",
+  "www.miit.gov.cn",
+  "english.mofcom.gov.cn",
+  "www.cada.cn",
   "autonews.gasgoo.com",
   "cnevpost.com",
   "www.yicaiglobal.com",
