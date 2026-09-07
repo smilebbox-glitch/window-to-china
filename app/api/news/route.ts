@@ -29,7 +29,7 @@ const brandPatterns: Array<[Brand, RegExp]> = [
 ];
 
 const autoIndustryPattern =
-  /汽车|车企|整车|新能源车|商用车|重卡|卡车|零部件|供应链|销量|产量|出口|工厂|自动驾驶|电池|充电|智能驾驶|车联网|芯片|SHACMAN|Shaanxi|陕汽|Great\s*Wall|GWM|长城汽车|哈弗|坦克|魏牌|欧拉|炮|\bautomotive\b|\bautomaker\b|\bvehicle\b|\bvehicles\b|\bcar\b|\bcars\b|\bev\b|\bnev\b|electric vehicle|commercial vehicle|\btruck\b|\btrucks\b|battery|charging|supplier|supply chain|vehicle sales|auto sales|robotaxi|autonomous driving|smart driving|\badas\b|mobility|\boem\b|auto export/iu;
+  /汽车|车企|整车|新能源车|商用车|重卡|卡车|零部件|供应链|销量|产量|出口|工厂|自动驾驶|电池|充电|智能驾驶|车联网|芯片|比亚迪|蔚来|小鹏|理想|吉利|奇瑞|上汽|一汽|东风|长安|小米汽车|极氪|零跑|宁德时代|SHACMAN|Shaanxi|陕汽|Great\s*Wall|GWM|长城汽车|哈弗|坦克|魏牌|欧拉|炮|\bautomotive\b|\bautomaker\b|\bvehicle\b|\bvehicles\b|\bcar\b|\bcars\b|\bev\b|\bnev\b|electric vehicle|commercial vehicle|\btruck\b|\btrucks\b|battery|charging|supplier|supply chain|vehicle sales|auto sales|robotaxi|autonomous driving|smart driving|\badas\b|mobility|\boem\b|auto export|\bbyd\b|\bnio\b|\bxpeng\b|li auto|\bgeely\b|\bchery\b|\bsaic\b|\bfaw\b|\bdongfeng\b|\bchangan\b|xiaomi auto|\bzeekr\b|\bleapmotor\b|\bcatl\b|\bavatr\b|\bvoyah\b/iu;
 const economyPattern =
   /工业|制造业|经济|外贸|进出口|出口|进口|投资|消费|生产|采购经理|供应链|关税|政策|监管|industrial|manufacturing|economy|economic|foreign trade|imports?|exports?|investment|production|factory|factories|\bpmi\b|retail sales|tariff|regulation|policy|foreign investment|supply chain/iu;
 const technologyPattern =
@@ -38,6 +38,21 @@ const tradePattern =
   /外贸|出口|进口|海外|关税|贸易|海关|export|import|overseas|tariff|trade|customs|locali[sz]ation|global market/iu;
 const policyPattern =
   /政策|监管|标准|法规|补贴|policy|regulation|standard|rules?|guideline|subsidy|compliance/iu;
+
+const specialistSourceIds = new Set([
+  "shaanxi-auto",
+  "caam",
+  "people-auto",
+  "xinhua-auto",
+  "cctv-auto",
+  "gasgoo",
+  "cnevpost",
+  "yicai-auto",
+  "autohome",
+  "yiche",
+  "pcauto",
+  "carnewschina",
+]);
 
 const stopWords = new Set([
   "и", "в", "во", "на", "с", "со", "по", "для", "из", "к", "ко", "о", "об", "от", "до", "за", "у", "как", "что", "это", "уже", "новый", "новая", "новые", "китай", "китая", "китайский", "китайская", "китайские",
@@ -246,14 +261,16 @@ function articleDate(html: string) {
 }
 
 function sourceRelevant(source: NewsWebsiteSource, title: string) {
-  if (title.length < 8 || title.length > 180) return false;
-  if (/^(home|news|more|read more|首页|新闻|更多|登录|注册|视频)$/iu.test(title.trim())) return false;
+  const trimmed = title.trim();
+  if (trimmed.length < 8 || trimmed.length > 180) return false;
+  if (/^(home|news|more|read more|首页|新闻|更多|登录|注册|视频|工作动态|文件发布|机构职责|办事指南|协会工作|统计数据|行业培训)$/iu.test(trimmed)) return false;
+  if (specialistSourceIds.has(source.id)) return true;
   return source.focus.some((focus) => {
-    if (focus === "auto" || focus === "ev") return autoIndustryPattern.test(title);
-    if (focus === "economy") return economyPattern.test(title);
-    if (focus === "technology") return technologyPattern.test(title);
-    if (focus === "trade") return tradePattern.test(title);
-    return policyPattern.test(title);
+    if (focus === "auto" || focus === "ev") return autoIndustryPattern.test(trimmed);
+    if (focus === "economy") return economyPattern.test(trimmed);
+    if (focus === "technology") return technologyPattern.test(trimmed);
+    if (focus === "trade") return tradePattern.test(trimmed);
+    return policyPattern.test(trimmed);
   });
 }
 
@@ -546,7 +563,8 @@ export async function GET(request: Request) {
 
   const errors = results.filter((result) => result.state === "error").map((result) => result.key);
   const degraded = results.filter((result) => result.state === "stale").map((result) => result.key);
-  if (errors.length || degraded.length) logEvent("warn", "news_sources_degraded", { errors, stale: degraded });
+  const clientErrors = [...errors, ...degraded.map((key) => `${key}:stale`)];
+  if (clientErrors.length) logEvent("warn", "news_sources_degraded", { errors, stale: degraded });
 
   const rawNews = results.flatMap((result) => result.items).filter(withinFreshnessWindow);
   const unique = deduplicateNews(rawNews).slice(0, 120);
@@ -554,7 +572,7 @@ export async function GET(request: Request) {
   if (!unique.length && cached?.state === "stale") {
     return jsonWithContext(context, {
       ...cached.payload,
-      errors: [...new Set([...(cached.payload.errors || []), ...errors])],
+      errors: [...new Set([...(cached.payload.errors || []), ...clientErrors])],
       cache: { state: "stale", ageSeconds: cached.ageSeconds, qualityScore: cached.qualityScore },
     }, { headers: { "cache-control": "public, max-age=60", "x-data-cache": "stale", ...rateLimitHeaders(limit) } });
   }
@@ -568,12 +586,12 @@ export async function GET(request: Request) {
     sourceCount: liveSources,
     totalSources: jobs.length,
     disabledSources,
-    errors,
+    errors: clientErrors,
     rawCount: rawNews.length,
     deduplicatedCount: Math.max(0, rawNews.length - unique.length),
     sourceCatalogVersion: NEWS_SOURCE_CATALOG_VERSION,
     sourceBreakdown: results.map((result) => ({ source: result.key, state: result.state, items: result.items.length, latencyMs: result.latencyMs })),
-    cache: { state: unique.length ? (errors.length || degraded.length ? "partial" : "live") : "miss", ageSeconds: 0, qualityScore },
+    cache: { state: unique.length ? (clientErrors.length ? "partial" : "live") : "miss", ageSeconds: 0, qualityScore },
   };
 
   if (unique.length) {
@@ -583,13 +601,13 @@ export async function GET(request: Request) {
       payload,
       ttlMs: Number(process.env.NEWS_CACHE_TTL_SECONDS || 900) * 1000,
       staleMs: Number(process.env.NEWS_CACHE_STALE_SECONDS || 21600) * 1000,
-      status: errors.length || degraded.length ? "partial" : "live",
+      status: clientErrors.length ? "partial" : "live",
       qualityScore,
       itemCount: unique.length,
-      error: [...errors, ...degraded.map((key) => `${key}:stale`)].join(", "),
+      error: clientErrors.join(", "),
     });
   } else {
-    recordSourceRun({ sourceKey: "news.aggregate", status: jobs.length ? "failure" : "disabled", qualityScore, itemCount: 0, error: errors.join(", ") });
+    recordSourceRun({ sourceKey: "news.aggregate", status: jobs.length ? "failure" : "disabled", qualityScore, itemCount: 0, error: clientErrors.join(", ") });
   }
 
   return jsonWithContext(context, payload, {
