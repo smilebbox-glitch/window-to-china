@@ -36,6 +36,21 @@ function Ensure-Secret([string]$Key, [string]$Placeholder = '') {
     }
 }
 function Docker-Ready { try { & docker info *> $null; return ($LASTEXITCODE -eq 0) } catch { return $false } }
+function Get-LanIPv4 {
+    try {
+        $defaultRoute = Get-NetRoute -AddressFamily IPv4 -DestinationPrefix '0.0.0.0/0' -ErrorAction Stop |
+            Where-Object { $_.NextHop -ne '0.0.0.0' } |
+            Sort-Object RouteMetric, InterfaceMetric |
+            Select-Object -First 1
+        if ($defaultRoute) {
+            $ip = Get-NetIPAddress -AddressFamily IPv4 -InterfaceIndex $defaultRoute.InterfaceIndex -ErrorAction Stop |
+                Where-Object { $_.IPAddress -notmatch '^127\.' -and $_.IPAddress -notmatch '^169\.254\.' } |
+                Select-Object -ExpandProperty IPAddress -First 1
+            if ($ip) { return $ip }
+        }
+    } catch {}
+    return ''
+}
 
 Stage 'Checking Docker'
 if (-not (Get-Command docker -ErrorAction SilentlyContinue)) {
@@ -96,10 +111,19 @@ foreach ($key in $policies.Keys) {
         Fail "$key must be an integer >= $($policies[$key])."
     }
 }
-$bindAddress = Get-EnvValue 'APP_BIND_ADDRESS'; if (-not $bindAddress) { $bindAddress = '127.0.0.1' }
-$allowPublic = Get-EnvValue 'ALLOW_PUBLIC_BIND'; if (-not $allowPublic) { $allowPublic = 'NO' }
+
+# v1.6.1 LAN migration: old one-computer defaults are upgraded automatically.
+$bindAddress = Get-EnvValue 'APP_BIND_ADDRESS'; if (-not $bindAddress) { $bindAddress = '0.0.0.0' }
+$allowPublic = Get-EnvValue 'ALLOW_PUBLIC_BIND'; if (-not $allowPublic) { $allowPublic = 'YES' }
+if ($bindAddress -eq '127.0.0.1' -and $allowPublic -eq 'NO') {
+    Set-EnvValue 'APP_BIND_ADDRESS' '0.0.0.0'
+    Set-EnvValue 'ALLOW_PUBLIC_BIND' 'YES'
+    $bindAddress = '0.0.0.0'
+    $allowPublic = 'YES'
+    Write-Host 'Enabled trusted-LAN access (migrated from localhost-only defaults).'
+}
 if ($bindAddress -eq '0.0.0.0' -and $allowPublic -ne 'YES') {
-    Fail 'APP_BIND_ADDRESS=0.0.0.0 requires ALLOW_PUBLIC_BIND=YES and explicit network controls.'
+    Fail 'APP_BIND_ADDRESS=0.0.0.0 requires ALLOW_PUBLIC_BIND=YES and trusted network/firewall controls.'
 }
 
 Stage 'Validating Docker Compose'
@@ -139,26 +163,35 @@ if ($health -ne 'healthy') { & docker compose logs --tail=120 china-auto-radar; 
 
 Stage 'Running smoke checks'
 $port = Get-EnvValue 'APP_PORT'; if (-not $port) { $port = '3000' }
-$base = "http://127.0.0.1:$port"
+$localBase = "http://127.0.0.1:$port"
 foreach ($path in @('/api/health','/api/ready','/api/content?section=travel-guide')) {
-    $r = Invoke-WebRequest -UseBasicParsing -Uri ($base + $path) -TimeoutSec 15
+    $r = Invoke-WebRequest -UseBasicParsing -Uri ($localBase + $path) -TimeoutSec 15
     if ($r.StatusCode -lt 200 -or $r.StatusCode -ge 300) { Fail "$path returned HTTP $($r.StatusCode)" }
 }
 $running = @(& docker compose ps --status running --services)
 if ($running -notcontains 'china-auto-radar-scheduler') { Fail 'Scheduler is not running.' }
 Write-Host 'PASS  health/readiness/content + scheduler'
 
+$lanIp = Get-LanIPv4
+$lanBase = if ($lanIp) { "http://${lanIp}:$port" } else { '' }
 $adminToken = Get-EnvValue 'ADMIN_API_TOKEN'
 $access = @(
     'Okno v Kitai Pilot v1.6.1',
-    "URL: $base"
+    "Local URL: $localBase"
 )
+if ($lanBase) { $access += "LAN URL: $lanBase" }
 if ($authMode -eq 'disabled') { $access += "Admin API token: $adminToken" } else { $access += 'Authentication: corporate proxy / SSO' }
 $access += ('Generated: ' + [DateTime]::UtcNow.ToString('yyyy-MM-ddTHH:mm:ssZ'))
 [System.IO.File]::WriteAllLines((Join-Path $Root '.pilot-access.txt'), $access, [System.Text.UTF8Encoding]::new($false))
 
 Stage 'READY'
-Write-Host "Application: $base" -ForegroundColor Green
+Write-Host "This PC: $localBase" -ForegroundColor Green
+if ($lanBase) {
+    Write-Host "Other PCs on the same LAN: $lanBase" -ForegroundColor Green
+    Write-Host 'If another PC cannot connect, allow inbound TCP for APP_PORT in Windows Firewall on the Domain/Private profile.'
+} else {
+    Write-Host 'LAN address could not be detected automatically. Run ipconfig and use http://<IPv4-address>:APP_PORT.'
+}
 Write-Host "Access details: $(Join-Path $Root '.pilot-access.txt')"
 Write-Host 'Stop: STOP.bat    Status: STATUS.bat'
-if (-not $NoBrowser) { Start-Process $base -ErrorAction SilentlyContinue | Out-Null }
+if (-not $NoBrowser) { Start-Process $localBase -ErrorAction SilentlyContinue | Out-Null }
