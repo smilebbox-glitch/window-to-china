@@ -6,6 +6,8 @@ const read = (file) => fs.readFileSync(path.join(root, file), "utf8");
 const sources = read("lib/news-sources.ts");
 const route = read("app/api/news/route.ts");
 const outbound = read("lib/outbound.ts");
+const page = read("app/page.tsx");
+const liveDashboard = read("components/news-dashboard-live.tsx");
 
 const failures = [];
 const check = (condition, message) => {
@@ -60,6 +62,8 @@ for (const token of [
 check(route.includes("activeNewsWebsiteSources"), "active curated website catalog is not wired into news API");
 check(route.includes("sourceType: source.sourceType"), "source authority type is not preserved");
 check(route.includes("runtime.sources[\"news.chinaPortals\"]"), "backward-compatible runtime website toggle is not preserved");
+check(page.includes("NewsDashboardLive"), "home page is not using fresh-first dashboard entrypoint");
+check(liveDashboard.includes("seedNews.splice(0, seedNews.length)"), "legacy static seed stories can still be mixed into the live feed");
 
 if (failures.length) {
   console.error("NO-GO: v1.7 news intelligence preflight failed");
@@ -67,4 +71,4 @@ if (failures.length) {
   process.exit(1);
 }
 
-console.log(`GO: v1.7 news intelligence pipeline; curatedSources=${ids.length}; uniqueUrls=${urls.length}; fuzzyDedup=on; perSourceFallback=on`);
+console.log(`GO: v1.7 news intelligence pipeline; curatedSources=${ids.length}; uniqueUrls=${urls.length}; fuzzyDedup=on; perSourceFallback=on; staticSeedsInLiveFeed=off`);
