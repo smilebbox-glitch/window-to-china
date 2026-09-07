@@ -2,6 +2,26 @@ name: One-click verification
 
 on:
   workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/one-click-verification.yml'
+      - '.devcontainer/**'
+      - '.env.example'
+      - '.gitattributes'
+      - 'Dockerfile'
+      - 'compose.yaml'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'next.config.*'
+      - 'app/**'
+      - 'components/**'
+      - 'lib/**'
+      - 'scripts/**'
+      - 'tests/**'
+      - 'start.sh'
+      - 'stop.sh'
+      - 'status.sh'
   push:
     branches: [main]
     paths:
@@ -15,6 +35,7 @@ on:
       - 'package-lock.json'
       - 'next.config.*'
       - 'app/**'
+      - 'components/**'
       - 'lib/**'
       - 'scripts/**'
       - 'tests/**'
@@ -26,7 +47,21 @@ permissions:
   contents: read
 
 jobs:
+  automated-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.13.0'
+      - name: Install dependencies
+        run: npm ci
+      - name: Run build and automated tests
+        run: npm test
+
   build-and-smoke:
+    needs: automated-tests
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -60,6 +95,10 @@ jobs:
         run: |
           curl --fail --show-error http://127.0.0.1:3000/api/health
           curl --fail --show-error http://127.0.0.1:3000/api/ready
+      - name: Run automated runtime smoke tests
+        env:
+          BASE_URL: http://127.0.0.1:3000
+        run: npm run test:runtime
       - name: Show status
         run: ./status.sh
       - name: Diagnostics
