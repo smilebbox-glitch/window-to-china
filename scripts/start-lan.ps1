@@ -30,6 +30,50 @@ function Test-Administrator {
     } catch { return $false }
 }
 
+function Test-TcpPortAvailable([int]$Port) {
+    $listener = $null
+    try {
+        $listener = [System.Net.Sockets.TcpListener]::new([System.Net.IPAddress]::Any, $Port)
+        $listener.Start()
+        return $true
+    } catch {
+        return $false
+    } finally {
+        if ($listener) {
+            try { $listener.Stop() } catch {}
+        }
+    }
+}
+
+function Get-PortOwnerText([int]$Port) {
+    try {
+        $connections = @(Get-NetTCPConnection -State Listen -LocalPort $Port -ErrorAction Stop)
+        if (-not $connections) { return '' }
+        $parts = foreach ($c in $connections) {
+            $pidValue = $c.OwningProcess
+            $name = ''
+            try { $name = (Get-Process -Id $pidValue -ErrorAction Stop).ProcessName } catch {}
+            if ($name) { "PID $pidValue ($name)" } else { "PID $pidValue" }
+        }
+        return (($parts | Select-Object -Unique) -join ', ')
+    } catch { return '' }
+}
+
+function Stop-OldOknoContainers([int]$Port) {
+    if (-not (Get-Command docker -ErrorAction SilentlyContinue)) { return }
+    try {
+        $ids = @(& docker ps -q --filter 'label=com.mgc.service=okno-v-kitai' --filter "publish=$Port" 2>$null) |
+            Where-Object { -not [string]::IsNullOrWhiteSpace($_) }
+        if ($ids.Count -gt 0) {
+            Write-Host "Found an older Okno v Kitai container on port $Port. Replacing it..." -ForegroundColor Yellow
+            & docker rm -f $ids *> $null
+            Start-Sleep -Seconds 2
+        }
+    } catch {
+        Write-Warning "Could not clean up the previous Okno v Kitai container: $($_.Exception.Message)"
+    }
+}
+
 function Get-LanIPv4 {
     try {
         $route = Get-NetRoute -AddressFamily IPv4 -DestinationPrefix '0.0.0.0/0' -ErrorAction Stop |
@@ -72,13 +116,48 @@ if (-not (Test-Path '.env')) {
     Copy-Item '.env.example' '.env'
 }
 
-# Force the user-requested LAN mode even when an older .env still contains localhost-only settings.
+# Force LAN mode even when an older .env still contains localhost-only settings.
 Set-EnvValue 'APP_BIND_ADDRESS' '0.0.0.0'
 Set-EnvValue 'ALLOW_PUBLIC_BIND' 'YES'
-$port = Get-EnvValue 'APP_PORT'
-if ([string]::IsNullOrWhiteSpace($port)) {
-    $port = '3000'
-    Set-EnvValue 'APP_PORT' $port
+
+$rawPort = Get-EnvValue 'APP_PORT'
+$port = 3000
+$parsedPort = 0
+if (-not [string]::IsNullOrWhiteSpace($rawPort) -and [int]::TryParse($rawPort, [ref]$parsedPort) -and $parsedPort -ge 1024 -and $parsedPort -le 65535) {
+    $port = $parsedPort
+} else {
+    Set-EnvValue 'APP_PORT' '3000'
+}
+
+# First remove only an older running container that belongs to this application.
+Stop-OldOknoContainers $port
+
+# If another application owns the requested port, leave it untouched and move Okno v Kitai
+# to the next free port. This avoids repeated "port is already allocated" failures.
+if (-not (Test-TcpPortAvailable $port)) {
+    $owner = Get-PortOwnerText $port
+    if ($owner) {
+        Write-Host "Port $port is occupied by $owner." -ForegroundColor Yellow
+    } else {
+        Write-Host "Port $port is already occupied." -ForegroundColor Yellow
+    }
+
+    $freePort = $null
+    foreach ($candidate in 3001..3099) {
+        if (Test-TcpPortAvailable $candidate) {
+            $freePort = $candidate
+            break
+        }
+    }
+    if (-not $freePort) {
+        throw 'No free TCP port was found in range 3001-3099. Close the conflicting application or configure APP_PORT manually.'
+    }
+
+    $port = [int]$freePort
+    Set-EnvValue 'APP_PORT' ([string]$port)
+    Write-Host "Using free port $port instead. The browser URL will include this port." -ForegroundColor Green
+} else {
+    Set-EnvValue 'APP_PORT' ([string]$port)
 }
 
 Write-Host "LAN mode enabled: 0.0.0.0:$port" -ForegroundColor Cyan
@@ -110,7 +189,16 @@ Write-Host ''
 Write-Host '================ NETWORK ACCESS ================' -ForegroundColor Cyan
 Write-Host "This PC:       http://127.0.0.1:$port" -ForegroundColor Green
 if ($lanIp) {
-    Write-Host "Other PCs:     http://${lanIp}:$port" -ForegroundColor Green
+    $lanUrl = "http://${lanIp}:$port"
+    Write-Host "Other PCs:     $lanUrl" -ForegroundColor Green
+    try {
+        $probe = Invoke-WebRequest -UseBasicParsing -Uri ($lanUrl + '/api/health') -TimeoutSec 10
+        if ($probe.StatusCode -ge 200 -and $probe.StatusCode -lt 300) {
+            Write-Host 'LAN self-test from this PC: PASS' -ForegroundColor Green
+        }
+    } catch {
+        Write-Host 'LAN self-test from this PC: FAILED. Windows/network policy may be blocking access to the host LAN address.' -ForegroundColor Yellow
+    }
     Write-Host "Open that exact address on another PC in the same corporate/local network."
 } else {
     Write-Host "Could not detect LAN IPv4 automatically. Run ipconfig and open http://<IPv4>:$port on another PC." -ForegroundColor Yellow
