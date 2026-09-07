@@ -6,6 +6,7 @@ import { pilotDbStatus } from "@/lib/pilot-db";
 import { checkRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
 import { createRequestContext, jsonWithContext } from "@/lib/request-context";
 import { sourceReliabilitySummary } from "@/lib/source-cache";
+import { validateNewsSourceCatalog } from "@/lib/news-sources";
 
 export const dynamic = "force-dynamic";
 
@@ -25,6 +26,7 @@ export async function GET(request: Request) {
     scheduler: { configured: Boolean(process.env.SCHEDULER_TOKEN?.trim()), intervalSeconds: Number(process.env.SCHEDULER_INTERVAL_SECONDS || 300), locks: schedulerLockStatus() },
     governance: { policy: governancePolicy(), migrations: migrationStatus(), sla: sourceSlaStatus() },
     content: contentCounts(),
+    newsSources: validateNewsSourceCatalog(),
     reliability,
     time: new Date().toISOString(),
   }, { headers: { "cache-control": "no-store", ...rateLimitHeaders(limit) } });
