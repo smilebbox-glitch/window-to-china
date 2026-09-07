@@ -50,3 +50,14 @@ test('LAN access is enabled by default and launchers expose a LAN URL', async ()
   assert.match(winLan, /RemoteAddress LocalSubnet/u);
   assert.match(winLan, /Other PCs:/u);
 });
+
+test('Windows LAN launcher recovers safely from an occupied port', async () => {
+  const winLan = await t('scripts/start-lan.ps1');
+  assert.match(winLan, /Test-TcpPortAvailable/u);
+  assert.match(winLan, /label=com\.mgc\.service=okno-v-kitai/u);
+  assert.match(winLan, /docker rm -f/u);
+  assert.match(winLan, /3001\.\.3099/u);
+  assert.match(winLan, /Using free port/u);
+  assert.match(winLan, /LAN self-test from this PC: PASS/u);
+  assert.match(winLan, /Get-PortOwnerText/u);
+});
