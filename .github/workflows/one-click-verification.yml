@@ -8,6 +8,18 @@ on:
       - '.github/workflows/one-click-verification.yml'
       - '.devcontainer/**'
       - '.env.example'
+      - 'Dockerfile'
+      - 'compose.yaml'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'next.config.*'
+      - 'app/**'
+      - 'lib/**'
+      - 'scripts/**'
+      - 'tests/**'
+      - 'start.sh'
+      - 'stop.sh'
+      - 'status.sh'
 
 permissions:
   contents: read
