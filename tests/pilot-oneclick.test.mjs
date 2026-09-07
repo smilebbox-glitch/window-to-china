@@ -24,3 +24,22 @@ test('one-click launchers bootstrap secrets and support offline image', async ()
     assert.match(src, /\.pilot-access\.txt/u);
   }
 });
+
+test('LAN access is enabled by default and launchers expose a LAN URL', async () => {
+  const [compose, env, sh, ps] = await Promise.all([
+    t('compose.yaml'),
+    t('.env.example'),
+    t('scripts/one-click-start.sh'),
+    t('scripts/one-click-start.ps1'),
+  ]);
+
+  assert.match(compose, /APP_BIND_ADDRESS:-0\.0\.0\.0/u);
+  assert.match(env, /^APP_BIND_ADDRESS=0\.0\.0\.0$/mu);
+  assert.match(env, /^ALLOW_PUBLIC_BIND=YES$/mu);
+
+  for (const src of [sh, ps]) {
+    assert.match(src, /127\.0\.0\.1/u);
+    assert.match(src, /LAN URL/u);
+    assert.match(src, /0\.0\.0\.0/u);
+  }
+});
