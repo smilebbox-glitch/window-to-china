@@ -17,9 +17,9 @@
     "pilot:security": "node scripts/pilot-security-preflight.mjs",
     "pilot:operations": "node scripts/pilot-operations-preflight.mjs",
     "pilot:sbom": "node scripts/generate-sbom.mjs",
-    "pilot:preflight": "npm run pilot:security && npm run pilot:operations && npm run pilot:reliability && npm run pilot:governance && npm run pilot:business && npm run pilot:oneclick && npm run pilot:syntax && npm run pilot:sbom",
-    "pilot:audit-deps": "npm audit --audit-level=high --omit=dev",
+    "pilot:preflight": "npm run pilot:security && npm run pilot:operations && npm run pilot:reliability && npm run pilot:governance && npm run pilot:business && npm run pilot:oneclick && npm run pilot:intelligence && npm run pilot:syntax && npm run pilot:sbom",
     "pilot:preflight:online": "npm run pilot:preflight && npm run pilot:audit-deps",
+    "pilot:audit-deps": "npm audit --audit-level=high --omit=dev",
     "pilot:host": "bash scripts/host-preflight.sh",
     "pilot:smoke": "bash scripts/container-smoke.sh",
     "pilot:syntax": "tsc --noEmit --noCheck",
@@ -28,7 +28,8 @@
     "pilot:governance": "node scripts/pilot-governance-preflight.mjs",
     "pilot:acceptance": "node scripts/generate-acceptance-report.mjs",
     "pilot:business": "node scripts/pilot-business-preflight.mjs",
-    "pilot:oneclick": "node scripts/pilot-oneclick-preflight.mjs"
+    "pilot:oneclick": "node scripts/pilot-oneclick-preflight.mjs",
+    "pilot:intelligence": "node scripts/news-intelligence-preflight.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",
