@@ -11,6 +11,7 @@
     "build": "bash scripts/build-verified.sh",
     "start": "vinext start",
     "test": "npm run build && node --test tests/*.test.mjs",
+    "test:runtime": "node --test tests/runtime-smoke.mjs",
     "lint": "bash scripts/sites-env.sh -- eslint . --ignore-pattern dist --ignore-pattern .next",
     "db:generate": "bash scripts/sites-env.sh -- drizzle-kit generate",
     "pilot:security": "node scripts/pilot-security-preflight.mjs",
