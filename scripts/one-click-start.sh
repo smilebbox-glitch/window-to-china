@@ -32,6 +32,18 @@ ensure_secret(){
     set_env "$key" "$(secret)"
   fi
 }
+get_lan_ip(){
+  case "$(uname -s)" in
+    Darwin)
+      local iface
+      iface="$(route -n get default 2>/dev/null | awk '/interface:/{print $2; exit}')"
+      [[ -n "$iface" ]] && ipconfig getifaddr "$iface" 2>/dev/null || true
+      ;;
+    *)
+      hostname -I 2>/dev/null | awk '{for(i=1;i<=NF;i++) if($i !~ /^127\./ && $i !~ /^169\.254\./){print $i; exit}}'
+      ;;
+  esac
+}
 
 say "Checking Docker"
 command -v docker >/dev/null 2>&1 || fail "Docker is not installed or is not in PATH. Install Docker Desktop / Docker Engine once, then run START again."
@@ -73,7 +85,6 @@ else
   fail "Unsupported AUTH_MODE='$auth_mode'. Expected disabled or proxy."
 fi
 
-# Validate the same critical governance fields required by the controlled pilot.
 for spec in \
   "SOURCE_HISTORY_RETENTION_DAYS:1" \
   "SOURCE_HISTORY_MAX_ROWS:100" \
@@ -86,10 +97,18 @@ for spec in \
   (( val >= min )) || fail "$key must be >= $min."
 done
 
-bind_address="$(get_env APP_BIND_ADDRESS)"; bind_address="${bind_address:-127.0.0.1}"
-allow_public="$(get_env ALLOW_PUBLIC_BIND)"; allow_public="${allow_public:-NO}"
+# v1.6.1 LAN migration: old one-computer defaults are upgraded automatically.
+bind_address="$(get_env APP_BIND_ADDRESS)"; bind_address="${bind_address:-0.0.0.0}"
+allow_public="$(get_env ALLOW_PUBLIC_BIND)"; allow_public="${allow_public:-YES}"
+if [[ "$bind_address" == "127.0.0.1" && "$allow_public" == "NO" ]]; then
+  set_env APP_BIND_ADDRESS "0.0.0.0"
+  set_env ALLOW_PUBLIC_BIND "YES"
+  bind_address="0.0.0.0"
+  allow_public="YES"
+  printf 'Enabled trusted-LAN access (migrated from localhost-only defaults).\n'
+fi
 if [[ "$bind_address" == "0.0.0.0" && "$allow_public" != "YES" ]]; then
-  fail "APP_BIND_ADDRESS=0.0.0.0 requires ALLOW_PUBLIC_BIND=YES and explicit network controls."
+  fail "APP_BIND_ADDRESS=0.0.0.0 requires ALLOW_PUBLIC_BIND=YES and trusted network/firewall controls."
 fi
 
 say "Running host preflight"
@@ -147,11 +166,15 @@ fi
 printf 'PASS  scheduler running\n'
 
 port="$(get_env APP_PORT)"; port="${port:-3000}"
-url="http://127.0.0.1:${port}"
+local_url="http://127.0.0.1:${port}"
+lan_ip="$(get_lan_ip || true)"
+lan_url=""
+[[ -n "$lan_ip" ]] && lan_url="http://${lan_ip}:${port}"
 admin_token="$(get_env ADMIN_API_TOKEN)"
 {
   printf 'Okno v Kitai Pilot v1.6.1\n'
-  printf 'URL: %s\n' "$url"
+  printf 'Local URL: %s\n' "$local_url"
+  [[ -n "$lan_url" ]] && printf 'LAN URL: %s\n' "$lan_url"
   if [[ "$auth_mode" == "disabled" ]]; then
     printf 'Admin API token: %s\n' "$admin_token"
   else
@@ -162,13 +185,19 @@ admin_token="$(get_env ADMIN_API_TOKEN)"
 chmod 600 .env .pilot-access.txt 2>/dev/null || true
 
 say "READY"
-printf 'Application: %s\n' "$url"
+printf 'This PC: %s\n' "$local_url"
+if [[ -n "$lan_url" ]]; then
+  printf 'Other PCs on the same LAN: %s\n' "$lan_url"
+  printf 'If another PC cannot connect, allow inbound TCP for APP_PORT in the host firewall on the trusted network profile.\n'
+else
+  printf 'LAN address could not be detected automatically. Use the host IPv4 address with port %s.\n' "$port"
+fi
 printf 'Access details: %s/.pilot-access.txt\n' "$ROOT"
 printf 'Stop: ./stop.sh    Status: ./status.sh\n'
 
 if [[ "${NO_BROWSER:-0}" != "1" ]]; then
   case "$(uname -s)" in
-    Darwin) command -v open >/dev/null 2>&1 && open "$url" >/dev/null 2>&1 || true ;;
-    Linux) command -v xdg-open >/dev/null 2>&1 && xdg-open "$url" >/dev/null 2>&1 || true ;;
+    Darwin) command -v open >/dev/null 2>&1 && open "$local_url" >/dev/null 2>&1 || true ;;
+    Linux) command -v xdg-open >/dev/null 2>&1 && xdg-open "$local_url" >/dev/null 2>&1 || true ;;
   esac
 fi
