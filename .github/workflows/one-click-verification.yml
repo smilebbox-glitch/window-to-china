@@ -44,6 +44,14 @@ jobs:
           node scripts/pilot-security-preflight.mjs
           mv compose.yaml.lf compose.yaml
           trap - EXIT
+      - name: Simulate Windows CRLF Docker build input
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('scripts/build-verified.sh')
+          text = path.read_text(encoding='utf-8').replace('\r\n', '\n').replace('\r', '\n')
+          path.write_bytes(text.replace('\n', '\r\n').encode('utf-8'))
+          PY
       - name: Start pilot
         run: |
           chmod +x start.sh stop.sh status.sh scripts/*.sh
