@@ -6,7 +6,7 @@ const check = (cond, m) => cond ? pass(m) : fail(m);
 const text = (p) => fs.existsSync(p) ? fs.readFileSync(p, 'utf8') : '';
 
 const pkg = JSON.parse(text('package.json'));
-check(pkg.version === '1.6.1-pilot', 'package version is v1.6.1 pilot');
+check(/^\d+\.\d+\.\d+-pilot$/.test(pkg.version), 'package version is a valid pilot version');
 for (const f of ['START.bat','STOP.bat','STATUS.bat','start.sh','stop.sh','status.sh','ONE_CLICK_DEPLOYMENT.md']) {
   check(fs.existsSync(f), `${f} packaged`);
 }
