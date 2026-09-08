@@ -8,10 +8,12 @@ import {
   Radar,
   Sparkles,
   Settings,
+  Truck,
 } from "lucide-react";
 
 const navigation = [
   { href: "/", label: "Новости", icon: Newspaper },
+  { href: "/trucks", label: "Грузовики", icon: Truck },
   { href: "/calendar", label: "Календарь", icon: CalendarDays },
   { href: "/analysis", label: "ИИ-анализ", icon: Sparkles },
   { href: "/market", label: "Рынок", icon: ChartNoAxesCombined },
@@ -45,7 +47,7 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
                   className="flex h-10 items-center gap-2 border-b-2 border-transparent px-2 text-xs font-bold uppercase tracking-[0.08em] text-zinc-400 transition-colors hover:border-[#285fff] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5f84ff] sm:px-3"
                 >
                   <Icon className="size-4 text-[#6f91ff]" />
-                  <span className="hidden lg:inline">{item.label}</span>
+                  <span className="hidden xl:inline">{item.label}</span>
                 </Link>
               );
             })}
