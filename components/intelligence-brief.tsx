@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ArrowUpRight, BriefcaseBusiness, Factory, FlaskConical, PackageSearch, Route, ShieldAlert } from "lucide-react";
 import type { NewsItem } from "@/lib/data";
 import { rankNews, type IntelligenceAudience } from "@/lib/intelligence-ranking";
+import { SourceTrustBadge } from "@/components/source-trust-badge";
 
 type LiveResponse = { news: NewsItem[]; errors?: string[] };
 
@@ -71,7 +72,7 @@ export function IntelligenceBrief() {
 
       <div className="mt-4 grid gap-3 lg:grid-cols-2 xl:grid-cols-3">
         {visible.map((item) => <article key={item.id} className="border border-white/8 bg-[#0a1516] p-4">
-          <div className="flex flex-wrap items-center gap-2"><span className={`border px-2 py-1 text-[10px] font-black uppercase tracking-[0.08em] ${levelClass(item.intelligence.level)}`}>{item.intelligence.level} · {item.intelligence.score}</span><span className="text-[11px] font-semibold text-slate-600">{item.source}</span>{item.commercialVehicle && <span className="border border-orange-400/20 bg-orange-400/5 px-2 py-1 text-[10px] font-bold text-orange-300">Грузовики</span>}</div>
+          <div className="flex flex-wrap items-center gap-2"><span className={`border px-2 py-1 text-[10px] font-black uppercase tracking-[0.08em] ${levelClass(item.intelligence.level)}`}>{item.intelligence.level} · {item.intelligence.score}</span><span className="text-[11px] font-semibold text-slate-400">{item.source}</span><SourceTrustBadge sourceType={item.sourceType} compact />{item.commercialVehicle && <span className="border border-orange-400/20 bg-orange-400/5 px-2 py-1 text-[10px] font-bold text-orange-300">Грузовики</span>}</div>
           <h3 className="mt-3 text-base font-semibold leading-6 text-slate-100">{item.title}</h3>
           <p className="mt-3 text-sm leading-6 text-slate-500">{item.intelligence.whyItMatters}</p>
           <div className="mt-3 border-l-2 border-violet-400/50 pl-3 text-xs leading-5 text-slate-400">{item.intelligence.recommendedAction}</div>
