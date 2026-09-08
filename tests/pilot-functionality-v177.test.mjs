@@ -32,6 +32,7 @@ const userRoutes = [
   "/executive",
   "/calendar",
   "/travel-guide",
+  "/search",
 ];
 
 const routeFiles = {
@@ -44,6 +45,7 @@ const routeFiles = {
   "/executive": "app/executive/page.tsx",
   "/calendar": "app/calendar/page.tsx",
   "/travel-guide": "app/travel-guide/page.tsx",
+  "/search": "app/search/page.tsx",
 };
 
 test("pilot exposes all approved user routes", () => {
@@ -52,10 +54,13 @@ test("pilot exposes all approved user routes", () => {
   }
 });
 
-test("corporate navigation reaches all main pilot sections", () => {
-  for (const href of ["/", "/news", "/trucks", "/market", "/analysis", "/decision", "/executive", "/calendar", "/travel-guide"]) {
+test("corporate navigation reaches all visible main pilot sections", () => {
+  for (const href of ["/", "/news", "/trucks", "/market", "/analysis", "/calendar", "/travel-guide"]) {
     assert.ok(shell.includes(`href: \"${href}\"`) || shell.includes(`href=\"${href}\"`), `navigation missing ${href}`);
   }
+  assert.doesNotMatch(shell, /label:\s*["']Решения["']/u);
+  assert.doesNotMatch(shell, /label:\s*["']Руководство["']/u);
+  assert.match(shell, /\/search\?q=/u);
 });
 
 test("approved corporate home keeps retired design widgets removed", () => {
