@@ -70,9 +70,12 @@ fi
 ensure_secret SCHEDULER_TOKEN change-me-before-pilot
 ensure_secret USER_DATA_HMAC_KEY change-me-user-data-hmac-before-pilot
 ensure_secret AUDIT_HMAC_KEY
+target_version="$(node -e "process.stdout.write(JSON.parse(require('fs').readFileSync('package.json','utf8')).version || '')")"
+[[ -n "$target_version" ]] || fail "package.json does not contain a valid version."
 current_version="$(get_env APP_VERSION)"
-if [[ -z "$current_version" || "$current_version" == "1.6.0-pilot" ]]; then
-  set_env APP_VERSION "1.6.1-pilot"
+if [[ "$current_version" != "$target_version" ]]; then
+  set_env APP_VERSION "$target_version"
+  printf 'Updated APP_VERSION to %s\n' "$target_version"
 fi
 
 auth_mode="$(get_env AUTH_MODE)"
@@ -97,7 +100,7 @@ for spec in \
   (( val >= min )) || fail "$key must be >= $min."
 done
 
-# v1.6.1 LAN migration: old one-computer defaults are upgraded automatically.
+# LAN migration: old one-computer defaults are upgraded automatically.
 bind_address="$(get_env APP_BIND_ADDRESS)"; bind_address="${bind_address:-0.0.0.0}"
 allow_public="$(get_env ALLOW_PUBLIC_BIND)"; allow_public="${allow_public:-YES}"
 if [[ "$bind_address" == "127.0.0.1" && "$allow_public" == "NO" ]]; then
@@ -120,7 +123,7 @@ docker compose config >/dev/null
 if [[ -f okno-v-kitai-image.tar ]]; then
   say "Loading offline Docker image"
   docker load -i okno-v-kitai-image.tar
-  app_version="$(get_env APP_VERSION)"; app_version="${app_version:-1.6.1-pilot}"
+  app_version="$(get_env APP_VERSION)"; app_version="${app_version:-$target_version}"
   expected_image="okno-v-kitai:${app_version}"
   docker image inspect "$expected_image" >/dev/null 2>&1 || fail "Offline image does not provide expected tag $expected_image."
   say "Starting services without rebuild"
@@ -172,7 +175,7 @@ lan_url=""
 [[ -n "$lan_ip" ]] && lan_url="http://${lan_ip}:${port}"
 admin_token="$(get_env ADMIN_API_TOKEN)"
 {
-  printf 'Okno v Kitai Pilot v1.6.1\n'
+  printf 'Okno v Kitai Pilot %s\n' "$target_version"
   printf 'Local URL: %s\n' "$local_url"
   [[ -n "$lan_url" ]] && printf 'LAN URL: %s\n' "$lan_url"
   if [[ "$auth_mode" == "disabled" ]]; then
