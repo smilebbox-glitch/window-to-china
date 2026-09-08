@@ -11,7 +11,9 @@ const requiredFiles = [
   "components/site-shell.tsx",
   "components/corporate-home.tsx",
   "components/corporate-page-hero.tsx",
+  "components/global-search.tsx",
   "app/news/page.tsx",
+  "app/search/page.tsx",
   "public/corporate/hero-shanghai.svg",
   "public/corporate/hero-trucks.svg",
   "public/corporate/hero-expo.svg",
@@ -23,6 +25,7 @@ const shell = read("components/site-shell.tsx");
 const home = read("components/corporate-home.tsx");
 const css = read("app/globals.css");
 const executive = read("app/executive/page.tsx");
+const globalSearch = read("components/global-search.tsx");
 const pages = {
   news: read("app/news/page.tsx"),
   trucks: read("app/trucks/page.tsx"),
@@ -32,10 +35,21 @@ const pages = {
   executive,
   calendar: read("app/calendar/page.tsx"),
   travel: read("app/travel-guide/page.tsx"),
+  search: read("app/search/page.tsx"),
 };
 
-for (const route of ["/news", "/trucks", "/market", "/analysis", "/decision", "/executive", "/calendar", "/travel-guide"]) {
+for (const route of ["/news", "/trucks", "/market", "/analysis", "/calendar", "/travel-guide"]) {
   check(shell.includes(`href: "${route}"`), `corporate sidebar missing ${route}`);
+}
+
+for (const retired of [
+  'label: "Решения"',
+  'label: "Руководство"',
+  '<span>Сервис</span>',
+  'aria-label="Язык интерфейса"',
+  'aria-label="Уведомления"',
+]) {
+  check(!shell.includes(retired), `retired shell control returned: ${retired}`);
 }
 
 for (const token of ["corporate-topbar", "corporate-sidebar", "corporate-nav-item", "corporate-mark"]) {
@@ -72,6 +86,11 @@ check(!home.includes("bg-red") && !home.includes("#ef") || !home.includes("См�
 check(home.includes("/api/news"), "corporate home must use live news API");
 check(home.includes("VOYAH") && home.includes("EVOLUTE") && home.includes("Моторинвест") && home.includes("ЭВИА"), "corporate home must keep strategic focus entities");
 check(shell.includes("Корпоративный пилот"), "pilot identity missing from shell");
+check(shell.includes("/search?q="), "top search must route to global search");
+check(globalSearch.includes('fetch("/api/news"'), "global search must query live news API");
+check(globalSearch.includes("autoEvents"), "global search must include exhibitions/events");
+check(shell.includes("В тестовом режиме. Данные могут быть неполны."), "test-mode notice missing");
+check(shell.includes("text-[15px]") && shell.includes("text-[#18345f]"), "test-mode notice must stay readable");
 
 if (failures.length) {
   console.error("NO-GO: v1.7.6 corporate UI preflight failed");
@@ -79,4 +98,4 @@ if (failures.length) {
   process.exit(1);
 }
 
-console.log("GO: v1.7.6 corporate UI; approved shell=on; rightSidebar=off; retiredWidgets=off; executiveOpsPanel=off; liveHome=on");
+console.log("GO: corporate UI; simplifiedShell=on; globalSearch=on; readablePilotNotice=on; rightSidebar=off; retiredWidgets=off; executiveOpsPanel=off; liveHome=on");
