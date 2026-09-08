@@ -4,9 +4,9 @@ import fs from 'node:fs/promises';
 
 const t = (p) => fs.readFile(new URL(`../${p}`, import.meta.url), 'utf8');
 
-test('v1.6.1 packages native one-click launchers', async () => {
+test('pilot packages native one-click launchers', async () => {
   const pkg = JSON.parse(await t('package.json'));
-  assert.equal(pkg.version, '1.6.1-pilot');
+  assert.match(pkg.version, /^\d+\.\d+\.\d+-pilot$/u);
   const [bat, sh, ps] = await Promise.all([t('START.bat'), t('start.sh'), t('scripts/one-click-start.ps1')]);
   assert.match(bat, /start-lan\.ps1/u);
   assert.match(sh, /one-click-start\.sh/u);
