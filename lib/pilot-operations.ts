@@ -116,7 +116,7 @@ export function pilotOperationsStatus(): PilotOperationsStatus {
       decision = "NO_GO";
       briefStatus = "STALE";
       reasons.push(`News aggregate устарел: ${Math.round(age / 60)} мин при SLA ${Math.round(policy.maxAgeSeconds / 60)} мин.`);
-    } else if (aggregate.qualityScore < policy.minQuality || aggregate.status === "partial" || (aggregate.payload.errors?.length ?? 0) > 0) {
+    } else if (aggregate.qualityScore < policy.minQuality || aggregate.status === "partial") {
       briefStatus = "DEGRADED";
       reasons.push(`News aggregate свежий, но quality/status ниже целевого уровня (${aggregate.qualityScore}/100, status=${aggregate.status || "unknown"}).`);
     }
@@ -126,14 +126,16 @@ export function pilotOperationsStatus(): PilotOperationsStatus {
   const stale = aggregateBreakdown.filter((item) => item.state === "stale").length;
   const error = aggregateBreakdown.filter((item) => item.state === "error").length;
   const empty = aggregateBreakdown.filter((item) => item.state === "empty").length;
-  if (briefStatus === "GO" && (stale > 0 || error > 0)) {
+  const degradedCount = stale + error;
+  const degradedPct = aggregateBreakdown.length ? Math.round((degradedCount / aggregateBreakdown.length) * 100) : 0;
+  const degradedLimitPct = Math.max(1, Math.min(100, Number(process.env.PILOT_SOURCE_DEGRADED_PCT || 25)));
+  if (briefStatus === "GO" && degradedPct >= degradedLimitPct) {
     briefStatus = "DEGRADED";
-    reasons.push(`Часть источников деградировала: stale=${stale}, error=${error}.`);
+    reasons.push(`Доля недоступных/stale источников ${degradedPct}% достигла порога ${degradedLimitPct}% (stale=${stale}, error=${error}).`);
   }
 
   if (!reliability.snapshots.length && aggregate) {
-    briefStatus = briefStatus === "STALE" ? "STALE" : "DEGRADED";
-    reasons.push("История reliability ещё прогревается.");
+    reasons.push("История reliability ещё прогревается; свежий aggregate доступен и это не блокирует пилот.");
   }
   if (!reasons.length) reasons.push("News aggregate свежий, SLA соблюдён, критических operational blockers нет.");
 
