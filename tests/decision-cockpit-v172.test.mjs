@@ -8,12 +8,12 @@ const cockpit = fs.readFileSync("components/decision-cockpit.tsx", "utf8");
 const route = fs.readFileSync("app/decision/page.tsx", "utf8");
 const shell = fs.readFileSync("components/site-shell.tsx", "utf8");
 
-test("v1.7.2 exposes a corporate Decision Cockpit route and navigation", () => {
+test("v1.7.2 keeps the corporate Decision Cockpit route available without exposing it in navigation", () => {
   assert.match(route, /DecisionCockpit/);
   assert.match(cockpit, /v1\.7\.2 · Corporate Decision Cockpit/);
   assert.match(cockpit, /без персонального Watchlist/);
-  assert.match(shell, /href: "\/decision"/);
-  assert.match(shell, /label: "Решения"/);
+  assert.doesNotMatch(shell, /href:\s*["']\/decision["']/u);
+  assert.doesNotMatch(shell, /label:\s*["']Решения["']/u);
 });
 
 test("Decision Cockpit uses one company-wide business score policy", () => {
