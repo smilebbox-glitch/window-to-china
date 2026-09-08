@@ -1,19 +1,17 @@
 import { randomUUID } from "node:crypto";
 import { getPilotDb } from "@/lib/pilot-db";
 import { autoEvents, type NewsItem } from "@/lib/data";
+import { rankNews } from "@/lib/intelligence-ranking";
+import {
+  defaultWatchlistSettings,
+  matchWatchlist,
+  normalizeWatchlistSettings,
+  type WatchlistSettings,
+} from "@/lib/watchlist";
 
-export type UserSubscriptions = {
-  brands: string[];
-  markets: string[];
-  topics: string[];
-  cities: string[];
-  events: string[];
-  eventLeadDays: number;
-};
+export type UserSubscriptions = WatchlistSettings;
 
-export const defaultSubscriptions: UserSubscriptions = {
-  brands: [], markets: [], topics: [], cities: [], events: [], eventLeadDays: 30,
-};
+export const defaultSubscriptions: UserSubscriptions = defaultWatchlistSettings;
 
 export type UserFavorite = {
   itemType: "news" | "event" | "link";
@@ -45,11 +43,7 @@ function arrayOfStrings(value: unknown, max = 50) {
   return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string").map((item) => item.trim()).filter(Boolean).slice(0, max) : [];
 }
 function normalizeSubscriptions(input: Partial<UserSubscriptions>): UserSubscriptions {
-  return {
-    brands: arrayOfStrings(input.brands, 20), markets: arrayOfStrings(input.markets, 20), topics: arrayOfStrings(input.topics, 20),
-    cities: arrayOfStrings(input.cities, 30), events: arrayOfStrings(input.events, 50),
-    eventLeadDays: Math.max(1, Math.min(180, Math.round(Number(input.eventLeadDays || 30)))),
-  };
+  return normalizeWatchlistSettings(input);
 }
 
 export function getSubscriptions(userKey: string) {
@@ -117,21 +111,6 @@ export function saveTrip(userKey: string, input: Partial<UserTrip>) {
   return trip;
 }
 
-function detectTopics(item: NewsItem) {
-  const text = `${item.title} ${item.summary}`;
-  const matches: string[] = [];
-  const patterns: Array<[string, RegExp]> = [
-    ["Стратегия", /стратег|инвестиц|партнер|альянс|сделк|развити|strategy|战略|合作/iu],
-    ["Геополитика", /санкц|пошлин|тариф|экспортн|огранич|запрет|регулир|комплаенс|关税|制裁|政策/iu],
-    ["Локализация", /локализ|производств|завод|сборк|factory|产能|工厂|本地化/iu],
-    ["Поставки", /постав|логист|компонент|цепочк|supplier|供应链|零部件|交付/iu],
-    ["Продажи", /продаж|рынок|спрос|цена|доля|sales|销量|市场|价格/iu],
-    ["Технологии", /технолог|батаре|электро|гибрид|автопилот|technology|电池|智能驾驶|新能源/iu],
-  ];
-  for (const [topic, pattern] of patterns) if (pattern.test(text)) matches.push(topic);
-  return matches;
-}
-
 function insertNotification(userKey: string, eventKey: string, kind: string, title: string, body: string, url = "") {
   const db = getPilotDb();
   const result = db.prepare(`INSERT OR IGNORE INTO user_notifications(id,user_key,event_key,kind,title,body,url,created_at,read_at) VALUES(?,?,?,?,?,?,?,?,NULL)`)
@@ -144,19 +123,28 @@ export function generateUserNotifications() {
   const prefs = db.prepare("SELECT user_key, subscriptions_json, created_at FROM user_preferences").all() as Array<Record<string, unknown>>;
   const newsRow = db.prepare("SELECT payload_json FROM source_snapshots WHERE source_key='news.aggregate' ORDER BY fetched_at DESC LIMIT 1").get() as { payload_json?: string } | undefined;
   const news = parseJson<{news?: NewsItem[]}>(newsRow?.payload_json, {}).news || [];
+  const rankedNews = rankNews(news.slice(0, 120));
   let created = 0;
+  let intelligenceAlerts = 0;
   const now = Date.now();
   for (const row of prefs) {
     const userKey = String(row.user_key);
     const subscriptions = normalizeSubscriptions(parseJson<Partial<UserSubscriptions>>(row.subscriptions_json, {}));
     const createdAt = Date.parse(String(row.created_at || "")) || (now - 7 * 86400000);
-    for (const item of news.slice(0, 120)) {
-      const published = Date.parse(item.publishedAt);
-      if (!Number.isFinite(published) || published < Math.max(createdAt, now - 7 * 86400000)) continue;
-      const topics = detectTopics(item);
-      const matches = subscriptions.brands.includes(item.brand) || subscriptions.markets.includes(item.market) || topics.some((topic) => subscriptions.topics.includes(topic));
-      if (!matches) continue;
-      created += insertNotification(userKey, `news:${item.id}`, "news", item.title, `${item.source} · ${item.market}${topics.length ? ` · ${topics.join(", ")}` : ""}`, item.url);
+    if (subscriptions.alertsEnabled) {
+      for (const item of rankedNews) {
+        const published = Date.parse(item.publishedAt);
+        if (!Number.isFinite(published) || published < Math.max(createdAt, now - 7 * 86400000)) continue;
+        const match = matchWatchlist(item, subscriptions);
+        if (!match.matched) continue;
+        const score = item.commercialVehicle?.score ?? item.intelligence.score;
+        const why = item.commercialVehicle?.whyItMatters ?? item.intelligence.whyItMatters;
+        const action = item.commercialVehicle?.recommendedAction ?? item.intelligence.recommendedAction;
+        const body = `${score}/100 · ${match.reasons.join(" · ")}. Почему важно: ${why} Что проверить: ${action}`;
+        const inserted = insertNotification(userKey, `intel:${item.id}`, "intelligence", item.title, body, item.url);
+        created += inserted;
+        intelligenceAlerts += inserted;
+      }
     }
     for (const event of autoEvents) {
       const start = Date.parse(`${event.start}T00:00:00Z`);
@@ -166,7 +154,7 @@ export function generateUserNotifications() {
       created += insertNotification(userKey, `event:${event.id}:${event.start}`, "event", `${event.shortName}: через ${days} дн.`, `${event.city} · ${event.start} — ${event.end}`, event.url);
     }
   }
-  return { users: prefs.length, created };
+  return { users: prefs.length, created, intelligenceAlerts };
 }
 
 export function listNotifications(userKey: string, limit = 100) {
