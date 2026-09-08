@@ -24,10 +24,10 @@ const requestContext = await readFile("lib/request-context.ts", "utf8");
 const backupLib = await readFile("lib/backup.ts", "utf8");
 
 const pilotVersion = packageJson.version;
-const escapedVersion = String(pilotVersion).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+const composeVersionExpression = `\${APP_VERSION:-${pilotVersion}}`;
 
 check(/^\d+\.\d+\.\d+-pilot$/.test(pilotVersion), "package version is a valid pilot version");
-check(new RegExp(`APP_VERSION=\\$\\{APP_VERSION:-${escapedVersion}\\}`).test(compose), "compose default APP_VERSION matches package version");
+check(compose.includes(composeVersionExpression), "compose default APP_VERSION matches package version");
 check(env.includes(`APP_VERSION=${pilotVersion}`), "environment template APP_VERSION matches package version");
 check(await exists("app/api/admin/audit/route.ts"), "admin audit endpoint exists");
 check(await exists("app/api/admin/backup/route.ts"), "admin backup endpoint exists");
