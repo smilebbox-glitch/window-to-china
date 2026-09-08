@@ -1,5 +1,5 @@
-import { NewsDashboardLive } from "@/components/news-dashboard-live";
+import { CorporateHome } from "@/components/corporate-home";
 
 export default function HomePage() {
-  return <NewsDashboardLive />;
+  return <CorporateHome />;
 }
