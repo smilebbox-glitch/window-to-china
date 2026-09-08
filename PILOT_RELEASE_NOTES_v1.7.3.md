@@ -75,6 +75,8 @@ Executive View переиспользует factual Market Data v1.7.2. Прог
 - runtime smoke для `/executive`;
 - `pilot:executive` в общем `pilot:preflight`.
 
+Combined CI должен проверять v1.7.1 + corporate v1.7.2 + Executive v1.7.3 одним build/runtime-smoke проходом.
+
 ## Data / migration
 
 Новая схема БД не требуется.
