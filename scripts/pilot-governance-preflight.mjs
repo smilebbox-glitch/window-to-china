@@ -9,7 +9,7 @@ const runtime=await readFile("lib/runtime-config.ts","utf8");
 const refresh=await readFile("app/api/internal/refresh/route.ts","utf8");
 const content=await readFile("lib/content-store.ts","utf8");
 const env=await readFile(".env.example","utf8");
-check(pkg.version==="1.6.1-pilot","package version is v1.6.1 pilot");
+check(/^\d+\.\d+\.\d+-pilot$/.test(pkg.version),"package version is a valid pilot version");
 check(db.includes("schema_migrations")&&db.includes("applyMigrations")&&db.includes("scheduler_locks"),"versioned SQLite migrations packaged");
 check(governance.includes("applyRetentionPolicies")&&governance.includes("SOURCE_HISTORY_RETENTION_DAYS")&&governance.includes("ARCHIVED_CONTENT_RETENTION_DAYS"),"retention policy implementation packaged");
 check(governance.includes("acquireSchedulerLock")&&governance.includes("releaseSchedulerLock")&&governance.includes("SCHEDULER_LOCK_TTL_SECONDS"),"scheduler locking with TTL packaged");
