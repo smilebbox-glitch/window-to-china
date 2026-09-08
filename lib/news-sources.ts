@@ -69,7 +69,7 @@ export const newsWebsiteSources: readonly NewsWebsiteSource[] = Object.freeze([
   {
     id: "mofcom-news",
     name: "MOFCOM China",
-    url: "https://english.mofcom.gov.cn/News/index.html",
+    url: "https://english.mofcom.gov.cn/News/SignificantNews/index.html",
     market: "Китай",
     language: "en",
     sourceType: "official",
@@ -143,8 +143,8 @@ export const newsWebsiteSources: readonly NewsWebsiteSource[] = Object.freeze([
     priority: 94,
     focus: ["auto", "ev", "policy"],
     maxCandidates: 2,
-    enabledByDefault: true,
-    note: "Автомобильная лента People's Daily Online.",
+    enabledByDefault: false,
+    note: "Резервный официальный источник: во внешних дата-центрах периодически недоступен; включать после локальной проверки сети компании.",
   },
   {
     id: "xinhua-auto",
@@ -249,8 +249,8 @@ export const newsWebsiteSources: readonly NewsWebsiteSource[] = Object.freeze([
     priority: 79,
     focus: ["auto", "ev"],
     maxCandidates: 2,
-    enabledByDefault: true,
-    note: "Китайский автомобильный портал.",
+    enabledByDefault: false,
+    note: "Резервный портал: нестабильный ответ для автоматизированного чтения; включать после локальной проверки.",
   },
   {
     id: "pcauto",
@@ -355,8 +355,8 @@ export const newsWebsiteSources: readonly NewsWebsiteSource[] = Object.freeze([
     priority: 86,
     focus: ["truck", "technology", "trade"],
     maxCandidates: 3,
-    enabledByDefault: true,
-    note: "Грузовики, тягачи, спецтехника, компоненты, эксплуатация, логистика и отраслевые выставки России.",
+    enabledByDefault: false,
+    note: "Резервный источник: внешний endpoint периодически возвращает 5xx; включать после подтверждения стабильности.",
     hostAliases: ["gruzovikpress.ru"],
   },
   {
