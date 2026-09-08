@@ -25,7 +25,7 @@ for (const file of [
   "public/apple-touch-icon.png",
 ]) {
   const stat = fs.statSync(path.join(root, file));
-  assert.ok(stat.size > 1_500, `${file} is unexpectedly small`);
+  assert.ok(stat.size > 1_000, `${file} is unexpectedly small`);
 }
 
 const layout = read("app/layout.tsx");

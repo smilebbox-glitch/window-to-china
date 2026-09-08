@@ -14,7 +14,7 @@
     h1 { margin:22px 0 10px; font-size:26px; letter-spacing:-.03em; }
     p { margin:0; color:#637d9e; line-height:1.6; font-size:14px; }
     .note { margin-top:20px; padding:14px 16px; border-radius:14px; background:#f1f7fc; color:#38577d; font-size:13px; }
-    a { display:inline-block; margin-top:22px; border-radius:12px; background:#147efb; color:white; padding:12px 18px; font-weight:800; text-decoration:none; }
+    button { margin-top:22px; border:0; border-radius:12px; background:#147efb; color:white; padding:12px 18px; font-weight:800; cursor:pointer; }
   </style>
 </head>
 <body>
@@ -23,7 +23,7 @@
     <h1>Нет соединения с «Окном в Китай»</h1>
     <p>Приложение не показывает сохранённые новости или аналитику офлайн, чтобы не выдавать устаревшие данные за актуальные.</p>
     <div class="note">Проверьте корпоративную сеть, VPN или подключение к серверу и повторите попытку.</div>
-    <a href="/">Повторить</a>
+    <button type="button" onclick="location.reload()">Повторить</button>
   </main>
 </body>
 </html>

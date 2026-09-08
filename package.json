@@ -39,9 +39,9 @@
     "pilot:controlled": "node scripts/controlled-pilot-preflight.mjs",
     "pilot:outcome": "node scripts/pilot-outcome.mjs",
     "pilot:ui176": "node scripts/corporate-ui-v176-preflight.mjs",
+    "pilot:pwa": "node scripts/pwa-webapp-preflight.mjs",
     "pilot:functional": "node --test tests/pilot-functionality-v177.test.mjs",
-    "pilot:functional:runtime": "node --test tests/pilot-runtime-v177.mjs",
-    "pilot:pwa": "node scripts/pwa-webapp-preflight.mjs"
+    "pilot:functional:runtime": "node --test tests/pilot-runtime-v177.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",
