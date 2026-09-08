@@ -12,10 +12,10 @@ async function request(pathname, accept) {
   });
 }
 
-test("runtime serves the PWA manifest", async () => {
-  const response = await request("/manifest.webmanifest", "application/manifest+json,application/json");
+test("runtime serves the PWA manifest as JSON", async () => {
+  const response = await request("/manifest.json", "application/json");
   assert.equal(response.status, 200);
-  assert.match(response.headers.get("content-type") ?? "", /application\/(manifest\+json|json)/i);
+  assert.match(response.headers.get("content-type") ?? "", /^application\/json\b/i);
   const manifest = await response.json();
   assert.equal(manifest.name, "Окно в Китай — Corporate Intelligence");
   assert.equal(manifest.display, "standalone");
@@ -33,6 +33,7 @@ test("runtime serves service worker with non-cacheable update policy", async () 
   const body = await response.text();
   assert.match(body, /url\.pathname\.startsWith\("\/api\/"\)/);
   assert.match(body, /request\.mode === "navigate"/);
+  assert.match(body, /manifest\.json/);
   assert.match(body, /offline\.html/);
 });
 
@@ -58,7 +59,7 @@ test("runtime HTML advertises install metadata", async () => {
   const response = await request("/", "text/html");
   assert.equal(response.status, 200);
   const body = await response.text();
-  assert.match(body, /manifest\.webmanifest/);
+  assert.match(body, /manifest\.json/);
   assert.match(body, /apple-touch-icon\.png/);
   assert.match(body, /mobile-web-app-capable/);
 });

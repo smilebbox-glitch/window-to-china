@@ -15,7 +15,7 @@
 
 Service Worker намеренно **не кэширует API, новости, аналитику, user/admin/pilot endpoints или HTML-страницы**. Для intelligence-продукта свежесть важнее полноценного offline-режима.
 
-Кэшируются только versioned/static assets (`/_next/static/*`, CSS, JS, fonts, icons) и offline fallback. Поэтому PWA не должна показывать старый briefing как текущий.
+Кэшируются только versioned/static assets (`/_next/static/*`, CSS, JS, fonts, icons), PWA manifest и offline fallback. Поэтому PWA не должна показывать старый briefing как текущий.
 
 ## Требование HTTPS
 
@@ -43,9 +43,21 @@ PWA/service worker требует secure context:
 
 Ручной путь тот же: откройте HTTPS-адрес в Safari → **Поделиться** → **На экран «Домой»**.
 
+## Production runtime
+
+Активный manifest публикуется как `public/manifest.json`. Это сделано намеренно: текущий Vinext production static server корректно отдаёт `.json` с MIME `application/json`, тогда как `.webmanifest` отдавался как `application/octet-stream`.
+
+CI проверяет не только наличие файлов, но и запущенный Docker runtime:
+
+- `/manifest.json` возвращает JSON;
+- `/sw.js` имеет `no-cache/no-store` и `Service-Worker-Allowed: /`;
+- `/offline.html` доступен;
+- PNG-иконки реально отдаются;
+- HTML содержит manifest и Apple install metadata.
+
 ## Технические файлы
 
-- `public/manifest.webmanifest`
+- `public/manifest.json`
 - `public/sw.js`
 - `public/offline.html`
 - `public/pwa-icon-192.png`
@@ -55,6 +67,7 @@ PWA/service worker требует secure context:
 - `components/site-shell.tsx`
 - `scripts/pwa-webapp-preflight.mjs`
 - `tests/pwa-webapp.test.mjs`
+- `tests/pwa-runtime.mjs`
 
 Проверка:
 

@@ -1,9 +1,9 @@
 const CACHE_PREFIX = "okno-v-kitai-pwa-";
-const CACHE_NAME = `${CACHE_PREFIX}v179-1`;
+const CACHE_NAME = `${CACHE_PREFIX}v179-2`;
 
 const PRECACHE = [
   "/offline.html",
-  "/manifest.webmanifest",
+  "/manifest.json",
   "/favicon.svg",
   "/pwa-icon-192.png",
   "/pwa-icon-512.png",
@@ -56,7 +56,7 @@ self.addEventListener("fetch", (event) => {
 
   const isStaticAsset =
     url.pathname.startsWith("/_next/static/") ||
-    /\.(?:css|js|woff2?|png|svg|ico)$/.test(url.pathname);
+    /\.(?:css|js|json|woff2?|png|svg|ico)$/.test(url.pathname);
 
   if (!isStaticAsset) return;
 

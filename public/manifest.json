@@ -1,0 +1,71 @@
+{
+  "id": "/",
+  "name": "Окно в Китай — Corporate Intelligence",
+  "short_name": "Окно в Китай",
+  "description": "Корпоративный intelligence-портал по Китаю и автомобильной промышленности.",
+  "lang": "ru",
+  "dir": "ltr",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f5f9fd",
+  "theme_color": "#0a1d54",
+  "orientation": "any",
+  "categories": [
+    "business",
+    "news",
+    "productivity"
+  ],
+  "icons": [
+    {
+      "src": "/pwa-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Новости",
+      "short_name": "Новости",
+      "url": "/news",
+      "icons": [
+        {
+          "src": "/pwa-icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Руководство",
+      "short_name": "Brief",
+      "url": "/executive",
+      "icons": [
+        {
+          "src": "/pwa-icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Коммерческий транспорт",
+      "short_name": "Truck Radar",
+      "url": "/trucks",
+      "icons": [
+        {
+          "src": "/pwa-icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    }
+  ]
+}

@@ -9,7 +9,7 @@ export const metadata: Metadata = {
   description:
     "Новости SHACMAN и Great Wall Motor, автомобильные выставки, поставщики и карта отрасли России и Китая.",
   applicationName: "Окно в Китай",
-  manifest: "/manifest.webmanifest",
+  manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     title: "Окно в Китай",

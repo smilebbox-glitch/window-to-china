@@ -5,7 +5,7 @@ import path from "node:path";
 const root = process.cwd();
 const read = (file) => fs.readFileSync(path.join(root, file), "utf8");
 
-const manifestPath = path.join(root, "public/manifest.webmanifest");
+const manifestPath = path.join(root, "public/manifest.json");
 const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
 assert.equal(manifest.name, "Окно в Китай — Corporate Intelligence");
 assert.equal(manifest.short_name, "Окно в Китай");
@@ -29,7 +29,7 @@ for (const file of [
 }
 
 const layout = read("app/layout.tsx");
-assert.match(layout, /manifest:\s*"\/manifest\.webmanifest"/);
+assert.match(layout, /manifest:\s*"\/manifest\.json"/);
 assert.match(layout, /PwaInstallButton/);
 assert.match(layout, /apple-touch-icon\.png/);
 assert.match(layout, /themeColor:\s*"#0a1d54"/);
@@ -48,6 +48,7 @@ const sw = read("public/sw.js");
 assert.match(sw, /url\.pathname\.startsWith\("\/api\/"\)/);
 assert.match(sw, /request\.mode === "navigate"/);
 assert.match(sw, /offline\.html/);
+assert.match(sw, /manifest\.json/);
 assert.match(sw, /_next\/static/);
 assert.doesNotMatch(sw, /cache\.put\([^\n]*\/api\//);
 
@@ -57,6 +58,7 @@ assert.match(offline, /не показывает сохранённые ново
 const nextConfig = read("next.config.ts");
 assert.match(nextConfig, /Service-Worker-Allowed/);
 assert.match(nextConfig, /no-cache, no-store, must-revalidate/);
+assert.match(nextConfig, /source:\s*"\/manifest\.json"/);
 
 const siteShell = read("components/site-shell.tsx");
 assert.match(siteShell, /corporate-mobile-nav/);
