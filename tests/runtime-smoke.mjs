@@ -53,13 +53,14 @@ test("runtime corporate home exposes approved v1.7.6 copy and no retired widgets
   }
 });
 
-test("runtime simplified shell hides retired controls and keeps the pilot notice", async () => {
+test("runtime simplified shell keeps approved notification center and hides other retired controls", async () => {
   const response = await request("/", "text/html");
   assert.equal(response.status, 200);
   const body = await response.text();
-  for (const retired of ["Решения", "Руководство", "Язык интерфейса", "Уведомления", ">Сервис<"]) {
+  for (const retired of ["Решения", "Руководство", "Язык интерфейса", ">Сервис<"]) {
     assert.equal(body.includes(retired), false, `retired shell control is visible: ${retired}`);
   }
+  assert.match(body, /Уведомления/u);
   assert.match(body, /В тестовом режиме\. Данные могут быть неполны\./u);
 });
 
@@ -167,12 +168,14 @@ test("runtime v1.7.5 pilot report exposes GO ADJUST STOP KPI contract", async ()
   assert.ok(Array.isArray(payload.reasons));
 });
 
-test("runtime legacy user preferences remain available", async () => {
+test("runtime user preferences expose configurable web-notification fields", async () => {
   const response = await request("/api/user/preferences", "application/json");
   assert.equal(response.status, 200);
   const payload = await response.json();
   assert.ok(payload.subscriptions);
+  assert.equal(typeof payload.subscriptions.notificationsEnabled, "boolean");
   assert.ok(Array.isArray(payload.subscriptions.brands));
+  assert.ok(Array.isArray(payload.subscriptions.segments));
   assert.ok(Array.isArray(payload.subscriptions.markets));
   assert.ok(Array.isArray(payload.subscriptions.topics));
   assert.ok(Array.isArray(payload.subscriptions.events));
