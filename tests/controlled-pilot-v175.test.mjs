@@ -68,6 +68,13 @@ test("pilot control and report share configurable RBAC", () => {
   assert.ok(issueApi.includes('authorize(request, "admin"'));
 });
 
+test("admin can move issues through open mitigated closed lifecycle", () => {
+  assert.ok(program.includes('"open", "mitigated", "closed"'));
+  assert.ok(controlUi.includes('setIssueStatus(issue, "open")'));
+  assert.ok(controlUi.includes('setIssueStatus(issue, "mitigated")'));
+  assert.ok(controlUi.includes('setIssueStatus(issue, "closed")'));
+});
+
 test("telemetry is explicitly product-pilot telemetry rather than employee scoring", () => {
   assert.ok(controlUi.includes("не рейтинг производительности сотрудников"));
   assert.ok(controlUi.includes("P-XXXXXX"));
