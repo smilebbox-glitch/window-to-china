@@ -4,9 +4,9 @@ import fs from 'node:fs/promises';
 
 const t = (p) => fs.readFile(new URL(`../${p}`, import.meta.url), 'utf8');
 
-test('v1.6.1 packages native one-click launchers', async () => {
+test('current pilot packages native one-click launchers', async () => {
   const pkg = JSON.parse(await t('package.json'));
-  assert.equal(pkg.version, '1.6.1-pilot');
+  assert.match(pkg.version, /^\d+\.\d+\.\d+-pilot$/u);
   const [bat, sh, ps] = await Promise.all([t('START.bat'), t('start.sh'), t('scripts/one-click-start.ps1')]);
   assert.match(bat, /start-lan\.ps1/u);
   assert.match(sh, /one-click-start\.sh/u);
@@ -46,6 +46,7 @@ test('LAN access is enabled by default and launchers expose a LAN URL', async ()
 
   assert.match(winLan, /Set-EnvValue 'APP_BIND_ADDRESS' '0\.0\.0\.0'/u);
   assert.match(winLan, /Set-EnvValue 'ALLOW_PUBLIC_BIND' 'YES'/u);
+  assert.match(winLan, /APP_VERSION/u);
   assert.match(winLan, /New-NetFirewallRule/u);
   assert.match(winLan, /RemoteAddress LocalSubnet/u);
   assert.match(winLan, /Other PCs:/u);
