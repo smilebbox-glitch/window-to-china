@@ -40,6 +40,9 @@ assert.match(component, /register\("\/sw\.js"/);
 assert.match(component, /beforeinstallprompt/);
 assert.match(component, /display-mode: standalone/);
 assert.match(component, /window\.isSecureContext/);
+assert.match(component, /isIosLikeDevice/);
+assert.match(component, /На экран Домой/);
+assert.match(component, /IOS_GUIDE_DISMISSED_KEY/);
 
 const sw = read("public/sw.js");
 assert.match(sw, /url\.pathname\.startsWith\("\/api\/"\)/);
@@ -60,4 +63,4 @@ assert.match(siteShell, /corporate-mobile-nav/);
 assert.match(siteShell, /mobileNavigation/);
 assert.match(siteShell, /aria-label="Мобильная навигация"/);
 
-console.log("PASS: Web App + PWA contract is installable on secure origins and never caches intelligence APIs");
+console.log("PASS: Web App + PWA contract is installable on secure origins, mobile-ready, iOS-guided, and never caches intelligence APIs");
