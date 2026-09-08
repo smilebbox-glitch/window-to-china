@@ -15,6 +15,8 @@ async function request(pathname, accept, timeout = timeoutMs) {
 
 const htmlRoutes = [
   "/",
+  "/trucks",
+  "/analysis",
   "/market",
   "/calendar",
   "/travel-guide",
@@ -25,11 +27,7 @@ for (const route of htmlRoutes) {
   test(`runtime page ${route} returns HTML`, async () => {
     const response = await request(route, "text/html");
     assert.equal(response.status, 200, `${route} returned HTTP ${response.status}`);
-    assert.match(
-      response.headers.get("content-type") ?? "",
-      /^text\/html\b/i,
-      `${route} must return HTML`,
-    );
+    assert.match(response.headers.get("content-type") ?? "", /^text\/html\b/i, `${route} must return HTML`);
     const body = await response.text();
     assert.ok(body.length > 100, `${route} returned an unexpectedly small document`);
   });
@@ -55,12 +53,12 @@ test("runtime readiness endpoint is ready", async () => {
   assert.equal(payload.checks?.migrationsCurrent, true);
 });
 
-test("runtime news endpoint is using v1.7 intelligence pipeline", async () => {
-  const response = await request("/api/news", "application/json", 22_000);
+test("runtime news endpoint is using v1.7.1 source catalog", async () => {
+  const response = await request("/api/news", "application/json", 25_000);
   assert.equal(response.status, 200, `/api/news returned HTTP ${response.status}`);
   assert.match(response.headers.get("content-type") ?? "", /^application\/json\b/i);
   const payload = await response.json();
-  assert.equal(payload.sourceCatalogVersion, 1);
+  assert.equal(payload.sourceCatalogVersion, 2);
   assert.ok(Array.isArray(payload.news));
   assert.ok(Array.isArray(payload.sourceBreakdown));
   assert.ok(payload.totalSources >= payload.sourceCount);
