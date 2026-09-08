@@ -17,31 +17,26 @@ import { getSourceSnapshot, recordSourceRun, saveSourceSnapshot } from "@/lib/so
 
 export const dynamic = "force-dynamic";
 
-const NEWS_SOURCE_CATALOG_VERSION = 1;
+const NEWS_SOURCE_CATALOG_VERSION = 2;
 const sourceNames = new Map(sourceChannels.map((source) => [source.handle, source.name]));
 
 const brandPatterns: Array<[Brand, RegExp]> = [
   ["SHACMAN", /\bshacman\b|\bshaanxi\b|шакман|шаанси|陕汽/iu],
-  [
-    "GWM",
-    /\bgwm\b|great\s*wall|г(р|рэ)ейт\s*волл|\bhaval\b|\btank\b|\bwey\b|\bora\b|хавейл|хавал|танк|长城|哈弗|坦克|魏牌|欧拉/iu,
-  ],
+  ["GWM", /\bgwm\b|great\s*wall|г(р|рэ)ейт\s*волл|\bhaval\b|\btank\b|\bwey\b|\bora\b|хавейл|хавал|танк|长城|哈弗|坦克|魏牌|欧拉/iu],
 ];
 
-const autoIndustryPattern =
-  /汽车|车企|整车|新能源车|商用车|重卡|卡车|零部件|供应链|销量|产量|出口|工厂|自动驾驶|电池|充电|智能驾驶|车联网|芯片|比亚迪|蔚来|小鹏|理想|吉利|奇瑞|上汽|一汽|东风|长安|小米汽车|极氪|零跑|宁德时代|SHACMAN|Shaanxi|陕汽|Great\s*Wall|GWM|长城汽车|哈弗|坦克|魏牌|欧拉|炮|\bautomotive\b|\bautomaker\b|\bvehicle\b|\bvehicles\b|\bcar\b|\bcars\b|\bev\b|\bnev\b|electric vehicle|commercial vehicle|\btruck\b|\btrucks\b|battery|charging|supplier|supply chain|vehicle sales|auto sales|robotaxi|autonomous driving|smart driving|\badas\b|mobility|\boem\b|auto export|\bbyd\b|\bnio\b|\bxpeng\b|li auto|\bgeely\b|\bchery\b|\bsaic\b|\bfaw\b|\bdongfeng\b|\bchangan\b|xiaomi auto|\bzeekr\b|\bleapmotor\b|\bcatl\b|\bavatr\b|\bvoyah\b/iu;
-const economyPattern =
-  /工业|制造业|经济|外贸|进出口|出口|进口|投资|消费|生产|采购经理|供应链|关税|政策|监管|industrial|manufacturing|economy|economic|foreign trade|imports?|exports?|investment|production|factory|factories|\bpmi\b|retail sales|tariff|regulation|policy|foreign investment|supply chain/iu;
-const technologyPattern =
-  /人工智能|机器人|半导体|芯片|软件|智能驾驶|自动驾驶|电池|科技|\bai\b|artificial intelligence|robotics?|semiconductor|chips?|software|smart driving|autonomous|battery|technology|mobility|lidar|sensor/iu;
-const tradePattern =
-  /外贸|出口|进口|海外|关税|贸易|海关|export|import|overseas|tariff|trade|customs|locali[sz]ation|global market/iu;
-const policyPattern =
-  /政策|监管|标准|法规|补贴|policy|regulation|standard|rules?|guideline|subsidy|compliance/iu;
+const autoIndustryPattern = /汽车|车企|整车|新能源车|商用车|重卡|卡车|零部件|供应链|销量|产量|出口|工厂|自动驾驶|电池|充电|智能驾驶|车联网|芯片|比亚迪|蔚来|小鹏|理想|吉利|奇瑞|上汽|一汽|东风|长安|小米汽车|极氪|零跑|宁德时代|SHACMAN|Shaanxi|陕汽|Great\s*Wall|GWM|长城汽车|哈弗|坦克|魏牌|欧拉|炮|\bautomotive\b|\bautomaker\b|\bvehicle\b|\bvehicles\b|\bcar\b|\bcars\b|\bev\b|\bnev\b|electric vehicle|commercial vehicle|\btruck\b|\btrucks\b|battery|charging|supplier|supply chain|vehicle sales|auto sales|robotaxi|autonomous driving|smart driving|\badas\b|mobility|\boem\b|auto export|\bbyd\b|\bnio\b|\bxpeng\b|li auto|\bgeely\b|\bchery\b|\bsaic\b|\bfaw\b|\bdongfeng\b|\bchangan\b|xiaomi auto|\bzeekr\b|\bleapmotor\b|\bcatl\b|\bavatr\b|\bvoyah\b/iu;
+const truckIndustryPattern = /грузов|тягач|седельн|самосвал|шасси|коммерческ.*транспорт|крупнотоннаж|среднетоннаж|малотоннаж|\bhcv\b|\bmcv\b|\blcv\b|heavy[- ]duty|medium[- ]duty|light truck|commercial vehicle|truck|tractor|tipper|dump truck|chassis|重卡|中卡|轻卡|卡车|牵引车|商用车|货车|自卸车|底盘|shacman|sitrak|sinotruk|howo|dongfeng|foton|auman|jiefang|\bfaw\b|\bjac\b|\bsany\b|\bxcmg\b|farizon|камаз|\bural\b|урал|газель|газон|валдай|sollers/iu;
+const economyPattern = /工业|制造业|经济|外贸|进出口|出口|进口|投资|消费|生产|采购经理|供应链|关税|政策|监管|industrial|manufacturing|economy|economic|foreign trade|imports?|exports?|investment|production|factory|factories|\bpmi\b|retail sales|tariff|regulation|policy|foreign investment|supply chain/iu;
+const technologyPattern = /人工智能|机器人|半导体|芯片|软件|智能驾驶|自动驾驶|电池|科技|\bai\b|artificial intelligence|robotics?|semiconductor|chips?|software|smart driving|autonomous|battery|technology|mobility|lidar|sensor/iu;
+const tradePattern = /外贸|出口|进口|海外|关税|贸易|海关|export|import|overseas|tariff|trade|customs|locali[sz]ation|global market/iu;
+const policyPattern = /政策|监管|标准|法规|补贴|policy|regulation|standard|rules?|guideline|subsidy|compliance/iu;
 
 const specialistSourceIds = new Set([
   "shaanxi-auto",
   "caam",
+  "chinatruck",
+  "360che-truck",
   "people-auto",
   "xinhua-auto",
   "cctv-auto",
@@ -52,6 +47,9 @@ const specialistSourceIds = new Set([
   "yiche",
   "pcauto",
   "carnewschina",
+  "gruzovoy-ru",
+  "gruzovikpress",
+  "reis-trucks",
 ]);
 
 const stopWords = new Set([
@@ -60,9 +58,7 @@ const stopWords = new Set([
 ]);
 
 function decodeHtml(value: string) {
-  const entities: Record<string, string> = {
-    amp: "&", quot: '"', apos: "'", lt: "<", gt: ">", nbsp: " ", laquo: "«", raquo: "»", mdash: "—", ndash: "–",
-  };
+  const entities: Record<string, string> = { amp: "&", quot: '"', apos: "'", lt: "<", gt: ">", nbsp: " ", laquo: "«", raquo: "»", mdash: "—", ndash: "–" };
   return value
     .replace(/<br\s*\/?\s*>/giu, "\n")
     .replace(/<script\b[\s\S]*?<\/script>/giu, " ")
@@ -87,11 +83,7 @@ function shorten(value: string, length: number) {
 }
 
 function compactSummary(value: string, title = "", length = 260) {
-  let cleaned = decodeHtml(value)
-    .replace(/https?:\/\/\S+/giu, "")
-    .replace(title, "")
-    .replace(/^[\s—–:;,.]+/u, "")
-    .trim();
+  let cleaned = decodeHtml(value).replace(/https?:\/\/\S+/giu, "").replace(title, "").replace(/^[\s—–:;,.]+/u, "").trim();
   if (!cleaned) cleaned = decodeHtml(value).trim();
   const sentences = cleaned.match(/[^.!?。！？]+[.!?。！？]+/gu) ?? [];
   const complete = sentences.find((sentence) => sentence.trim().length >= 24)?.trim();
@@ -112,9 +104,7 @@ function absoluteUrl(href: string, base: string) {
     const url = new URL(decodeHtml(href), base);
     if (!/^https?:$/u.test(url.protocol)) return null;
     url.hash = "";
-    for (const key of [...url.searchParams.keys()]) {
-      if (/^(utm_|spm|from|source|ref|trk|fbclid|gclid)/iu.test(key)) url.searchParams.delete(key);
-    }
+    for (const key of [...url.searchParams.keys()]) if (/^(utm_|spm|from|source|ref|trk|fbclid|gclid)/iu.test(key)) url.searchParams.delete(key);
     return url.toString();
   } catch {
     return null;
@@ -136,9 +126,9 @@ function canonicalUrl(value: string) {
 async function fetchText(url: string, requestSignal?: AbortSignal) {
   const response = await safeFetch(url, {
     headers: {
-      "user-agent": "Mozilla/5.0 (compatible; WindowToChina/1.7; internal-corporate-news-reader)",
+      "user-agent": "Mozilla/5.0 (compatible; WindowToChina/1.7.1; internal-corporate-news-reader)",
       accept: "text/html,application/rss+xml,application/xml;q=0.9,*/*;q=0.8",
-      "accept-language": "en,zh-CN;q=0.9,ru;q=0.8",
+      "accept-language": "ru,en,zh-CN;q=0.9",
     },
     signal: requestSignal
       ? AbortSignal.any([requestSignal, AbortSignal.timeout(Number(process.env.NEWS_FETCH_TIMEOUT_MS || 5000))])
@@ -212,9 +202,9 @@ async function fetchAutostatRss(requestSignal?: AbortSignal): Promise<NewsItem[]
 }
 
 async function translateToRussian(value: string, language: NewsSourceLanguage, requestSignal?: AbortSignal) {
-  const sourceLanguage = language === "zh" ? "zh-CN" : "en";
-  if (!value.trim()) return value;
+  if (!value.trim() || language === "ru") return value;
   if (language === "zh" && !/[\u3400-\u9fff]/u.test(value)) return value;
+  const sourceLanguage = language === "zh" ? "zh-CN" : "en";
   try {
     const endpoint = new URL("https://translate.googleapis.com/translate_a/single");
     endpoint.search = new URLSearchParams({ client: "gtx", sl: sourceLanguage, tl: "ru", dt: "t", q: value }).toString();
@@ -250,10 +240,9 @@ function articleBodyPreview(html: string) {
 }
 
 function articleDate(html: string) {
-  const raw =
-    metaValue(html, ["article:published_time", "pubdate", "publishdate", "date", "datepublished"]) ||
-    html.match(/["']datePublished["']\s*:\s*["']([^"']+)["']/iu)?.[1] ||
-    html.match(/(20\d{2}[-/.年]\d{1,2}[-/.月]\d{1,2}(?:[ T]\d{1,2}:\d{2}(?::\d{2})?)?)/u)?.[1];
+  const raw = metaValue(html, ["article:published_time", "pubdate", "publishdate", "date", "datepublished"])
+    || html.match(/["']datePublished["']\s*:\s*["']([^"']+)["']/iu)?.[1]
+    || html.match(/(20\d{2}[-/.年]\d{1,2}[-/.月]\d{1,2}(?:[ T]\d{1,2}:\d{2}(?::\d{2})?)?)/u)?.[1];
   if (!raw) return null;
   const normalized = raw.replace("年", "-").replace("月", "-").replace("日", "").replaceAll("/", "-");
   const parsed = new Date(normalized);
@@ -263,10 +252,11 @@ function articleDate(html: string) {
 function sourceRelevant(source: NewsWebsiteSource, title: string) {
   const trimmed = title.trim();
   if (trimmed.length < 8 || trimmed.length > 180) return false;
-  if (/^(home|news|more|read more|首页|新闻|更多|登录|注册|视频|工作动态|文件发布|机构职责|办事指南|协会工作|统计数据|行业培训)$/iu.test(trimmed)) return false;
+  if (/^(home|news|more|read more|главная|новости|архив|подробнее|首页|新闻|更多|登录|注册|视频|工作动态|文件发布|机构职责|办事指南|协会工作|统计数据|行业培训)$/iu.test(trimmed)) return false;
   if (specialistSourceIds.has(source.id)) return true;
   return source.focus.some((focus) => {
     if (focus === "auto" || focus === "ev") return autoIndustryPattern.test(trimmed);
+    if (focus === "truck") return truckIndustryPattern.test(trimmed);
     if (focus === "economy") return economyPattern.test(trimmed);
     if (focus === "technology") return technologyPattern.test(trimmed);
     if (focus === "trade") return tradePattern.test(trimmed);
@@ -279,32 +269,25 @@ function allowedHostsForSource(source: NewsWebsiteSource) {
   return new Set([base, ...(source.hostAliases ?? []).map((host) => host.toLowerCase())]);
 }
 
-async function fetchWebsiteArticle(
-  source: NewsWebsiteSource,
-  candidate: { title: string; url: string },
-  requestSignal?: AbortSignal,
-) {
+async function fetchWebsiteArticle(source: NewsWebsiteSource, candidate: { title: string; url: string }, requestSignal?: AbortSignal) {
   try {
     const html = await fetchText(candidate.url, requestSignal);
     const description = metaValue(html, ["description", "og:description", "twitter:description"]) || articleBodyPreview(html);
     const publishedAt = articleDate(html);
     if (!publishedAt || description.length < 24) return null;
-
     const [translatedTitle, translatedDescription] = await Promise.all([
       translateToRussian(candidate.title, source.language, requestSignal),
       translateToRussian(description, source.language, requestSignal),
     ]);
-
     if (source.language === "zh") {
       if (translatedTitle === candidate.title || /[\u3400-\u9fff]/u.test(translatedTitle)) return null;
       if (/[\u3400-\u9fff]/u.test(translatedDescription)) return null;
     }
-
     return {
       title: translatedTitle,
       summary: compactSummary(translatedDescription, translatedTitle),
       publishedAt,
-      translated: translatedTitle !== candidate.title || translatedDescription !== description,
+      translated: source.language !== "ru" && (translatedTitle !== candidate.title || translatedDescription !== description),
     };
   } catch {
     return null;
@@ -315,7 +298,6 @@ async function fetchWebsitePortal(source: NewsWebsiteSource, requestSignal?: Abo
   const html = await fetchText(source.url, requestSignal);
   const candidates = new Map<string, { title: string; url: string }>();
   const allowedHosts = allowedHostsForSource(source);
-
   for (const match of html.matchAll(/<a\b[^>]*href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/giu)) {
     const originalTitle = decodeHtml(match[2]);
     if (!sourceRelevant(source, originalTitle)) continue;
@@ -326,46 +308,38 @@ async function fetchWebsitePortal(source: NewsWebsiteSource, requestSignal?: Abo
     if (!allowedHosts.has(host) || candidates.has(candidateUrl)) continue;
     candidates.set(candidateUrl, { title: originalTitle, url: candidateUrl });
   }
-
   const ranked = [...candidates.values()]
     .sort((left, right) => {
       const rightBrand = detectBrand(right.title) === "Отрасль" ? 0 : 1;
       const leftBrand = detectBrand(left.title) === "Отрасль" ? 0 : 1;
-      return rightBrand - leftBrand || right.title.length - left.title.length;
+      const rightTruck = truckIndustryPattern.test(right.title) ? 1 : 0;
+      const leftTruck = truckIndustryPattern.test(left.title) ? 1 : 0;
+      return rightTruck - leftTruck || rightBrand - leftBrand || right.title.length - left.title.length;
     })
     .slice(0, source.maxCandidates ?? 2);
-
-  const enriched = await Promise.all(
-    ranked.map(async (candidate) => {
-      const article = await fetchWebsiteArticle(source, candidate, requestSignal);
-      if (!article) return null;
-      return {
-        id: `web-${source.id}-${encodeURIComponent(canonicalUrl(candidate.url))}`,
-        title: shorten(article.title, 160),
-        originalTitle: candidate.title,
-        summary: article.summary,
-        source: source.name,
-        sourceType: source.sourceType,
-        url: candidate.url,
-        publishedAt: article.publishedAt,
-        market: source.market,
-        brand: detectBrand(`${candidate.title} ${article.title}`),
-        translated: article.translated,
-        live: true,
-      } satisfies NewsItem;
-    }),
-  );
+  const enriched = await Promise.all(ranked.map(async (candidate) => {
+    const article = await fetchWebsiteArticle(source, candidate, requestSignal);
+    if (!article) return null;
+    return {
+      id: `web-${source.id}-${encodeURIComponent(canonicalUrl(candidate.url))}`,
+      title: shorten(article.title, 160),
+      originalTitle: source.language === "ru" ? undefined : candidate.title,
+      summary: article.summary,
+      source: source.name,
+      sourceType: source.sourceType,
+      url: candidate.url,
+      publishedAt: article.publishedAt,
+      market: source.market,
+      brand: detectBrand(`${candidate.title} ${article.title}`),
+      translated: article.translated,
+      live: true,
+    } satisfies NewsItem;
+  }));
   return enriched.filter((item): item is NewsItem => item !== null);
 }
 
 function normalizeTokens(value: string) {
-  return value
-    .toLocaleLowerCase("ru-RU")
-    .replace(/[ё]/gu, "е")
-    .replace(/[^\p{L}\p{N}]+/gu, " ")
-    .split(/\s+/u)
-    .map((token) => token.trim())
-    .filter((token) => token.length >= 2 && !stopWords.has(token));
+  return value.toLocaleLowerCase("ru-RU").replace(/[ё]/gu, "е").replace(/[^\p{L}\p{N}]+/gu, " ").split(/\s+/u).map((token) => token.trim()).filter((token) => token.length >= 2 && !stopWords.has(token));
 }
 
 function titleFingerprint(value: string) {
@@ -379,11 +353,7 @@ function tokenSimilarity(left: string, right: string) {
   let common = 0;
   for (const token of a) if (b.has(token)) common += 1;
   const union = a.size + b.size - common;
-  return {
-    jaccard: union ? common / union : 0,
-    containment: common / Math.min(a.size, b.size),
-    common,
-  };
+  return { jaccard: union ? common / union : 0, containment: common / Math.min(a.size, b.size), common };
 }
 
 function likelySameStory(left: NewsItem, right: NewsItem) {
@@ -393,11 +363,9 @@ function likelySameStory(left: NewsItem, right: NewsItem) {
   const windowMs = Number(process.env.NEWS_DEDUPE_WINDOW_HOURS || 72) * 3600 * 1000;
   if (Math.abs(leftTime - rightTime) > windowMs) return false;
   if (left.brand !== "Отрасль" && right.brand !== "Отрасль" && left.brand !== right.brand) return false;
-
   const leftTitle = left.originalTitle ?? left.title;
   const rightTitle = right.originalTitle ?? right.title;
   if (titleFingerprint(leftTitle) === titleFingerprint(rightTitle)) return true;
-
   const translatedScore = tokenSimilarity(left.title, right.title);
   const originalScore = tokenSimilarity(leftTitle, rightTitle);
   const score = translatedScore.jaccard >= originalScore.jaccard ? translatedScore : originalScore;
@@ -412,7 +380,6 @@ function deduplicateNews(items: NewsItem[]) {
     if (live) return live;
     return Date.parse(right.publishedAt) - Date.parse(left.publishedAt);
   });
-
   const accepted: NewsItem[] = [];
   const urls = new Set<string>();
   for (const item of candidates) {
@@ -422,7 +389,6 @@ function deduplicateNews(items: NewsItem[]) {
     urls.add(canonical);
     accepted.push(item);
   }
-
   return accepted.sort((left, right) => Date.parse(right.publishedAt) - Date.parse(left.publishedAt));
 }
 
@@ -437,21 +403,12 @@ function withinFreshnessWindow(item: NewsItem) {
 function withDeadline<T>(promise: Promise<T>, timeoutMs = Number(process.env.NEWS_SOURCE_DEADLINE_MS || 7500)): Promise<T> {
   return new Promise((resolve, reject) => {
     const timer = setTimeout(() => reject(new Error("source deadline exceeded")), timeoutMs);
-    promise.then(
-      (value) => { clearTimeout(timer); resolve(value); },
-      (error) => { clearTimeout(timer); reject(error); },
-    );
+    promise.then((value) => { clearTimeout(timer); resolve(value); }, (error) => { clearTimeout(timer); reject(error); });
   });
 }
 
 type NewsJob = { key: string; run: () => Promise<NewsItem[]> };
-type JobResult = {
-  key: string;
-  state: "live" | "stale" | "empty" | "error";
-  items: NewsItem[];
-  latencyMs: number;
-  error?: string;
-};
+type JobResult = { key: string; state: "live" | "stale" | "empty" | "error"; items: NewsItem[]; latencyMs: number; error?: string };
 
 async function executeJob(job: NewsJob): Promise<JobResult> {
   const started = Date.now();
@@ -463,24 +420,12 @@ async function executeJob(job: NewsJob): Promise<JobResult> {
       recordSourceRun({ sourceKey: job.key, status: "empty-stale-fallback", qualityScore: 45, itemCount: 0, latencyMs: Date.now() - started });
       return { key: job.key, state: "stale", items: previous.payload.map((item) => ({ ...item, live: false })), latencyMs: Date.now() - started };
     }
-    saveSourceSnapshot({
-      cacheKey,
-      sourceKey: job.key,
-      payload: fetched,
-      ttlMs: Number(process.env.NEWS_CACHE_TTL_SECONDS || 900) * 1000,
-      staleMs: Number(process.env.NEWS_CACHE_STALE_SECONDS || 86400) * 1000,
-      status: fetched.length ? "live" : "empty",
-      qualityScore: fetched.length ? 100 : 65,
-      itemCount: fetched.length,
-      latencyMs: Date.now() - started,
-    });
+    saveSourceSnapshot({ cacheKey, sourceKey: job.key, payload: fetched, ttlMs: Number(process.env.NEWS_CACHE_TTL_SECONDS || 900) * 1000, staleMs: Number(process.env.NEWS_CACHE_STALE_SECONDS || 86400) * 1000, status: fetched.length ? "live" : "empty", qualityScore: fetched.length ? 100 : 65, itemCount: fetched.length, latencyMs: Date.now() - started });
     return { key: job.key, state: fetched.length ? "live" : "empty", items: fetched, latencyMs: Date.now() - started };
   } catch (error) {
     const message = error instanceof Error ? error.message : "source failed";
     recordSourceRun({ sourceKey: job.key, status: "failure", qualityScore: 0, latencyMs: Date.now() - started, error: message });
-    if (previous && previous.state !== "expired" && previous.payload.length) {
-      return { key: job.key, state: "stale", items: previous.payload.map((item) => ({ ...item, live: false })), latencyMs: Date.now() - started, error: message };
-    }
+    if (previous && previous.state !== "expired" && previous.payload.length) return { key: job.key, state: "stale", items: previous.payload.map((item) => ({ ...item, live: false })), latencyMs: Date.now() - started, error: message };
     return { key: job.key, state: "error", items: [], latencyMs: Date.now() - started, error: message };
   }
 }
@@ -490,8 +435,7 @@ async function runWithConcurrency(jobs: NewsJob[], concurrency: number) {
   let cursor = 0;
   async function worker() {
     while (true) {
-      const index = cursor;
-      cursor += 1;
+      const index = cursor++;
       if (index >= jobs.length) return;
       results[index] = await executeJob(jobs[index]);
     }
@@ -527,54 +471,39 @@ export async function GET(request: Request) {
   const cacheKey = `news:aggregate:${revision}`;
   const cached = getSourceSnapshot<NewsPayload>(cacheKey);
   if (!forceRefresh && cached?.state === "fresh") {
-    return jsonWithContext(context, { ...cached.payload, cache: { state: "fresh", ageSeconds: cached.ageSeconds, qualityScore: cached.qualityScore } }, {
-      headers: { "cache-control": "public, max-age=120, s-maxage=300", "x-data-cache": "fresh", ...rateLimitHeaders(limit) },
-    });
+    return jsonWithContext(context, { ...cached.payload, cache: { state: "fresh", ageSeconds: cached.ageSeconds, qualityScore: cached.qualityScore } }, { headers: { "cache-control": "public, max-age=120, s-maxage=300", "x-data-cache": "fresh", ...rateLimitHeaders(limit) } });
   }
 
   const requestController = new AbortController();
   const requestDeadline = setTimeout(() => requestController.abort(), Number(process.env.NEWS_REQUEST_DEADLINE_MS || 14000));
-  const websiteSources = runtime.sources["news.chinaPortals"] && runtime.sources["translate.google"] ? activeNewsWebsiteSources : [];
+  const websiteSources = runtime.sources["news.chinaPortals"]
+    ? activeNewsWebsiteSources.filter((source) => source.language === "ru" || runtime.sources["translate.google"])
+    : [];
   const jobs: NewsJob[] = [
-    ...(runtime.sources["news.telegram"] ? sourceChannels.map((source) => ({
-      key: `news.telegram:${source.handle}`,
-      run: () => fetchTelegramChannel(source.handle, requestController.signal),
-    })) : []),
-    ...(runtime.sources["news.autostat"] ? [{
-      key: "news.autostat:rss",
-      run: () => fetchAutostatRss(requestController.signal),
-    }] : []),
-    ...websiteSources.map((source) => ({
-      key: `news.web:${source.id}`,
-      run: () => fetchWebsitePortal(source, requestController.signal),
-    })),
+    ...(runtime.sources["news.telegram"] ? sourceChannels.map((source) => ({ key: `news.telegram:${source.handle}`, run: () => fetchTelegramChannel(source.handle, requestController.signal) })) : []),
+    ...(runtime.sources["news.autostat"] ? [{ key: "news.autostat:rss", run: () => fetchAutostatRss(requestController.signal) }] : []),
+    ...websiteSources.map((source) => ({ key: `news.web:${source.id}`, run: () => fetchWebsitePortal(source, requestController.signal) })),
   ];
 
   const disabledSources = [
     ...(!runtime.sources["news.telegram"] ? ["news.telegram"] : []),
     ...(!runtime.sources["news.autostat"] ? ["news.autostat"] : []),
     ...(!runtime.sources["news.chinaPortals"] ? ["news.chinaPortals"] : []),
-    ...(!runtime.sources["translate.google"] ? ["translate.google"] : []),
+    ...(!runtime.sources["translate.google"] ? ["translate.google:non-ru-web-sources"] : []),
     ...newsWebsiteSources.filter((source) => !source.enabledByDefault).map((source) => `catalog:${source.id}`),
   ];
 
   const results = await runWithConcurrency(jobs, Number(process.env.NEWS_SOURCE_CONCURRENCY || 5));
   clearTimeout(requestDeadline);
-
   const errors = results.filter((result) => result.state === "error").map((result) => result.key);
   const degraded = results.filter((result) => result.state === "stale").map((result) => result.key);
   const clientErrors = [...errors, ...degraded.map((key) => `${key}:stale`)];
   if (clientErrors.length) logEvent("warn", "news_sources_degraded", { errors, stale: degraded });
 
   const rawNews = results.flatMap((result) => result.items).filter(withinFreshnessWindow);
-  const unique = deduplicateNews(rawNews).slice(0, 120);
-
+  const unique = deduplicateNews(rawNews).slice(0, 160);
   if (!unique.length && cached?.state === "stale") {
-    return jsonWithContext(context, {
-      ...cached.payload,
-      errors: [...new Set([...(cached.payload.errors || []), ...clientErrors])],
-      cache: { state: "stale", ageSeconds: cached.ageSeconds, qualityScore: cached.qualityScore },
-    }, { headers: { "cache-control": "public, max-age=60", "x-data-cache": "stale", ...rateLimitHeaders(limit) } });
+    return jsonWithContext(context, { ...cached.payload, errors: [...new Set([...(cached.payload.errors || []), ...clientErrors])], cache: { state: "stale", ageSeconds: cached.ageSeconds, qualityScore: cached.qualityScore } }, { headers: { "cache-control": "public, max-age=60", "x-data-cache": "stale", ...rateLimitHeaders(limit) } });
   }
 
   const liveSources = results.filter((result) => result.state === "live").length;
@@ -593,28 +522,10 @@ export async function GET(request: Request) {
     sourceBreakdown: results.map((result) => ({ source: result.key, state: result.state, items: result.items.length, latencyMs: result.latencyMs })),
     cache: { state: unique.length ? (clientErrors.length ? "partial" : "live") : "miss", ageSeconds: 0, qualityScore },
   };
-
   if (unique.length) {
-    saveSourceSnapshot({
-      cacheKey,
-      sourceKey: "news.aggregate",
-      payload,
-      ttlMs: Number(process.env.NEWS_CACHE_TTL_SECONDS || 900) * 1000,
-      staleMs: Number(process.env.NEWS_CACHE_STALE_SECONDS || 21600) * 1000,
-      status: clientErrors.length ? "partial" : "live",
-      qualityScore,
-      itemCount: unique.length,
-      error: clientErrors.join(", "),
-    });
+    saveSourceSnapshot({ cacheKey, sourceKey: "news.aggregate", payload, ttlMs: Number(process.env.NEWS_CACHE_TTL_SECONDS || 900) * 1000, staleMs: Number(process.env.NEWS_CACHE_STALE_SECONDS || 21600) * 1000, status: clientErrors.length ? "partial" : "live", qualityScore, itemCount: unique.length, error: clientErrors.join(", ") });
   } else {
     recordSourceRun({ sourceKey: "news.aggregate", status: jobs.length ? "failure" : "disabled", qualityScore, itemCount: 0, error: clientErrors.join(", ") });
   }
-
-  return jsonWithContext(context, payload, {
-    headers: {
-      "cache-control": "public, max-age=120, s-maxage=300, stale-while-revalidate=3600",
-      "x-data-cache": payload.cache?.state || "live",
-      ...rateLimitHeaders(limit),
-    },
-  });
+  return jsonWithContext(context, payload, { headers: { "cache-control": "public, max-age=120, s-maxage=300, stale-while-revalidate=3600", "x-data-cache": payload.cache?.state || "live", ...rateLimitHeaders(limit) } });
 }
