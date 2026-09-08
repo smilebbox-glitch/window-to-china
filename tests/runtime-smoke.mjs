@@ -72,12 +72,12 @@ test("runtime readiness endpoint is ready", async () => {
   assert.equal(payload.checks?.migrationsCurrent, true);
 });
 
-test("runtime news endpoint is using v1.7.5 focus source catalog", async () => {
-  const response = await request("/api/news", "application/json", 25_000);
+test("runtime news endpoint is using v1.7.9 reliability source catalog", async () => {
+  const response = await request("/api/news", "application/json", 40_000);
   assert.equal(response.status, 200, `/api/news returned HTTP ${response.status}`);
   assert.match(response.headers.get("content-type") ?? "", /^application\/json\b/i);
   const payload = await response.json();
-  assert.equal(payload.sourceCatalogVersion, 3);
+  assert.equal(payload.sourceCatalogVersion, 4);
   assert.ok(Array.isArray(payload.news));
   assert.ok(Array.isArray(payload.sourceBreakdown));
   assert.ok(payload.sourceBreakdown.some((entry) => entry.source === "news.web:evolute-official"));
@@ -85,6 +85,7 @@ test("runtime news endpoint is using v1.7.5 focus source catalog", async () => {
   assert.ok(payload.totalSources >= payload.sourceCount);
   assert.ok(Number.isInteger(payload.rawCount) && payload.rawCount >= 0);
   assert.ok(Number.isInteger(payload.deduplicatedCount) && payload.deduplicatedCount >= 0);
+  assert.ok(["live", "partial", "fresh", "stale"].includes(payload.cache?.state));
 });
 
 test("runtime v1.7.4 pilot operations endpoint exposes trust state", async () => {

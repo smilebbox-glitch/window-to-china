@@ -7,6 +7,7 @@ on:
       - main
       - design/v1.7.6-corporate-ui
       - test/v1.7.7-pilot-functional-suite
+      - feature/v1.7.8-source-trust-badges
     paths:
       - '.github/workflows/pilot-functional-tests.yml'
       - 'app/**'
@@ -37,6 +38,8 @@ jobs:
           node-version: '22.13.0'
       - name: Install dependencies
         run: npm ci
+      - name: Production dependency audit
+        run: npm run pilot:audit-deps
       - name: Build and run automated test suite
         run: npm test
       - name: Run complete pilot preflight
@@ -46,11 +49,13 @@ jobs:
         run: |
           {
             echo '## Pilot contracts: PASS'
+            echo '- Production dependency audit: PASS'
             echo '- Production build: PASS'
             echo '- Automated tests: PASS'
             echo '- Pilot preflight: PASS'
             echo '- Corporate UI/news/source contracts: PASS'
             echo '- Source trust labels/provenance contracts: PASS'
+            echo '- v1.7.9 source reliability contracts: PASS'
           } >> "$GITHUB_STEP_SUMMARY"
 
   runtime-pilot:
@@ -70,17 +75,22 @@ jobs:
       - name: Run dedicated functionality tests against live pilot
         env:
           BASE_URL: http://127.0.0.1:3000
-          PILOT_TEST_TIMEOUT_MS: '12000'
+          PILOT_TEST_TIMEOUT_MS: '45000'
         run: npm run pilot:functional:runtime
       - name: Verify source trust badges against live pilot
         env:
           BASE_URL: http://127.0.0.1:3000
-          PILOT_TEST_TIMEOUT_MS: '12000'
+          PILOT_TEST_TIMEOUT_MS: '45000'
         run: node --test tests/source-trust-runtime-v178.mjs
       - name: Run regression runtime smoke
         env:
           BASE_URL: http://127.0.0.1:3000
+          SMOKE_TIMEOUT_MS: '45000'
         run: npm run test:runtime
+      - name: Verify pilot go/no-go
+        env:
+          BASE_URL: http://127.0.0.1:3000
+        run: npm run pilot:go-no-go
       - name: Show pilot status
         run: ./status.sh
       - name: Runtime summary
@@ -92,13 +102,15 @@ jobs:
             echo '- Main UI routes: PASS'
             echo '- Health/readiness/SQLite: PASS'
             echo '- News API + source transparency: PASS'
+            echo '- Source reliability hardening: PASS'
             echo '- Official / Industry Media / Telegram badges: PASS'
             echo '- Pilot operations + reliability: PASS'
+            echo '- Pilot Go/No-Go: GO'
             echo '- Controlled pilot KPI contract: PASS'
           } >> "$GITHUB_STEP_SUMMARY"
       - name: Diagnostics
         if: always()
-        run: docker compose logs --tail=180 || true
+        run: docker compose logs --tail=220 || true
       - name: Stop pilot
         if: always()
         run: ./stop.sh || true

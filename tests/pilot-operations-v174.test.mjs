@@ -50,3 +50,11 @@ test("go-no-go blocks missing database migrations or stale aggregate", () => {
   assert.match(operations, /Нет агрегированного news snapshot/);
   assert.match(operations, /decision = "NO_GO"/);
 });
+
+test("isolated external failures degrade only after governed source-ratio threshold", () => {
+  assert.match(operations, /PILOT_SOURCE_DEGRADED_PCT/);
+  assert.match(operations, /degradedCount = stale \+ error/);
+  assert.match(operations, /degradedPct >= degradedLimitPct/);
+  assert.match(env, /PILOT_SOURCE_DEGRADED_PCT=25/);
+  assert.match(compose, /PILOT_SOURCE_DEGRADED_PCT: \$\{PILOT_SOURCE_DEGRADED_PCT:-25\}/);
+});

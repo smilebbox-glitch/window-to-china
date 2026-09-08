@@ -6,6 +6,8 @@ const read = (file) => fs.readFileSync(path.join(root, file), "utf8");
 const sources = read("lib/news-sources.ts");
 const route = read("app/api/news/route.ts");
 const outbound = read("lib/outbound.ts");
+const env = read(".env.example");
+const compose = read("compose.yaml");
 const page = read("app/page.tsx");
 const newsPage = read("app/news/page.tsx");
 const corporateHome = read("components/corporate-home.tsx");
@@ -32,21 +34,39 @@ for (const id of [
   "ural-official", "gruzovoy-ru", "gruzovikpress", "reis-trucks",
 ]) check(sources.includes(`id: "${id}"`), `missing source ${id}`);
 
+for (const reserve of ["people-auto", "yiche", "gruzovikpress"]) {
+  check(new RegExp(`id: "${reserve}"[\\s\\S]*?enabledByDefault: false`).test(sources), `${reserve} must be reserve-only for pilot`);
+}
+check(/id: "mofcom-news"[\s\S]*?SignificantNews\/index\.html/.test(sources), "MOFCOM should use the stable Significant News entrypoint");
+
 for (const host of [
   "www.caam.org.cn", "www.miit.gov.cn", "english.mofcom.gov.cn", "www.cada.cn",
   "www.chinatruck.org", "www.360che.com", "autonews.gasgoo.com", "cnevpost.com",
   "www.yicaiglobal.com", "eu.36kr.com", "www.china-briefing.com", "www.stats.gov.cn", "carnewschina.com",
   "www.evolute.ru", "evolute.ru", "voyah.ru", "www.voyah.ru",
-  "uralaz.ru", "gruzovoy.ru", "www.gruzovikpress.ru", "reis.zr.ru",
+  "uralaz.ru", "gruzovoy.ru", "www.gruzovikpress.ru", "reis.zr.ru", "m.autostat.ru",
 ]) check(outbound.includes(`"${host}"`), `outbound allow-list missing ${host}`);
 
 for (const token of [
   "function likelySameStory", "tokenSimilarity", "NEWS_DEDUPE_WINDOW_HOURS", "priorityForNewsItem",
   "runWithConcurrency", "NEWS_SOURCE_CONCURRENCY", "news:source:v", "empty-stale-fallback",
   "sourceBreakdown", "deduplicatedCount", "NEWS_MAX_AGE_DAYS", "truckIndustryPattern",
-  "source.language === \"ru\"", "NEWS_SOURCE_CATALOG_VERSION = 3",
+  "source.language === \"ru\"", "NEWS_SOURCE_CATALOG_VERSION = 4",
   "evolute-official", "voyah-official", "motorinvest", "моторинвест", "evia", "эвиа",
+  "autostat_rss_fallback", "translateArticleFields", "NEWS_AGGREGATE_LIVE_QUALITY_MIN",
 ]) check(route.toLowerCase().includes(token.toLowerCase()), `news route missing ${token}`);
+
+for (const token of ["outbound_redirect_https_upgrade", "outbound_translate_rate_limited", "TRANSLATE_MIN_INTERVAL_MS"]) {
+  check(outbound.includes(token), `outbound reliability missing ${token}`);
+}
+for (const token of [
+  "NEWS_SOURCE_CONCURRENCY=4", "NEWS_FETCH_TIMEOUT_MS=8000", "NEWS_TRANSLATE_TIMEOUT_MS=6500",
+  "NEWS_SOURCE_DEADLINE_MS=12000", "NEWS_REQUEST_DEADLINE_MS=26000",
+  "NEWS_AGGREGATE_LIVE_QUALITY_MIN=75", "TRANSLATE_MIN_INTERVAL_MS=180", "TRANSLATE_MAX_ATTEMPTS=2",
+]) check(env.includes(token), `.env.example missing ${token}`);
+for (const token of ["NEWS_AGGREGATE_LIVE_QUALITY_MIN", "TRANSLATE_MIN_INTERVAL_MS", "TRANSLATE_MAX_ATTEMPTS"]) {
+  check(compose.includes(token), `compose missing ${token}`);
+}
 
 for (const entity of ["SHACMAN", "GWM", "EVOLUTE", "VOYAH", "Моторинвест", "ЭВИА"]) {
   check(focus.includes(`\"${entity}\"`), `focus detector missing ${entity}`);
@@ -72,9 +92,9 @@ check(truckRadar.includes("Почему важно") && truckRadar.includes("Ч�
 check(analysisPage.includes("IntelligenceBrief"), "department intelligence ranking is not surfaced on analysis page");
 
 if (failures.length) {
-  console.error("NO-GO: v1.7.5 intelligence preflight failed");
+  console.error("NO-GO: v1.7.9 intelligence/reliability preflight failed");
   for (const failure of failures) console.error(` - ${failure}`);
   process.exit(1);
 }
 
-console.log(`GO: v1.7.5 intelligence pipeline; curatedSources=${ids.length}; uniqueUrls=${urls.length}; strategicFocus=6; truckRadar=on; departmentRanking=on; freshNewsRoute=on; fuzzyDedup=on; perSourceFallback=on`);
+console.log(`GO: v1.7.9 intelligence/reliability pipeline; curatedSources=${ids.length}; uniqueUrls=${urls.length}; strategicFocus=6; truckRadar=on; translationThrottle=on; autostatFallback=on; aggregateQualityGate=on`);

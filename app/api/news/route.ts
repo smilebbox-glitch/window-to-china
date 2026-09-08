@@ -17,7 +17,7 @@ import { getSourceSnapshot, recordSourceRun, saveSourceSnapshot } from "@/lib/so
 
 export const dynamic = "force-dynamic";
 
-const NEWS_SOURCE_CATALOG_VERSION = 3;
+const NEWS_SOURCE_CATALOG_VERSION = 4;
 const sourceNames = new Map(sourceChannels.map((source) => [source.handle, source.name]));
 
 const brandPatterns: Array<[Brand, RegExp]> = [
@@ -52,6 +52,7 @@ const specialistSourceIds = new Set([
   "gruzovoy-ru",
   "gruzovikpress",
   "reis-trucks",
+  "autostat-web",
 ]);
 
 const stopWords = new Set([
@@ -128,13 +129,13 @@ function canonicalUrl(value: string) {
 async function fetchText(url: string, requestSignal?: AbortSignal) {
   const response = await safeFetch(url, {
     headers: {
-      "user-agent": "Mozilla/5.0 (compatible; WindowToChina/1.7.1; internal-corporate-news-reader)",
+      "user-agent": "Mozilla/5.0 (compatible; WindowToChina/1.7.9; internal-corporate-news-reader)",
       accept: "text/html,application/rss+xml,application/xml;q=0.9,*/*;q=0.8",
       "accept-language": "ru,en,zh-CN;q=0.9",
     },
     signal: requestSignal
-      ? AbortSignal.any([requestSignal, AbortSignal.timeout(Number(process.env.NEWS_FETCH_TIMEOUT_MS || 5000))])
-      : AbortSignal.timeout(Number(process.env.NEWS_FETCH_TIMEOUT_MS || 5000)),
+      ? AbortSignal.any([requestSignal, AbortSignal.timeout(Number(process.env.NEWS_FETCH_TIMEOUT_MS || 8000))])
+      : AbortSignal.timeout(Number(process.env.NEWS_FETCH_TIMEOUT_MS || 8000)),
   });
   if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);
   return response.text();
@@ -172,6 +173,21 @@ function unwrapXml(value: string) {
   return decodeHtml(value.replace(/^<!\[CDATA\[/u, "").replace(/\]\]>$/u, ""));
 }
 
+const autostatPortalSource: NewsWebsiteSource = {
+  id: "autostat-web",
+  name: "АВТОСТАТ",
+  url: "https://m.autostat.ru/news/",
+  market: "Россия",
+  language: "ru",
+  sourceType: "media",
+  priority: 90,
+  focus: ["auto", "truck", "ev", "trade"],
+  maxCandidates: 6,
+  enabledByDefault: true,
+  note: "HTML fallback для АВТОСТАТ, если RSS endpoint ограничивает автоматизированный доступ.",
+  hostAliases: ["www.autostat.ru"],
+};
+
 async function fetchAutostatRss(requestSignal?: AbortSignal): Promise<NewsItem[]> {
   const xml = await fetchText("https://www.autostat.ru/news/rss/3/", requestSignal);
   const items: NewsItem[] = [];
@@ -203,6 +219,15 @@ async function fetchAutostatRss(requestSignal?: AbortSignal): Promise<NewsItem[]
   return items.slice(0, 50);
 }
 
+async function fetchAutostat(requestSignal?: AbortSignal): Promise<NewsItem[]> {
+  try {
+    return await fetchAutostatRss(requestSignal);
+  } catch (error) {
+    logEvent("warn", "autostat_rss_fallback", { error: error instanceof Error ? error.message : "rss failed" });
+    return fetchWebsitePortal(autostatPortalSource, requestSignal);
+  }
+}
+
 async function translateToRussian(value: string, language: NewsSourceLanguage, requestSignal?: AbortSignal) {
   if (!value.trim() || language === "ru") return value;
   if (language === "zh" && !/[\u3400-\u9fff]/u.test(value)) return value;
@@ -211,8 +236,8 @@ async function translateToRussian(value: string, language: NewsSourceLanguage, r
     const endpoint = new URL("https://translate.googleapis.com/translate_a/single");
     endpoint.search = new URLSearchParams({ client: "gtx", sl: sourceLanguage, tl: "ru", dt: "t", q: value }).toString();
     const signal = requestSignal
-      ? AbortSignal.any([requestSignal, AbortSignal.timeout(Number(process.env.NEWS_TRANSLATE_TIMEOUT_MS || 3200))])
-      : AbortSignal.timeout(Number(process.env.NEWS_TRANSLATE_TIMEOUT_MS || 3200));
+      ? AbortSignal.any([requestSignal, AbortSignal.timeout(Number(process.env.NEWS_TRANSLATE_TIMEOUT_MS || 6500))])
+      : AbortSignal.timeout(Number(process.env.NEWS_TRANSLATE_TIMEOUT_MS || 6500));
     const response = await safeFetch(endpoint, { signal });
     if (!response.ok) return value;
     const payload = (await response.json()) as Array<Array<Array<string>>>;
@@ -220,6 +245,18 @@ async function translateToRussian(value: string, language: NewsSourceLanguage, r
   } catch {
     return value;
   }
+}
+
+async function translateArticleFields(title: string, description: string, language: NewsSourceLanguage, requestSignal?: AbortSignal) {
+  if (language === "ru") return { title, description };
+  const marker = "WTC_FIELD_SEPARATOR_7F3A";
+  const translated = await translateToRussian(`${title}\n${marker}\n${description}`, language, requestSignal);
+  const separator = translated.indexOf(marker);
+  if (separator < 0) return { title, description };
+  return {
+    title: translated.slice(0, separator).trim() || title,
+    description: translated.slice(separator + marker.length).trim() || description,
+  };
 }
 
 function metaValue(html: string, names: string[]) {
@@ -277,10 +314,9 @@ async function fetchWebsiteArticle(source: NewsWebsiteSource, candidate: { title
     const description = metaValue(html, ["description", "og:description", "twitter:description"]) || articleBodyPreview(html);
     const publishedAt = articleDate(html);
     if (!publishedAt || description.length < 24) return null;
-    const [translatedTitle, translatedDescription] = await Promise.all([
-      translateToRussian(candidate.title, source.language, requestSignal),
-      translateToRussian(description, source.language, requestSignal),
-    ]);
+    const translated = await translateArticleFields(candidate.title, description, source.language, requestSignal);
+    const translatedTitle = translated.title;
+    const translatedDescription = translated.description;
     if (source.language === "zh") {
       if (translatedTitle === candidate.title || /[\u3400-\u9fff]/u.test(translatedTitle)) return null;
       if (/[\u3400-\u9fff]/u.test(translatedDescription)) return null;
@@ -402,7 +438,7 @@ function withinFreshnessWindow(item: NewsItem) {
   return published <= now + 86400 * 1000 && published >= now - maxAgeMs;
 }
 
-function withDeadline<T>(promise: Promise<T>, timeoutMs = Number(process.env.NEWS_SOURCE_DEADLINE_MS || 7500)): Promise<T> {
+function withDeadline<T>(promise: Promise<T>, timeoutMs = Number(process.env.NEWS_SOURCE_DEADLINE_MS || 12000)): Promise<T> {
   return new Promise((resolve, reject) => {
     const timer = setTimeout(() => reject(new Error("source deadline exceeded")), timeoutMs);
     promise.then((value) => { clearTimeout(timer); resolve(value); }, (error) => { clearTimeout(timer); reject(error); });
@@ -477,13 +513,13 @@ export async function GET(request: Request) {
   }
 
   const requestController = new AbortController();
-  const requestDeadline = setTimeout(() => requestController.abort(), Number(process.env.NEWS_REQUEST_DEADLINE_MS || 14000));
+  const requestDeadline = setTimeout(() => requestController.abort(), Number(process.env.NEWS_REQUEST_DEADLINE_MS || 26000));
   const websiteSources = runtime.sources["news.chinaPortals"]
     ? activeNewsWebsiteSources.filter((source) => source.language === "ru" || runtime.sources["translate.google"])
     : [];
   const jobs: NewsJob[] = [
     ...(runtime.sources["news.telegram"] ? sourceChannels.map((source) => ({ key: `news.telegram:${source.handle}`, run: () => fetchTelegramChannel(source.handle, requestController.signal) })) : []),
-    ...(runtime.sources["news.autostat"] ? [{ key: "news.autostat:rss", run: () => fetchAutostatRss(requestController.signal) }] : []),
+    ...(runtime.sources["news.autostat"] ? [{ key: "news.autostat:rss", run: () => fetchAutostat(requestController.signal) }] : []),
     ...websiteSources.map((source) => ({ key: `news.web:${source.id}`, run: () => fetchWebsitePortal(source, requestController.signal) })),
   ];
 
@@ -495,7 +531,7 @@ export async function GET(request: Request) {
     ...newsWebsiteSources.filter((source) => !source.enabledByDefault).map((source) => `catalog:${source.id}`),
   ];
 
-  const results = await runWithConcurrency(jobs, Number(process.env.NEWS_SOURCE_CONCURRENCY || 5));
+  const results = await runWithConcurrency(jobs, Number(process.env.NEWS_SOURCE_CONCURRENCY || 4));
   clearTimeout(requestDeadline);
   const errors = results.filter((result) => result.state === "error").map((result) => result.key);
   const degraded = results.filter((result) => result.state === "stale").map((result) => result.key);
@@ -510,7 +546,10 @@ export async function GET(request: Request) {
 
   const liveSources = results.filter((result) => result.state === "live").length;
   const staleSources = results.filter((result) => result.state === "stale").length;
-  const qualityScore = jobs.length ? Math.round(((liveSources + staleSources * 0.5) / jobs.length) * 100) : 0;
+  const emptySources = results.filter((result) => result.state === "empty").length;
+  const qualityScore = jobs.length ? Math.round(((liveSources + staleSources * 0.5 + emptySources * 0.75) / jobs.length) * 100) : 0;
+  const aggregateLiveQuality = Number(process.env.NEWS_AGGREGATE_LIVE_QUALITY_MIN || 75);
+  const aggregateState = unique.length ? (qualityScore >= aggregateLiveQuality ? "live" : "partial") : "miss";
   const payload: NewsPayload = {
     news: unique,
     updatedAt: new Date().toISOString(),
@@ -522,10 +561,10 @@ export async function GET(request: Request) {
     deduplicatedCount: Math.max(0, rawNews.length - unique.length),
     sourceCatalogVersion: NEWS_SOURCE_CATALOG_VERSION,
     sourceBreakdown: results.map((result) => ({ source: result.key, state: result.state, items: result.items.length, latencyMs: result.latencyMs })),
-    cache: { state: unique.length ? (clientErrors.length ? "partial" : "live") : "miss", ageSeconds: 0, qualityScore },
+    cache: { state: aggregateState, ageSeconds: 0, qualityScore },
   };
   if (unique.length) {
-    saveSourceSnapshot({ cacheKey, sourceKey: "news.aggregate", payload, ttlMs: Number(process.env.NEWS_CACHE_TTL_SECONDS || 900) * 1000, staleMs: Number(process.env.NEWS_CACHE_STALE_SECONDS || 21600) * 1000, status: clientErrors.length ? "partial" : "live", qualityScore, itemCount: unique.length, error: clientErrors.join(", ") });
+    saveSourceSnapshot({ cacheKey, sourceKey: "news.aggregate", payload, ttlMs: Number(process.env.NEWS_CACHE_TTL_SECONDS || 900) * 1000, staleMs: Number(process.env.NEWS_CACHE_STALE_SECONDS || 21600) * 1000, status: aggregateState, qualityScore, itemCount: unique.length, error: clientErrors.join(", ") });
   } else {
     recordSourceRun({ sourceKey: "news.aggregate", status: jobs.length ? "failure" : "disabled", qualityScore, itemCount: 0, error: clientErrors.join(", ") });
   }

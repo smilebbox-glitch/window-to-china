@@ -14,7 +14,7 @@ function captures(pattern, text) {
   return [...text.matchAll(pattern)].map((match) => match[1]);
 }
 
-test("v1.7.5 source catalog is broad and contains no duplicate IDs or URLs", () => {
+test("v1.7.9 source catalog is broad and contains no duplicate IDs or URLs", () => {
   const ids = captures(/\bid:\s*"([^"]+)"/g, sources);
   const urls = captures(/\burl:\s*"(https:[^"]+)"/g, sources);
   assert.ok(ids.length >= 29, `expected >=29 sources, got ${ids.length}`);
@@ -43,6 +43,13 @@ test("official and specialist sources outrank broad secondary feeds", () => {
   assert.match(sources, /id: "caixin-global"[\s\S]*?enabledByDefault: false/);
 });
 
+test("unstable best-effort portals are retained as reserves instead of poisoning pilot health", () => {
+  for (const id of ["people-auto", "yiche", "gruzovikpress"]) {
+    assert.match(sources, new RegExp(`id: "${id}"[\\s\\S]*?enabledByDefault: false`), id);
+  }
+  assert.match(sources, /id: "mofcom-news"[\s\S]*?SignificantNews\/index\.html/);
+});
+
 test("news API performs fuzzy cross-source dedupe and source-priority selection", () => {
   for (const token of [
     "normalizeTokens",
@@ -60,7 +67,7 @@ test("Russia and China strategic sources are first-class ingestion jobs", () => 
   assert.ok(route.includes("truckIndustryPattern"));
   assert.ok(route.includes('focus === "truck"'));
   assert.ok(route.includes('language === "ru"'));
-  assert.ok(route.includes('NEWS_SOURCE_CATALOG_VERSION = 3'));
+  assert.ok(route.includes('NEWS_SOURCE_CATALOG_VERSION = 4'));
   for (const token of ["evolute", "voyah", "motorinvest", "моторинвест", "evia", "эвиа"]) assert.ok(route.toLowerCase().includes(token.toLowerCase()), token);
   assert.ok(route.includes('"evolute-official"'));
   assert.ok(route.includes('"voyah-official"'));
@@ -79,6 +86,16 @@ test("source failures are isolated by per-source cache and limited concurrency",
   ]) assert.ok(route.includes(token), token);
 });
 
+test("v1.7.9 has Autostat HTML fallback and quality-based aggregate state", () => {
+  for (const token of [
+    "autostat_rss_fallback",
+    "https://m.autostat.ru/news/",
+    "translateArticleFields",
+    "NEWS_AGGREGATE_LIVE_QUALITY_MIN",
+    "emptySources * 0.75",
+  ]) assert.ok(route.includes(token), token);
+});
+
 test("news feed rejects unbounded stale content and exposes dedup diagnostics", () => {
   assert.ok(route.includes("NEWS_MAX_AGE_DAYS"));
   assert.ok(route.includes("rawCount"));
@@ -94,12 +111,15 @@ test("fresh-first feed moved to dedicated news route while corporate home stays 
   assert.match(liveDashboard, /return <NewsDashboard \/>/);
 });
 
-test("outbound SSRF policy explicitly allows curated focus sources", () => {
+test("outbound SSRF policy explicitly allows curated focus sources and secure Autostat fallback", () => {
   for (const host of [
     "www.caam.org.cn", "www.miit.gov.cn", "english.mofcom.gov.cn", "www.cada.cn",
     "www.chinatruck.org", "www.360che.com", "autonews.gasgoo.com", "cnevpost.com",
     "www.yicaiglobal.com", "eu.36kr.com", "www.china-briefing.com", "www.stats.gov.cn", "carnewschina.com",
     "www.evolute.ru", "evolute.ru", "voyah.ru", "www.voyah.ru",
-    "uralaz.ru", "gruzovoy.ru", "www.gruzovikpress.ru", "reis.zr.ru",
+    "uralaz.ru", "gruzovoy.ru", "www.gruzovikpress.ru", "reis.zr.ru", "m.autostat.ru",
   ]) assert.ok(outbound.includes(`"${host}"`), host);
+  assert.ok(outbound.includes("outbound_redirect_https_upgrade"));
+  assert.ok(outbound.includes("outbound_translate_rate_limited"));
+  assert.ok(outbound.includes("TRANSLATE_MIN_INTERVAL_MS"));
 });

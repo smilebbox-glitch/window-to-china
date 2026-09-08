@@ -6,6 +6,7 @@ const defaultHosts = [
   "bankiros.ru",
   "t.me",
   "www.autostat.ru",
+  "m.autostat.ru",
   "www.sxqc.com",
   "www.caam.org.cn",
   "en.caam.org.cn",
@@ -61,6 +62,28 @@ const defaultHosts = [
   "host.docker.internal",
 ];
 
+let translateNextSlotAt = 0;
+let translateCooldownUntil = 0;
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function waitForTranslateSlot() {
+  const spacingMs = Math.max(80, Number(process.env.TRANSLATE_MIN_INTERVAL_MS || 260));
+  const now = Date.now();
+  const reservedAt = Math.max(now, translateNextSlotAt, translateCooldownUntil);
+  translateNextSlotAt = reservedAt + spacingMs;
+  if (reservedAt > now) await sleep(reservedAt - now);
+}
+
+function retryAfterMs(response: Response, attempt: number) {
+  const header = response.headers.get("retry-after");
+  const seconds = header ? Number(header) : Number.NaN;
+  if (Number.isFinite(seconds) && seconds >= 0) return Math.min(15_000, seconds * 1000);
+  return Math.min(6_000, 750 * (attempt + 1));
+}
+
 function configuredHosts() {
   const configured = process.env.OUTBOUND_ALLOWLIST?.split(",").map((item) => item.trim()).filter(Boolean) ?? [];
   const rag = process.env.RAG_API_URL?.trim();
@@ -103,32 +126,60 @@ export function assertOutboundUrl(input: string | URL) {
   return url;
 }
 
+function safeRedirectTarget(location: string, current: URL) {
+  const candidate = new URL(location, current);
+  const sameHostDowngrade = current.protocol === "https:"
+    && candidate.protocol === "http:"
+    && candidate.hostname.toLocaleLowerCase("en-US") === current.hostname.toLocaleLowerCase("en-US");
+  if (sameHostDowngrade) {
+    candidate.protocol = "https:";
+    logEvent("info", "outbound_redirect_https_upgrade", { host: candidate.hostname });
+  }
+  return assertOutboundUrl(candidate);
+}
+
 export async function safeFetch(input: string | URL, init: RequestInit = {}) {
   let url = assertOutboundUrl(input);
   const method = (init.method || "GET").toUpperCase();
   for (let redirect = 0; redirect <= 4; redirect += 1) {
-    const started = performance.now();
-    try {
-      const response = await fetch(url, { ...init, redirect: "manual" });
-      recordExternal(url.hostname, response.status < 400, response.status, performance.now() - started);
-      const location = response.headers.get("location");
-      if (response.status >= 300 && response.status < 400 && location) {
-        if (redirect === 4) throw new Error("Too many outbound redirects");
-        if (method !== "GET" && method !== "HEAD") {
-          throw new Error(`Redirect blocked for non-idempotent outbound ${method}`);
+    const isTranslate = url.hostname.toLocaleLowerCase("en-US") === "translate.googleapis.com";
+    const maxAttempts = isTranslate ? Math.max(1, Number(process.env.TRANSLATE_MAX_ATTEMPTS || 2)) : 1;
+    let response: Response | null = null;
+
+    for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+      if (isTranslate) await waitForTranslateSlot();
+      const started = performance.now();
+      try {
+        response = await fetch(url, { ...init, redirect: "manual" });
+        recordExternal(url.hostname, response.status < 400, response.status, performance.now() - started);
+        if (isTranslate && response.status === 429 && attempt + 1 < maxAttempts) {
+          const delayMs = retryAfterMs(response, attempt);
+          translateCooldownUntil = Math.max(translateCooldownUntil, Date.now() + delayMs);
+          logEvent("warn", "outbound_translate_rate_limited", { host: url.hostname, attempt: attempt + 1, delayMs });
+          continue;
         }
-        const next = assertOutboundUrl(new URL(location, url));
-        logEvent("info", "outbound_redirect", { fromHost: url.hostname, toHost: next.hostname, status: response.status });
-        url = next;
-        continue;
+        break;
+      } catch (error) {
+        recordExternal(url.hostname, false, 0, performance.now() - started);
+        logEvent("warn", "outbound_http_failed", { host: url.hostname, error });
+        throw error;
       }
-      if (!response.ok) logEvent("warn", "outbound_http_non_2xx", { host: url.hostname, status: response.status });
-      return response;
-    } catch (error) {
-      recordExternal(url.hostname, false, 0, performance.now() - started);
-      logEvent("warn", "outbound_http_failed", { host: url.hostname, error });
-      throw error;
     }
+
+    if (!response) throw new Error("Outbound request produced no response");
+    const location = response.headers.get("location");
+    if (response.status >= 300 && response.status < 400 && location) {
+      if (redirect === 4) throw new Error("Too many outbound redirects");
+      if (method !== "GET" && method !== "HEAD") {
+        throw new Error(`Redirect blocked for non-idempotent outbound ${method}`);
+      }
+      const next = safeRedirectTarget(location, url);
+      logEvent("info", "outbound_redirect", { fromHost: url.hostname, toHost: next.hostname, status: response.status });
+      url = next;
+      continue;
+    }
+    if (!response.ok) logEvent("warn", "outbound_http_non_2xx", { host: url.hostname, status: response.status });
+    return response;
   }
   throw new Error("Outbound redirect loop");
 }
