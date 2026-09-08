@@ -18,6 +18,16 @@ function hmacIdentity(value: string) {
   return createHmac("sha256", key).update(value).digest("hex");
 }
 
+/**
+ * Stable pseudonymous key for a corporate SSO subject.
+ * Raw login/e-mail is intentionally not required in pilot cohort tables.
+ */
+export function identityKeyForSubject(subject: string) {
+  const normalized = subject.trim().slice(0, 256);
+  if (!normalized) throw new Error("SSO subject is required.");
+  return hmacIdentity(`sso:${normalized}`);
+}
+
 export type UserContext = {
   userKey: string;
   actor: string;
@@ -30,7 +40,7 @@ export function resolveUserContext(request: Request): UserContext {
   const principal = resolvePrincipal(request);
   if (principal.authenticated) {
     return {
-      userKey: hmacIdentity(`sso:${principal.subject}`),
+      userKey: identityKeyForSubject(principal.subject),
       actor: principal.subject,
       authenticated: true,
     };

@@ -1,11 +1,15 @@
 import Link from "next/link";
+import { headers } from "next/headers";
 import { MaintenanceBanner } from "@/components/maintenance-banner";
+import { resolvePrincipal } from "@/lib/auth";
+import { principalPilotAccess } from "@/lib/pilot-program";
 import {
   BriefcaseBusiness,
   ChartNoAxesCombined,
   CalendarDays,
   Crosshair,
   FileText,
+  MessageSquareText,
   Newspaper,
   Radar,
   Sparkles,
@@ -22,9 +26,15 @@ const navigation = [
   { href: "/market", label: "Рынок", icon: ChartNoAxesCombined },
   { href: "/calendar", label: "Календарь", icon: CalendarDays },
   { href: "/travel-guide", label: "Перед поездкой", icon: BriefcaseBusiness },
+  { href: "/pilot", label: "Пилот", icon: MessageSquareText },
 ];
 
-export function SiteShell({ children }: { children: React.ReactNode }) {
+export async function SiteShell({ children }: { children: React.ReactNode }) {
+  const incoming = await headers();
+  const request = new Request("http://internal/", { headers: Object.fromEntries(incoming.entries()) });
+  const principal = resolvePrincipal(request);
+  const pilotAccess = principalPilotAccess(principal);
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       <header className="sticky top-0 z-50 border-b border-white/10 bg-[#101114]/96 backdrop-blur-xl">
@@ -69,11 +79,23 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
       </header>
       <MaintenanceBanner />
 
-      {children}
+      {pilotAccess.allowed ? children : (
+        <main className="mx-auto min-h-[70vh] w-full max-w-5xl px-4 py-16 sm:px-6 lg:px-8">
+          <section className="border border-orange-300 bg-white p-8 shadow-[0_18px_60px_rgba(18,24,35,0.08)]">
+            <p className="text-xs font-black uppercase tracking-[0.16em] text-orange-700">Controlled Corporate Pilot</p>
+            <h1 className="mt-3 text-3xl font-black tracking-[-0.04em] text-zinc-950">Доступ ограничен участниками текущей пилотной волны</h1>
+            <p className="mt-4 max-w-3xl text-sm leading-6 text-zinc-600">
+              Этот экземпляр работает в controlled cohort mode. Если вы должны участвовать в пилоте, IT/Admin должен добавить ваш SSO subject в активную волну. Корпоративный логин в базе пилота в открытом виде не сохраняется.
+            </p>
+            <p className="mt-4 text-xs text-zinc-500">Причина: {pilotAccess.reason} · роль: {principal.role}</p>
+          </section>
+        </main>
+      )}
 
       <footer className="border-t border-white/8 bg-[#101114]">
-        <div className="mx-auto max-w-[1560px] px-4 py-6 text-xs font-semibold uppercase tracking-[0.14em] text-zinc-600 sm:px-6 lg:px-8">
-          Окно в Китай
+        <div className="mx-auto flex max-w-[1560px] items-center justify-between gap-4 px-4 py-6 text-xs font-semibold uppercase tracking-[0.14em] text-zinc-600 sm:px-6 lg:px-8">
+          <span>Окно в Китай</span>
+          <Link href="/pilot" className="text-zinc-500 transition-colors hover:text-white">Обратная связь по пилоту</Link>
         </div>
       </footer>
     </div>
