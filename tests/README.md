@@ -7,18 +7,35 @@ This directory contains the automated verification suite for **Окно в Ки�
 - `npm test` — builds the application and runs the Node.js test suite in `tests/*.test.mjs`.
 - `npm run test:runtime` — checks a running deployment over HTTP instead of relying on manual link clicking.
 - GitHub Actions runs the tests automatically for changes to `main` and for pull requests targeting `main`.
+- `tests/news-received-time-v179.test.mjs` protects exact live-news receipt timestamps.
+- `tests/web-notifications.test.mjs` protects configurable web notifications: master enable/disable, company/brand and auto-industry segment filters, browser Notification API integration, Service Worker notification click behavior, and user preference persistence.
 
 ## Runtime smoke coverage
 
-The runtime smoke test verifies that the application is actually reachable and returns the expected response type for:
+The runtime smoke test verifies that the application is actually reachable and returns the expected response/contract for:
 
 - `/`
+- `/news`
+- `/trucks`
 - `/market`
+- `/analysis`
+- `/decision`
+- `/executive`
 - `/calendar`
 - `/travel-guide`
 - `/trip-planner`
+- `/pilot-feedback`
+- `/pilot`
+- `/search?q=SHACMAN`
 - `/api/health`
 - `/api/ready`
+- `/api/news`
+- `/api/user/preferences`
+- `/api/user/notifications`
+- `/api/pilot/operations`
+- `/api/pilot/report`
+
+The notification runtime contract confirms that user preferences expose `notificationsEnabled`, `brands`, and `segments`, and that the notification endpoint returns a valid notification list and unread count. The shell contract also confirms that the approved notification center is present while other retired controls remain absent.
 
 Set `BASE_URL` when testing a non-local deployment:
 
@@ -26,4 +43,4 @@ Set `BASE_URL` when testing a non-local deployment:
 BASE_URL=http://127.0.0.1:3000 npm run test:runtime
 ```
 
-A failed request, unexpected HTTP status, or wrong content type makes the test fail and therefore makes the GitHub Actions check fail.
+A failed request, unexpected HTTP status, invalid response contract, or wrong content type makes the test fail and therefore makes the GitHub Actions check fail.
