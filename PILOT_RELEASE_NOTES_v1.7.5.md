@@ -16,13 +16,15 @@ v1.7.5 переводит систему из технического Pilot Can
 - status;
 - HMAC user key.
 
-Raw SSO subject / login / e-mail не сохраняются в `pilot_members`.
+Raw SSO subject / login / e-mail не сохраняются в `pilot_members`. Автор Weekly/Final Review также сохраняется в псевдонимном виде.
 
 ### Controlled access
 
 Новый `PILOT_ENFORCE_COHORT=YES` ограничивает viewer-доступ активной/приглашённой cohort. Editor/Admin сохраняют staff bypass для сопровождения.
 
 Pilot role не заменяет и не расширяет application RBAC.
+
+В строгом corporate mode controlled-pilot preflight требует `AUTH_MODE=proxy`, сильные proxy/HMAC secrets и согласованные cohort limits.
 
 ### Feedback
 
@@ -57,7 +59,7 @@ Returning user определяется по активности минимум
 - `ADJUST` — blocker нет, но KPI/major feedback требуют corrective action;
 - `STOP` — operational `NO_GO` или blocker feedback.
 
-Weekly и Final review сохраняются в SQLite как immutable review snapshots.
+Weekly и Final review сохраняются в SQLite как evidence snapshots.
 
 ### API
 
@@ -92,6 +94,8 @@ SSO subject преобразуется через `HMAC-SHA256` с `USER_DATA_HM
 - `scripts/generate-pilot-outcome.mjs`;
 - `npm run pilot:outcome`;
 - `docs/CONTROLLED_CORPORATE_PILOT_v1.7.5.md`.
+
+Перед merge обязателен **combined One-click verification** полного stacked candidate: automated tests, production build, Windows CRLF preflight, Docker startup, health/readiness, runtime smoke включая `/pilot` и v1.7.5 API contracts, diagnostics и controlled stop.
 
 ### Rollout
 
