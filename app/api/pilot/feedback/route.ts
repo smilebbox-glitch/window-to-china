@@ -2,6 +2,7 @@ import { authorize } from "@/lib/auth";
 import { createRequestContext, jsonWithContext } from "@/lib/request-context";
 import { listPilotFeedback, submitPilotFeedback } from "@/lib/pilot-program";
 import { resolveUserContext, withUserCookie } from "@/lib/user-context";
+import { trackUsage } from "@/lib/user-store";
 
 export const dynamic = "force-dynamic";
 
@@ -26,6 +27,13 @@ export async function POST(request: Request) {
       usefulSignal: Boolean(body.usefulSignal),
       savedMinutes: body.savedMinutes,
       comment: typeof body.comment === "string" ? body.comment : "",
+    });
+    trackUsage(user.userKey, "pilot_feedback_submit", "/pilot", {
+      category: feedback.category,
+      severity: feedback.severity,
+      rating: feedback.rating,
+      usefulSignal: feedback.usefulSignal,
+      savedMinutes: feedback.savedMinutes,
     });
     return jsonWithContext(context, { ok: true, feedback }, {
       status: 201,
