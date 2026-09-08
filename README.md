@@ -8,6 +8,7 @@
 
 - свежая новостная лента с приоритетным мониторингом **SHACMAN, GWM, EVOLUTE, VOYAH, Моторинвест, ЭВИА** и отрасли;
 - у live-новостей отдельно отображаются **точные дата и время первого получения сервисом** и дата/время публикации источником (МСК);
+- **персональные web-уведомления о новых новостях**: общий выключатель, фильтры по компаниям/брендам и сегментам автопрома, внутренний колокольчик и системные уведомления браузера/ОС на secure origin;
 - типизированный каталог китайских и российских источников;
 - автоматическая дедупликация похожих материалов и fresh-first выдача;
 - перевод китайских материалов на русский с контролем нагрузки и retry/cooldown;
@@ -27,7 +28,7 @@
 
 ## Время новости: публикация и получение
 
-В новостной карточке теперь разделены два времени:
+В новостной карточке разделены два времени:
 
 - **Получено** — момент, когда live-материал впервые был принят текущим контуром «Окна в Китай»; значение сохраняется при последующих обновлениях того же материала в source snapshot;
 - **Опубликовано** — timestamp, который пришёл из первоисточника.
@@ -37,6 +38,24 @@
 Чтобы после внедрения timestamp-схемы не использовать старый кэш без поля получения, версия каталога news-cache повышена до `5`. Повторные live-refresh того же материала сохраняют уже зафиксированное `receivedAt` по идентификатору или canonical URL.
 
 Regression-контракт: `tests/news-received-time-v179.test.mjs`.
+
+## Персональные web-уведомления
+
+Пользователь может включить или полностью выключить уведомления и выбрать, какие материалы ему интересны.
+
+Доступные фильтры включают:
+
+- компании и бренды — **SHACMAN, GWM, EVOLUTE, VOYAH, Моторинвест, ЭВИА** и другие обнаруживаемые компании;
+- сегменты — коммерческий транспорт, легковые автомобили, EV/NEV, компоненты и поставщики, производство и локализация, логистика, регулирование/геополитика, рынок/продажи, технологии/ADAS;
+- режим **«Весь автопром»** для всех новых отраслевых материалов.
+
+В web-интерфейсе работает внутренний колокольчик с непрочитанными материалами. При наличии Notification API, разрешения пользователя и secure context (`HTTPS` или `localhost`) сервис также показывает системные уведомления браузера/ОС. Клиент проверяет новые персональные уведомления раз в 60 секунд; клик по системному уведомлению открывает связанный материал.
+
+Если `notificationsEnabled=false`, новые персональные уведомления для пользователя не генерируются. Уже созданная история сохраняется до стандартного срока retention.
+
+Текущий пилот использует **web-notification**, а не серверный Web Push: если браузер/PWA полностью закрыты и остановлены ОС, гарантированная фоновая доставка не выполняется. Для такого режима потребуется отдельная корпоративная Web Push/VAPID-конфигурация.
+
+Regression-контракт: `tests/web-notifications.test.mjs`. Подробности: `docs/WEB_NOTIFICATIONS_v1.7.9.md`.
 
 ## Что нового в v1.7.9
 
@@ -50,9 +69,10 @@ v1.7.9 — актуальный hardening-релиз перед controlled corpo
 - aggregate health оценивается по общей quality, а не становится `PARTIAL` из-за единичного best-effort source failure;
 - Pilot Operations использует явный порог деградации источников;
 - новостная лента различает timestamp публикации и точное время получения live-материала сервисом;
-- GitHub Actions проверяет production build, test/preflight suite, live Docker pilot, runtime smoke и корпоративный HTTPS/SSO deployment contract.
+- добавлены настраиваемые персональные web-уведомления по компаниям и сегментам автопрома с полным выключателем;
+- GitHub Actions проверяет production build, test/preflight suite, live Docker pilot, runtime smoke, Web App/PWA и корпоративный HTTPS/SSO deployment contract.
 
-Подробности: `docs/SOURCE_RELIABILITY_v1.7.9.md`, `PILOT_START_v1.7.9.md` и `docs/CORPORATE_HTTPS_SSO.md`.
+Подробности: `docs/SOURCE_RELIABILITY_v1.7.9.md`, `PILOT_START_v1.7.9.md`, `docs/PWA_WEB_APP_v1.7.9.md`, `docs/WEB_NOTIFICATIONS_v1.7.9.md` и `docs/CORPORATE_HTTPS_SSO_v1.7.9.md`.
 
 ## Быстрый запуск
 
@@ -144,7 +164,7 @@ npm run pilot:functional
 BASE_URL=http://127.0.0.1:3000 npm run pilot:functional:runtime
 ```
 
-Полный `npm test` автоматически включает `tests/news-received-time-v179.test.mjs`, поэтому timestamp-регрессия проверяется в GitHub Actions при изменениях `app/**`, `components/**`, `lib/**` или `tests/**`.
+Полный `npm test` включает regression-контракты времени получения новостей и web-уведомлений. GitHub Actions дополнительно поднимает реальный Docker pilot, проверяет health/readiness, runtime API/UI, Web App/PWA и корпоративный HTTPS/SSO contract.
 
 ## Ключевые маршруты
 
@@ -157,6 +177,7 @@ BASE_URL=http://127.0.0.1:3000 npm run pilot:functional:runtime
 - `/executive` — Executive Daily / Weekly Brief;
 - `/calendar` — Выставки и события;
 - `/travel-guide` — Перед поездкой;
+- `/my` — персональное пространство, история уведомлений и пользовательские настройки;
 - `/pilot-feedback` — обратная связь участника пилота;
 - `/pilot` — Pilot Control Room;
 - `/admin` — IT/Admin Reliability.
@@ -167,6 +188,10 @@ BASE_URL=http://127.0.0.1:3000 npm run pilot:functional:runtime
 - `GET /api/ready`
 - `GET /api/news`
 - `POST /api/analyze`
+- `GET /api/user/preferences`
+- `PUT /api/user/preferences`
+- `GET /api/user/notifications`
+- `PATCH /api/user/notifications`
 - `GET /api/pilot/operations`
 - `GET /api/pilot/report`
 - `POST /api/pilot/feedback`
@@ -199,11 +224,12 @@ Pilot Control Room формирует итог `GO / ADJUST / STOP`.
 - downgrade HTTPS → HTTP блокируется;
 - pilot telemetry предназначена для оценки продукта, а не сотрудников;
 - пользовательские идентификаторы в pilot-контуре псевдонимизируются;
+- настройки подписок и история уведомлений сохраняются в пользовательском профиле;
 - нестабильные внешние источники не должны отключать общий новостной контур;
 - `.env.corporate`, TLS private keys и локальные runtime-secrets не должны попадать в Git.
 
 ## Статус сборки
 
-Актуальный `main` содержит Pilot v1.7.9, точное время получения live-новостей и корпоративный HTTPS/SSO deployment profile. Финальная One-click verification проверяет build/tests, корпоративный ingress/Compose contract, запуск Docker pilot, health/readiness, runtime smoke и PWA runtime.
+Актуальный `main` содержит Pilot v1.7.9, точное время получения live-новостей, настраиваемые web-уведомления, Web App/PWA и корпоративный HTTPS/SSO deployment profile. One-click verification проверяет build/tests, корпоративный ingress/Compose contract, запуск Docker pilot, health/readiness, runtime smoke и PWA runtime.
 
 Физическое подключение к корпоративному IdP, внутреннему DNS и корпоративному CA остаётся отдельным Day 0 IT validation и не считается выполненным только по факту успешного CI.
