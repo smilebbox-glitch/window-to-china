@@ -7,20 +7,14 @@ import type { FormEvent } from "react";
 import { MaintenanceBanner } from "@/components/maintenance-banner";
 import {
   BarChart3,
-  Bell,
   BriefcaseBusiness,
   Building2,
   CalendarDays,
   ChartNoAxesCombined,
-  Crown,
-  Crosshair,
   Home,
   Info,
-  Languages,
   Newspaper,
   Search,
-  Settings,
-  Sparkles,
   Truck,
 } from "lucide-react";
 
@@ -30,18 +24,11 @@ const navigation = [
   { href: "/trucks", label: "Коммерческий транспорт", icon: Truck },
   { href: "/market", label: "Рынок", icon: ChartNoAxesCombined },
   { href: "/analysis", label: "Аналитика", icon: BarChart3 },
-  { href: "/decision", label: "Решения", icon: Crosshair },
-  { href: "/executive", label: "Руководство", icon: Crown },
   { href: "/calendar", label: "Выставки и события", icon: CalendarDays },
   { href: "/travel-guide", label: "Перед поездкой", icon: BriefcaseBusiness },
 ] as const;
 
-const serviceNavigation = [
-  { href: "/pilot", label: "Пилот", icon: Sparkles },
-  { href: "/admin", label: "Администрирование", icon: Settings },
-] as const;
-
-const mobileNavigation = [...navigation, ...serviceNavigation] as const;
+const mobileNavigation = navigation;
 
 function isActive(pathname: string, href: string) {
   if (href === "/") return pathname === "/";
@@ -84,13 +71,6 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
           </form>
 
           <div className="ml-auto flex shrink-0 items-center gap-2">
-            <button type="button" className="hidden h-10 items-center gap-1.5 rounded-lg px-3 text-xs font-bold text-[#173368] hover:bg-[#f1f6fb] sm:flex" aria-label="Язык интерфейса">
-              <Languages className="size-4" /> RU
-            </button>
-            <button type="button" className="relative grid size-10 place-items-center rounded-lg text-[#173368] hover:bg-[#f1f6fb]" aria-label="Уведомления">
-              <Bell className="size-5" />
-              <span className="absolute right-2 top-2 size-2 rounded-full bg-[#ef3d45] ring-2 ring-white" />
-            </button>
             <div className="hidden items-center gap-2 rounded-xl border border-[#e2ebf3] bg-white px-2.5 py-1.5 lg:flex">
               <span className="grid size-8 place-items-center rounded-full bg-[#0d2b5c] text-[11px] font-black text-white">П</span>
               <span className="pr-1">
@@ -142,25 +122,22 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
           </nav>
 
           <div className="mt-auto border-t border-[#e4edf5] p-3">
-            <div className="mb-3 rounded-2xl bg-[linear-gradient(180deg,#f4f9fd,#edf5fb)] p-4">
+            <div className="rounded-2xl bg-[linear-gradient(180deg,#f4f9fd,#edf5fb)] p-4">
               <Building2 className="size-5 text-[#2587ff]" />
               <p className="mt-3 text-sm font-black leading-5 text-[#11285e]">Надёжный мост для вашего бизнеса в Китае</p>
               <div className="mt-3 h-0.5 w-8 bg-[#22c7b8]" />
               <p className="mt-3 text-[10px] leading-4 text-[#7b91aa]">Знания. Аналитика. Возможности.</p>
             </div>
-            <details className="group">
-              <summary className="corporate-nav-item cursor-pointer list-none"><Info className="size-[19px]" /><span>Сервис</span></summary>
-              <div className="mt-1 space-y-1 pl-3">
-                {serviceNavigation.map((item) => {
-                  const Icon = item.icon;
-                  return <Link key={item.href} href={item.href} className={`corporate-nav-item text-xs ${isActive(pathname, item.href) ? "is-active" : ""}`}><Icon className="size-4" />{item.label}</Link>;
-                })}
-              </div>
-            </details>
           </div>
         </aside>
 
         <div className="min-w-0">
+          <div className="border-b border-[#dce8f3] bg-[#f8fbfe] px-4 py-3 sm:px-6">
+            <div className="mx-auto flex max-w-[1540px] items-center gap-2 text-[15px] font-bold leading-5 text-[#18345f] sm:text-base">
+              <Info className="size-5 shrink-0 text-[#285fff]" aria-hidden="true" />
+              <span>В тестовом режиме. Данные могут быть неполны.</span>
+            </div>
+          </div>
           <MaintenanceBanner />
           <div className="pilot-content">{children}</div>
           <footer className="border-t border-[#dfe9f2] bg-white px-5 py-5 text-xs text-[#6f86a4] sm:px-8">
