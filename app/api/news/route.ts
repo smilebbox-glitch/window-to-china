@@ -17,7 +17,7 @@ import { getSourceSnapshot, recordSourceRun, saveSourceSnapshot } from "@/lib/so
 
 export const dynamic = "force-dynamic";
 
-const NEWS_SOURCE_CATALOG_VERSION = 2;
+const NEWS_SOURCE_CATALOG_VERSION = 3;
 const sourceNames = new Map(sourceChannels.map((source) => [source.handle, source.name]));
 
 const brandPatterns: Array<[Brand, RegExp]> = [
@@ -25,7 +25,7 @@ const brandPatterns: Array<[Brand, RegExp]> = [
   ["GWM", /\bgwm\b|great\s*wall|г(р|рэ)ейт\s*волл|\bhaval\b|\btank\b|\bwey\b|\bora\b|хавейл|хавал|танк|长城|哈弗|坦克|魏牌|欧拉/iu],
 ];
 
-const autoIndustryPattern = /汽车|车企|整车|新能源车|商用车|重卡|卡车|零部件|供应链|销量|产量|出口|工厂|自动驾驶|电池|充电|智能驾驶|车联网|芯片|比亚迪|蔚来|小鹏|理想|吉利|奇瑞|上汽|一汽|东风|长安|小米汽车|极氪|零跑|宁德时代|SHACMAN|Shaanxi|陕汽|Great\s*Wall|GWM|长城汽车|哈弗|坦克|魏牌|欧拉|炮|\bautomotive\b|\bautomaker\b|\bvehicle\b|\bvehicles\b|\bcar\b|\bcars\b|\bev\b|\bnev\b|electric vehicle|commercial vehicle|\btruck\b|\btrucks\b|battery|charging|supplier|supply chain|vehicle sales|auto sales|robotaxi|autonomous driving|smart driving|\badas\b|mobility|\boem\b|auto export|\bbyd\b|\bnio\b|\bxpeng\b|li auto|\bgeely\b|\bchery\b|\bsaic\b|\bfaw\b|\bdongfeng\b|\bchangan\b|xiaomi auto|\bzeekr\b|\bleapmotor\b|\bcatl\b|\bavatr\b|\bvoyah\b/iu;
+const autoIndustryPattern = /汽车|车企|整车|新能源车|商用车|重卡|卡车|零部件|供应链|销量|产量|出口|工厂|自动驾驶|电池|充电|智能驾驶|车联网|芯片|比亚迪|蔚来|小鹏|理想|吉利|奇瑞|上汽|一汽|东风|长安|小米汽车|极氪|零跑|宁德时代|SHACMAN|Shaanxi|陕汽|Great\s*Wall|GWM|长城汽车|哈弗|坦克|魏牌|欧拉|炮|岚图|\bautomotive\b|\bautomaker\b|\bvehicle\b|\bvehicles\b|\bcar\b|\bcars\b|\bev\b|\bnev\b|electric vehicle|commercial vehicle|\btruck\b|\btrucks\b|battery|charging|supplier|supply chain|vehicle sales|auto sales|robotaxi|autonomous driving|smart driving|\badas\b|mobility|\boem\b|auto export|\bbyd\b|\bnio\b|\bxpeng\b|li auto|\bgeely\b|\bchery\b|\bsaic\b|\bfaw\b|\bdongfeng\b|\bchangan\b|xiaomi auto|\bzeekr\b|\bleapmotor\b|\bcatl\b|\bavatr\b|\bvoyah\b|воях|войя|\bevolute\b|эволют|\bmotorinvest\b|моторинвест|\bevia\b|эвиа/iu;
 const truckIndustryPattern = /грузов|тягач|седельн|самосвал|шасси|коммерческ.*транспорт|крупнотоннаж|среднетоннаж|малотоннаж|\bhcv\b|\bmcv\b|\blcv\b|heavy[- ]duty|medium[- ]duty|light truck|commercial vehicle|truck|tractor|tipper|dump truck|chassis|重卡|中卡|轻卡|卡车|牵引车|商用车|货车|自卸车|底盘|shacman|sitrak|sinotruk|howo|dongfeng|foton|auman|jiefang|\bfaw\b|\bjac\b|\bsany\b|\bxcmg\b|farizon|камаз|\bural\b|урал|газель|газон|валдай|sollers/iu;
 const economyPattern = /工业|制造业|经济|外贸|进出口|出口|进口|投资|消费|生产|采购经理|供应链|关税|政策|监管|industrial|manufacturing|economy|economic|foreign trade|imports?|exports?|investment|production|factory|factories|\bpmi\b|retail sales|tariff|regulation|policy|foreign investment|supply chain/iu;
 const technologyPattern = /人工智能|机器人|半导体|芯片|软件|智能驾驶|自动驾驶|电池|科技|\bai\b|artificial intelligence|robotics?|semiconductor|chips?|software|smart driving|autonomous|battery|technology|mobility|lidar|sensor/iu;
@@ -47,6 +47,8 @@ const specialistSourceIds = new Set([
   "yiche",
   "pcauto",
   "carnewschina",
+  "evolute-official",
+  "voyah-official",
   "gruzovoy-ru",
   "gruzovikpress",
   "reis-trucks",
