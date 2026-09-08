@@ -1,13 +1,13 @@
 import type { NewsItem } from "@/lib/data";
 
-export type NewsSourceLanguage = "zh" | "en";
-export type NewsSourceFocus = "auto" | "ev" | "economy" | "technology" | "policy" | "trade";
+export type NewsSourceLanguage = "zh" | "en" | "ru";
+export type NewsSourceFocus = "auto" | "truck" | "ev" | "economy" | "technology" | "policy" | "trade";
 
 export type NewsWebsiteSource = {
   id: string;
   name: string;
   url: string;
-  market: "Китай" | "Международный";
+  market: "Россия" | "Китай" | "Международный";
   language: NewsSourceLanguage;
   sourceType: "official" | "media";
   priority: number;
@@ -19,10 +19,10 @@ export type NewsWebsiteSource = {
 };
 
 /**
- * Source policy for Window to China v1.7.
+ * Source policy for Window to China v1.7/v1.7.1.
  *
  * Priority is editorial for duplicate resolution, not a general media-quality score:
- * primary/official data beats secondary reporting; specialist automotive originals
+ * primary/official data beats secondary reporting; specialist automotive/truck originals
  * beat broad aggregators; Telegram stays useful for speed but loses duplicate conflicts
  * to an identifiable original or official publication.
  */
@@ -35,10 +35,10 @@ export const newsWebsiteSources: readonly NewsWebsiteSource[] = Object.freeze([
     language: "zh",
     sourceType: "official",
     priority: 100,
-    focus: ["auto"],
+    focus: ["auto", "truck"],
     maxCandidates: 3,
     enabledByDefault: true,
-    note: "Официальные новости SHACMAN / Shaanxi Automobile.",
+    note: "Официальные новости SHACMAN / Shaanxi Automobile, включая тяжёлые грузовики и экспорт.",
   },
   {
     id: "caam",
@@ -48,7 +48,7 @@ export const newsWebsiteSources: readonly NewsWebsiteSource[] = Object.freeze([
     language: "zh",
     sourceType: "official",
     priority: 100,
-    focus: ["auto", "ev", "trade", "policy"],
+    focus: ["auto", "truck", "ev", "trade", "policy"],
     maxCandidates: 3,
     enabledByDefault: true,
     note: "Ассоциация автопроизводителей Китая: продажи, производство, экспорт, коммерческий транспорт.",
@@ -61,7 +61,7 @@ export const newsWebsiteSources: readonly NewsWebsiteSource[] = Object.freeze([
     language: "zh",
     sourceType: "official",
     priority: 100,
-    focus: ["auto", "ev", "technology", "policy"],
+    focus: ["auto", "truck", "ev", "technology", "policy"],
     maxCandidates: 3,
     enabledByDefault: true,
     note: "Министерство промышленности КНР: автомобильная политика, стандарты, продуктовые допуски, NEV и smart vehicles.",
@@ -100,11 +100,38 @@ export const newsWebsiteSources: readonly NewsWebsiteSource[] = Object.freeze([
     language: "zh",
     sourceType: "official",
     priority: 98,
-    focus: ["auto", "ev", "policy"],
+    focus: ["auto", "truck", "ev", "policy"],
     maxCandidates: 3,
     enabledByDefault: true,
-    note: "Рынок новых и подержанных автомобилей, дилерские запасы, passenger-car market reports и отраслевые правила.",
+    note: "Рынок новых и подержанных автомобилей, дилерские запасы и отраслевые отчёты.",
     hostAliases: ["data.cada.cn"],
+  },
+  {
+    id: "chinatruck",
+    name: "卡车网 · China Truck",
+    url: "https://www.chinatruck.org/news/",
+    market: "Китай",
+    language: "zh",
+    sourceType: "media",
+    priority: 93,
+    focus: ["truck", "ev", "technology", "trade"],
+    maxCandidates: 4,
+    enabledByDefault: true,
+    note: "Специализированная лента по тяжёлым и лёгким грузовикам, тягачам, силовым агрегатам и коммерческому транспорту Китая.",
+    hostAliases: ["m.chinatruck.org"],
+  },
+  {
+    id: "360che-truck",
+    name: "卡车之家 · 360che",
+    url: "https://www.360che.com/news/",
+    market: "Китай",
+    language: "zh",
+    sourceType: "media",
+    priority: 92,
+    focus: ["truck", "ev", "technology"],
+    maxCandidates: 4,
+    enabledByDefault: true,
+    note: "Рынок HCV/MCV/LCV Китая, бренды, страховые регистрации,新能源重卡, батареи и продуктовые объявления.",
   },
   {
     id: "people-auto",
@@ -154,7 +181,7 @@ export const newsWebsiteSources: readonly NewsWebsiteSource[] = Object.freeze([
     language: "en",
     sourceType: "media",
     priority: 91,
-    focus: ["auto", "ev", "technology", "trade"],
+    focus: ["auto", "truck", "ev", "technology", "trade"],
     maxCandidates: 3,
     enabledByDefault: true,
     note: "Специализированные новости китайского автопрома, Tier-1/Tier-2, батареи и рынок.",
@@ -168,7 +195,7 @@ export const newsWebsiteSources: readonly NewsWebsiteSource[] = Object.freeze([
     language: "en",
     sourceType: "media",
     priority: 90,
-    focus: ["ev", "auto", "trade"],
+    focus: ["ev", "auto", "truck", "trade"],
     maxCandidates: 3,
     enabledByDefault: true,
     note: "Китайский NEV/EV рынок, продажи, экспорт, батареи и регулирование.",
@@ -181,7 +208,7 @@ export const newsWebsiteSources: readonly NewsWebsiteSource[] = Object.freeze([
     language: "en",
     sourceType: "media",
     priority: 85,
-    focus: ["auto", "economy", "trade", "policy"],
+    focus: ["auto", "truck", "economy", "trade", "policy"],
     maxCandidates: 2,
     enabledByDefault: true,
     note: "Китайский бизнес, автопром, локализация, экспорт и инвестиции.",
@@ -265,6 +292,59 @@ export const newsWebsiteSources: readonly NewsWebsiteSource[] = Object.freeze([
     note: "Быстрая лента китайских автомобилей и EV; вторичная по отношению к официальным источникам.",
   },
   {
+    id: "ural-official",
+    name: "Автозавод УРАЛ",
+    url: "https://uralaz.ru/media/news/",
+    market: "Россия",
+    language: "ru",
+    sourceType: "official",
+    priority: 100,
+    focus: ["truck", "technology", "trade"],
+    maxCandidates: 3,
+    enabledByDefault: true,
+    note: "Официальные новости российского производителя тяжёлых грузовиков и специальной техники УРАЛ.",
+  },
+  {
+    id: "gruzovoy-ru",
+    name: "Грузовой.RU",
+    url: "https://gruzovoy.ru/news",
+    market: "Россия",
+    language: "ru",
+    sourceType: "media",
+    priority: 88,
+    focus: ["truck", "auto", "technology", "trade"],
+    maxCandidates: 4,
+    enabledByDefault: true,
+    note: "Российский рынок коммерческого транспорта: модели, продажи, китайские и российские грузовые бренды.",
+  },
+  {
+    id: "gruzovikpress",
+    name: "Грузовик Пресс",
+    url: "https://www.gruzovikpress.ru/",
+    market: "Россия",
+    language: "ru",
+    sourceType: "media",
+    priority: 86,
+    focus: ["truck", "technology", "trade"],
+    maxCandidates: 3,
+    enabledByDefault: true,
+    note: "Грузовики, тягачи, спецтехника, компоненты, эксплуатация, логистика и отраслевые выставки России.",
+    hostAliases: ["gruzovikpress.ru"],
+  },
+  {
+    id: "reis-trucks",
+    name: "Рейс · Грузовики",
+    url: "https://reis.zr.ru/articles/avtomobili/gruzoviki/",
+    market: "Россия",
+    language: "ru",
+    sourceType: "media",
+    priority: 84,
+    focus: ["truck", "technology", "trade"],
+    maxCandidates: 3,
+    enabledByDefault: true,
+    note: "Новости и практическая аналитика грузового транспорта, тягачей и российского коммерческого рынка.",
+  },
+  {
     id: "china-daily-motoring",
     name: "China Daily Motoring",
     url: "https://global.chinadaily.com.cn/business/5c2336fea310d91214051089",
@@ -275,7 +355,7 @@ export const newsWebsiteSources: readonly NewsWebsiteSource[] = Object.freeze([
     focus: ["auto", "ev", "economy"],
     maxCandidates: 2,
     enabledByDefault: false,
-    note: "Резервный источник: часть материалов повторяет агентские публикации, поэтому по умолчанию выключен.",
+    note: "Резервный источник: часть материалов повторяет агентские/официальные публикации.",
   },
   {
     id: "caixin-global",
@@ -301,7 +381,7 @@ export const newsWebsiteSources: readonly NewsWebsiteSource[] = Object.freeze([
     focus: ["trade", "economy"],
     maxCandidates: 1,
     enabledByDefault: false,
-    note: "Официальная внешнеторговая статистика; оставлена как data-source candidate, а не новостная лента.",
+    note: "Официальная внешнеторговая статистика; data-source candidate, а не оперативная новостная лента.",
   },
 ]);
 
@@ -312,7 +392,7 @@ const sourcePriorities = new Map(newsWebsiteSources.map((source) => [source.name
 export function priorityForNewsItem(item: Pick<NewsItem, "source" | "sourceType">) {
   const configured = sourcePriorities.get(item.source);
   if (configured != null) return configured;
-  if (item.source === "АВТОСТАТ") return 84;
+  if (item.source === "АВТОСТАТ") return 90;
   if (item.sourceType === "official") return 95;
   if (item.sourceType === "media") return 72;
   return 55;
