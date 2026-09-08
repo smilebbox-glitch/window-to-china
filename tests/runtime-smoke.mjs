@@ -69,6 +69,23 @@ test("runtime news endpoint is using v1.7.1 source catalog", async () => {
   assert.ok(Number.isInteger(payload.deduplicatedCount) && payload.deduplicatedCount >= 0);
 });
 
+test("runtime v1.7.4 pilot operations endpoint exposes trust state", async () => {
+  const response = await request("/api/pilot/operations", "application/json");
+  assert.equal(response.status, 200);
+  assert.match(response.headers.get("content-type") ?? "", /^application\/json\b/i);
+  const payload = await response.json();
+  assert.ok(["GO", "NO_GO"].includes(payload.decision));
+  assert.ok(["GO", "DEGRADED", "STALE"].includes(payload.briefStatus));
+  assert.equal(typeof payload.executiveMinimumRole, "string");
+  assert.equal(typeof payload.aggregate?.available, "boolean");
+  assert.equal(typeof payload.sources?.fresh, "number");
+  assert.equal(typeof payload.sources?.stale, "number");
+  assert.equal(typeof payload.sources?.error, "number");
+  assert.equal(typeof payload.sla?.maxAgeSeconds, "number");
+  assert.equal(typeof payload.sla?.minQuality, "number");
+  assert.ok(Array.isArray(payload.reasons));
+});
+
 test("runtime legacy user preferences remain available", async () => {
   const response = await request("/api/user/preferences", "application/json");
   assert.equal(response.status, 200);
