@@ -98,14 +98,14 @@ test("runtime v1.7.5 membership endpoint is available to participant context", a
   assert.ok(payload.member === null || typeof payload.member === "object");
 });
 
-test("runtime corporate pilot KPI report is not exposed to anonymous viewer", async () => {
+test("runtime corporate pilot KPI report is not exposed to unauthenticated viewer", async () => {
   const response = await request("/api/pilot/report?days=14", "application/json");
-  assert.equal(response.status, 403);
+  assert.equal(response.status, 401);
 });
 
-test("runtime cohort register is not exposed to anonymous viewer", async () => {
+test("runtime cohort register is not exposed to unauthenticated viewer", async () => {
   const response = await request("/api/pilot/cohort", "application/json");
-  assert.equal(response.status, 403);
+  assert.equal(response.status, 401);
 });
 
 test("runtime legacy user preferences remain available", async () => {
