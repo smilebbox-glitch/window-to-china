@@ -1,0 +1,25 @@
+name: Dependency lock refresh preview
+
+on:
+  push:
+    branches:
+      - feature/v1.7.9-source-reliability-hardening
+
+permissions:
+  contents: read
+
+jobs:
+  next-lock-preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.13.0'
+      - name: Generate lock update for patched Next
+        run: npm install --package-lock-only --save-exact next@16.3.4
+      - name: Show deterministic dependency diff
+        run: git diff -- package.json package-lock.json
+      - name: Verify production high-severity audit after refresh
+        run: npm audit --audit-level=high --omit=dev
