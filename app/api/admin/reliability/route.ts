@@ -1,8 +1,8 @@
 import { authorize } from "@/lib/auth";
 import { contentCounts } from "@/lib/content-store";
 import { governancePolicy, schedulerLockStatus, sourceSlaStatus } from "@/lib/governance";
-import { migrationStatus } from "@/lib/pilot-db";
-import { pilotDbStatus } from "@/lib/pilot-db";
+import { migrationStatus, pilotDbStatus } from "@/lib/pilot-db";
+import { pilotOperationsStatus } from "@/lib/pilot-operations";
 import { checkRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
 import { createRequestContext, jsonWithContext } from "@/lib/request-context";
 import { sourceReliabilitySummary } from "@/lib/source-cache";
@@ -22,6 +22,7 @@ export async function GET(request: Request) {
   const serviceLevel = expired ? "DEGRADED" : stale ? "STALE" : reliability.snapshots.length ? "HEALTHY" : "WARMING_UP";
   return jsonWithContext(context, {
     serviceLevel,
+    pilotOperations: pilotOperationsStatus(),
     database: pilotDbStatus(),
     scheduler: { configured: Boolean(process.env.SCHEDULER_TOKEN?.trim()), intervalSeconds: Number(process.env.SCHEDULER_INTERVAL_SECONDS || 300), locks: schedulerLockStatus() },
     governance: { policy: governancePolicy(), migrations: migrationStatus(), sla: sourceSlaStatus() },
