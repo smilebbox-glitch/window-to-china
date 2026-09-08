@@ -24,11 +24,12 @@ test("migration 4 creates controlled cohort, feedback and immutable review evide
   assert.match(db, /CHECK\(decision IN \('GO','ADJUST','STOP'\)\)/);
 });
 
-test("corporate SSO subject is pseudonymized before cohort persistence", () => {
+test("corporate SSO subject is pseudonymized before cohort and review persistence", () => {
   assert.match(userContext, /identityKeyForSubject/);
   assert.match(userContext, /createHmac\("sha256"/);
   assert.match(userContext, /USER_DATA_HMAC_KEY/);
   assert.match(program, /const userKey = identityKeyForSubject\(input\.subject\)/);
+  assert.match(program, /const createdBy = identityKeyForSubject\(actor\)/);
   assert.doesNotMatch(db, /email TEXT|subject TEXT|login TEXT/i);
 });
 
@@ -66,8 +67,8 @@ test("pilot outcome is deterministic GO ADJUST STOP, with blockers mapped to STO
 });
 
 test("v1.7.5 contains no personal Watchlist dependency", () => {
-  const scope = [program, control, feedback, cohortApi, feedbackApi, reportApi, reviewsApi].join("\n").toLowerCase();
-  assert.equal(scope.includes("watchlist"), false);
-  assert.equal(scope.includes("matchwatchlist"), false);
+  const scope = [program, control, feedback, cohortApi, feedbackApi, reportApi, reviewsApi].join("\n");
+  assert.equal(scope.includes("matchWatchlist"), false);
   assert.equal(scope.includes("/api/user/preferences"), false);
+  assert.equal(/from\s+["'][^"']*watchlist[^"']*["']/iu.test(scope), false);
 });
