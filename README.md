@@ -21,7 +21,8 @@
 - CNY ↔ RUB и вспомогательные travel/business данные;
 - **Pilot Operations** с `GO / DEGRADED / STALE` и формальным `GO / NO_GO`;
 - **Controlled Corporate Pilot** на 5–10 сотрудников с feedback, KPI и итогом `GO / ADJUST / STOP`;
-- IT/Admin Reliability console, SQLite persistence, backup, audit и source diagnostics.
+- IT/Admin Reliability console, SQLite persistence, backup, audit и source diagnostics;
+- отдельный **Corporate HTTPS + SSO** профиль: Nginx TLS → oauth2-proxy/OIDC → приложение в `AUTH_MODE=proxy`.
 
 ## Что нового в v1.7.9
 
@@ -34,13 +35,13 @@ v1.7.9 — актуальный hardening-релиз перед controlled corpo
 - HTTPS → HTTP redirect того же hostname не разрешает downgrade;
 - aggregate health оценивается по общей quality, а не становится `PARTIAL` из-за единичного best-effort source failure;
 - Pilot Operations использует явный порог деградации источников;
-- GitHub Actions проверяет production dependency audit, production build, полный pilot preflight, live Docker pilot, runtime tests и `pilot:go-no-go`.
+- GitHub Actions проверяет production build, test/preflight suite, live Docker pilot, runtime smoke и корпоративный HTTPS/SSO deployment contract.
 
-Подробности: `docs/SOURCE_RELIABILITY_v1.7.9.md` и `PILOT_START_v1.7.9.md`.
+Подробности: `docs/SOURCE_RELIABILITY_v1.7.9.md`, `PILOT_START_v1.7.9.md` и `docs/CORPORATE_HTTPS_SSO.md`.
 
 ## Быстрый запуск
 
-### Windows
+### Windows — локальный/LAN пилот
 
 Дважды нажмите:
 
@@ -50,13 +51,56 @@ START.bat
 
 Windows launcher автоматически подготавливает конфигурацию, запускает Docker pilot, проверяет health/readiness и показывает адрес для доступа из доверенной локальной сети. При конфликте порта используется свободный порт из разрешённого диапазона без остановки постороннего процесса.
 
+### Windows — корпоративный HTTPS + SSO
+
+После получения от IT внутреннего DNS-имени, OIDC-реквизитов и доверенного TLS-сертификата:
+
+```text
+START_CORPORATE_HTTPS.bat
+```
+
+Корпоративный launcher создаёт локальные runtime-секреты, выполняет preflight и запускает отдельный Compose-профиль. Если OIDC или TLS не настроены, запуск завершается `NO-GO` без небезопасного fallback.
+
+Шаблон конфигурации: `.env.corporate.example`.
+
+Проверка/остановка корпоративного профиля:
+
+```text
+STATUS_CORPORATE.bat
+STOP_CORPORATE.bat
+```
+
 ### Linux / macOS
 
 ```bash
 ./start.sh
 ```
 
-Для остановки и проверки состояния используются `STOP.bat` / `STATUS.bat` либо `./stop.sh` / `./status.sh`.
+Для остановки и проверки состояния локального/LAN-пилота используются `STOP.bat` / `STATUS.bat` либо `./stop.sh` / `./status.sh`.
+
+## Корпоративный периметр
+
+Рекомендуемая схема:
+
+```text
+Сотрудник
+  ↓ HTTPS
+Nginx / TLS
+  ↓ auth_request
+oauth2-proxy / корпоративный OIDC
+  ↓ trusted identity headers
+Окно в Китай (AUTH_MODE=proxy)
+```
+
+Приложение в корпоративном Compose-профиле не публикует свой Node-порт напрямую наружу. Identity headers формируются только доверенным reverse proxy и защищены `AUTH_PROXY_SECRET`.
+
+Группы RBAC по умолчанию:
+
+- `okno-china-admin` → `admin`;
+- `okno-china-editor` → `editor`;
+- остальные успешно аутентифицированные сотрудники → `viewer`.
+
+Фактические имена групп должны быть согласованы с корпоративным IT/IdP.
 
 ## Проверка Pilot Candidate
 
@@ -112,6 +156,8 @@ BASE_URL=http://127.0.0.1:3000 npm run pilot:functional:runtime
 - `GET /api/admin/reliability`
 - `GET /api/metrics`
 
+В корпоративном пользовательском ingress `/api/metrics` не публикуется наружу.
+
 ## Controlled corporate pilot
 
 Рекомендуемая Wave 1: **5–10 сотрудников** на 10 дней. Основные KPI по умолчанию:
@@ -124,7 +170,7 @@ BASE_URL=http://127.0.0.1:3000 npm run pilot:functional:runtime
 
 Pilot Control Room формирует итог `GO / ADJUST / STOP`.
 
-Для корпоративного режима через reverse proxy / SSO используйте `AUTH_MODE=proxy`, сильные pilot secrets и ограничения доступа согласно `PILOT_START_v1.7.9.md`.
+Для корпоративного режима используется `AUTH_MODE=proxy`, сильные локальные runtime-secrets, OIDC и TLS-периметр из `compose.corporate.yaml`.
 
 ## Данные и безопасность
 
@@ -134,10 +180,11 @@ Pilot Control Room формирует итог `GO / ADJUST / STOP`.
 - downgrade HTTPS → HTTP блокируется;
 - pilot telemetry предназначена для оценки продукта, а не сотрудников;
 - пользовательские идентификаторы в pilot-контуре псевдонимизируются;
-- нестабильные внешние источники не должны отключать общий новостной контур.
+- нестабильные внешние источники не должны отключать общий новостной контур;
+- `.env.corporate`, TLS private keys и локальные runtime-secrets не должны попадать в Git.
 
 ## Статус сборки
 
-Pilot v1.7.9 прошёл GitHub Actions на актуальном head: production dependency audit, build, полный test/preflight suite, live Docker pilot, runtime smoke и Pilot Go/No-Go.
+Актуальный `main` содержит Pilot v1.7.9 и корпоративный HTTPS/SSO deployment profile. Финальная One-click verification проверяет build/tests, корпоративный ingress/Compose contract, запуск Docker pilot, health/readiness, runtime smoke и PWA runtime.
 
-Физический запуск во внутренней сети компании остаётся отдельным Day 0 IT validation и не считается выполненным только по факту успешного CI.
+Физическое подключение к корпоративному IdP, внутреннему DNS и корпоративному CA остаётся отдельным Day 0 IT validation и не считается выполненным только по факту успешного CI.
