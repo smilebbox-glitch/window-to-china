@@ -23,7 +23,12 @@ const rateLimit = await readFile("lib/rate-limit.ts", "utf8");
 const requestContext = await readFile("lib/request-context.ts", "utf8");
 const backupLib = await readFile("lib/backup.ts", "utf8");
 
-check(packageJson.version === "1.6.1-pilot", "package version is v1.6.1 pilot");
+const pilotVersion = packageJson.version;
+const escapedVersion = String(pilotVersion).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+check(/^\d+\.\d+\.\d+-pilot$/.test(pilotVersion), "package version is a valid pilot version");
+check(new RegExp(`APP_VERSION=\\$\\{APP_VERSION:-${escapedVersion}\\}`).test(compose), "compose default APP_VERSION matches package version");
+check(env.includes(`APP_VERSION=${pilotVersion}`), "environment template APP_VERSION matches package version");
 check(await exists("app/api/admin/audit/route.ts"), "admin audit endpoint exists");
 check(await exists("app/api/admin/backup/route.ts"), "admin backup endpoint exists");
 check(await exists("app/api/admin/restore/route.ts"), "admin restore endpoint exists");
