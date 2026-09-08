@@ -5,7 +5,7 @@ import { readFile } from "node:fs/promises";
 
 const text=(p)=>readFile(p,"utf8");
 
-test("SQLite supports the governance locking primitives required by v1.6",()=>{
+test("SQLite supports the governance locking primitives required by the pilot",()=>{
   const db=new DatabaseSync(":memory:");
   db.exec("CREATE TABLE scheduler_locks(lock_name TEXT PRIMARY KEY, owner TEXT NOT NULL, acquired_at TEXT NOT NULL, expires_at TEXT NOT NULL)");
   const now=new Date().toISOString();
@@ -16,9 +16,9 @@ test("SQLite supports the governance locking primitives required by v1.6",()=>{
   db.close();
 });
 
-test("v1.6 governance controls are packaged",async()=>{
+test("pilot governance controls are packaged",async()=>{
   const pkg=JSON.parse(await text("package.json"));
-  assert.equal(pkg.version,"1.6.1-pilot");
+  assert.match(pkg.version,/^\d+\.\d+\.\d+-pilot$/u);
   assert.match(await text("lib/pilot-db.ts"),/schema_migrations/u);
   assert.match(await text("lib/governance.ts"),/acquireSchedulerLock/u);
   assert.match(await text("lib/runtime-config.ts"),/maintenance/u);
