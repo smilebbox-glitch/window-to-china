@@ -72,8 +72,9 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
       {children}
 
       <footer className="border-t border-white/8 bg-[#101114]">
-        <div className="mx-auto max-w-[1560px] px-4 py-6 text-xs font-semibold uppercase tracking-[0.14em] text-zinc-600 sm:px-6 lg:px-8">
-          Окно в Китай
+        <div className="mx-auto flex max-w-[1560px] flex-wrap items-center justify-between gap-3 px-4 py-6 text-xs font-semibold uppercase tracking-[0.14em] text-zinc-600 sm:px-6 lg:px-8">
+          <span>Окно в Китай</span>
+          <Link href="/pilot-feedback" className="text-zinc-500 transition-colors hover:text-white">Обратная связь пилота</Link>
         </div>
       </footer>
     </div>
