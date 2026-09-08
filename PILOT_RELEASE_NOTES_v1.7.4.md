@@ -77,6 +77,8 @@ npm run pilot:go-no-go
 
 Runtime smoke проверяет operational endpoint. `pilot:ops174` включён в общий `pilot:preflight`.
 
+Перед merge обязателен combined One-click verification: automated tests, production build, Docker startup, health/readiness, runtime smoke с `/executive` и `/api/pilot/operations`, status и controlled stop.
+
 ### Data / migration
 
 Новая DB migration не требуется. Используются существующие `source_snapshots`, `source_history` и governance SLA.
