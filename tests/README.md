@@ -35,7 +35,7 @@ The runtime smoke test verifies that the application is actually reachable and r
 - `/api/pilot/operations`
 - `/api/pilot/report`
 
-The notification runtime contract confirms that user preferences expose `notificationsEnabled`, `brands`, and `segments`, and that the notification endpoint returns a valid notification list and unread count. The shell contract also confirms that the approved notification center is present while other retired controls remain absent.
+The notification runtime coverage performs a real preference round-trip against the running Docker pilot: it enables notifications, saves **SHACMAN** and **Коммерческий транспорт** filters, reads them back using the same pseudonymous user cookie, verifies the notification endpoint, then disables the master switch and confirms the new state. The shell contract also confirms that the approved notification center is present while other retired controls remain absent.
 
 Set `BASE_URL` when testing a non-local deployment:
 
@@ -43,4 +43,4 @@ Set `BASE_URL` when testing a non-local deployment:
 BASE_URL=http://127.0.0.1:3000 npm run test:runtime
 ```
 
-A failed request, unexpected HTTP status, invalid response contract, or wrong content type makes the test fail and therefore makes the GitHub Actions check fail.
+A failed request, unexpected HTTP status, invalid response contract, failed preference persistence, or wrong content type makes the test fail and therefore makes the GitHub Actions check fail.
