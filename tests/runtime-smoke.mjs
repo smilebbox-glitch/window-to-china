@@ -6,11 +6,12 @@ const timeoutMs = Number(process.env.SMOKE_TIMEOUT_MS || 10_000);
 
 async function request(pathname, accept, timeout = timeoutMs, init = {}) {
   const url = new URL(pathname, baseUrl);
+  const { headers = {}, ...rest } = init;
   return fetch(url, {
-    headers: { accept, ...(init.headers || {}) },
+    ...rest,
+    headers: { accept, ...headers },
     redirect: "follow",
     signal: AbortSignal.timeout(timeout),
-    ...init,
   });
 }
 
@@ -24,6 +25,8 @@ const htmlRoutes = [
   "/calendar",
   "/travel-guide",
   "/trip-planner",
+  "/pilot-feedback",
+  "/pilot",
 ];
 
 for (const route of htmlRoutes) {
@@ -83,6 +86,44 @@ test("runtime v1.7.4 pilot operations endpoint exposes trust state", async () =>
   assert.equal(typeof payload.sources?.error, "number");
   assert.equal(typeof payload.sla?.maxAgeSeconds, "number");
   assert.equal(typeof payload.sla?.minQuality, "number");
+  assert.ok(Array.isArray(payload.reasons));
+});
+
+test("runtime v1.7.5 accepts pseudonymous controlled-pilot feedback", async () => {
+  const response = await request("/api/pilot/feedback", "application/json", 10_000, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      workFunction: "R&D",
+      rating: 5,
+      usefulness: 5,
+      savedMinutes: 15,
+      outcome: "saved_time",
+      section: "Грузовики",
+      comment: "runtime smoke feedback",
+    }),
+  });
+  assert.equal(response.status, 201, `/api/pilot/feedback returned HTTP ${response.status}`);
+  const payload = await response.json();
+  assert.equal(payload.ok, true);
+  assert.equal(typeof payload.feedback?.id, "string");
+});
+
+test("runtime v1.7.5 pilot report exposes GO ADJUST STOP KPI contract", async () => {
+  const response = await request("/api/pilot/report", "application/json");
+  assert.equal(response.status, 200, `/api/pilot/report returned HTTP ${response.status}`);
+  const payload = await response.json();
+  assert.ok(["GO", "ADJUST", "STOP"].includes(payload.outcome));
+  assert.equal(payload.policy?.targetMinUsers, 5);
+  assert.equal(payload.policy?.targetMaxUsers, 10);
+  assert.equal(typeof payload.cohort?.activeUsers, "number");
+  assert.equal(typeof payload.cohort?.repeatPct, "number");
+  assert.ok(Array.isArray(payload.cohort?.participants));
+  assert.ok(payload.cohort.participants.every((entry) => /^P-[A-F0-9]{6}$/u.test(entry.code)));
+  assert.ok(payload.feedback?.responses >= 1);
+  assert.equal(typeof payload.feedback?.savedMinutes, "number");
+  assert.equal(typeof payload.issues?.openBySeverity?.S1, "number");
+  assert.equal(typeof payload.issues?.openBySeverity?.S2, "number");
   assert.ok(Array.isArray(payload.reasons));
 });
 
