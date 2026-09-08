@@ -28,6 +28,7 @@ const htmlRoutes = [
   "/trip-planner",
   "/pilot-feedback",
   "/pilot",
+  "/search?q=SHACMAN",
 ];
 
 for (const route of htmlRoutes) {
@@ -50,6 +51,25 @@ test("runtime corporate home exposes approved v1.7.6 copy and no retired widgets
   for (const retired of ["Решения на сегодня", "Что взять с собой", "Ключевые темы", "Популярные разделы", "Смотреть новости"]) {
     assert.equal(body.includes(retired), false, retired);
   }
+});
+
+test("runtime simplified shell hides retired controls and keeps the pilot notice", async () => {
+  const response = await request("/", "text/html");
+  assert.equal(response.status, 200);
+  const body = await response.text();
+  for (const retired of ["Решения", "Руководство", "Язык интерфейса", "Уведомления", ">Сервис<"]) {
+    assert.equal(body.includes(retired), false, `retired shell control is visible: ${retired}`);
+  }
+  assert.match(body, /В тестовом режиме\. Данные могут быть неполны\./u);
+});
+
+test("runtime global search page renders the working search surface", async () => {
+  const response = await request("/search?q=SHACMAN", "text/html");
+  assert.equal(response.status, 200);
+  const body = await response.text();
+  assert.match(body, /Найдите нужную информацию/u);
+  assert.match(body, /Поиск по сервису/u);
+  assert.match(body, /SHACMAN/u);
 });
 
 test("runtime health endpoint is healthy", async () => {
