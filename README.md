@@ -7,6 +7,7 @@
 ## Что есть в продукте
 
 - свежая новостная лента с приоритетным мониторингом **SHACMAN, GWM, EVOLUTE, VOYAH, Моторинвест, ЭВИА** и отрасли;
+- у live-новостей отдельно отображаются **точные дата и время первого получения сервисом** и дата/время публикации источником (МСК);
 - типизированный каталог китайских и российских источников;
 - автоматическая дедупликация похожих материалов и fresh-first выдача;
 - перевод китайских материалов на русский с контролем нагрузки и retry/cooldown;
@@ -24,6 +25,19 @@
 - IT/Admin Reliability console, SQLite persistence, backup, audit и source diagnostics;
 - отдельный **Corporate HTTPS + SSO** профиль: Nginx TLS → oauth2-proxy/OIDC → приложение в `AUTH_MODE=proxy`.
 
+## Время новости: публикация и получение
+
+В новостной карточке теперь разделены два времени:
+
+- **Получено** — момент, когда live-материал впервые был принят текущим контуром «Окна в Китай»; значение сохраняется при последующих обновлениях того же материала в source snapshot;
+- **Опубликовано** — timestamp, который пришёл из первоисточника.
+
+Оба значения отображаются в формате `дата, ЧЧ:ММ МСК`. Для встроенной резервной seed-ленты историческое время получения намеренно не выдумывается: если live timestamp недоступен, интерфейс показывает `Получено: нет данных`.
+
+Чтобы после внедрения timestamp-схемы не использовать старый кэш без поля получения, версия каталога news-cache повышена до `5`. Повторные live-refresh того же материала сохраняют уже зафиксированное `receivedAt` по идентификатору или canonical URL.
+
+Regression-контракт: `tests/news-received-time-v179.test.mjs`.
+
 ## Что нового в v1.7.9
 
 v1.7.9 — актуальный hardening-релиз перед controlled corporate pilot:
@@ -35,6 +49,7 @@ v1.7.9 — актуальный hardening-релиз перед controlled corpo
 - HTTPS → HTTP redirect того же hostname не разрешает downgrade;
 - aggregate health оценивается по общей quality, а не становится `PARTIAL` из-за единичного best-effort source failure;
 - Pilot Operations использует явный порог деградации источников;
+- новостная лента различает timestamp публикации и точное время получения live-материала сервисом;
 - GitHub Actions проверяет production build, test/preflight suite, live Docker pilot, runtime smoke и корпоративный HTTPS/SSO deployment contract.
 
 Подробности: `docs/SOURCE_RELIABILITY_v1.7.9.md`, `PILOT_START_v1.7.9.md` и `docs/CORPORATE_HTTPS_SSO.md`.
@@ -129,6 +144,8 @@ npm run pilot:functional
 BASE_URL=http://127.0.0.1:3000 npm run pilot:functional:runtime
 ```
 
+Полный `npm test` автоматически включает `tests/news-received-time-v179.test.mjs`, поэтому timestamp-регрессия проверяется в GitHub Actions при изменениях `app/**`, `components/**`, `lib/**` или `tests/**`.
+
 ## Ключевые маршруты
 
 - `/` — Главная;
@@ -155,6 +172,8 @@ BASE_URL=http://127.0.0.1:3000 npm run pilot:functional:runtime
 - `POST /api/pilot/feedback`
 - `GET /api/admin/reliability`
 - `GET /api/metrics`
+
+`GET /api/news` для live-материалов возвращает `receivedAt` наряду с `publishedAt`.
 
 В корпоративном пользовательском ingress `/api/metrics` не публикуется наружу.
 
@@ -185,6 +204,6 @@ Pilot Control Room формирует итог `GO / ADJUST / STOP`.
 
 ## Статус сборки
 
-Актуальный `main` содержит Pilot v1.7.9 и корпоративный HTTPS/SSO deployment profile. Финальная One-click verification проверяет build/tests, корпоративный ingress/Compose contract, запуск Docker pilot, health/readiness, runtime smoke и PWA runtime.
+Актуальный `main` содержит Pilot v1.7.9, точное время получения live-новостей и корпоративный HTTPS/SSO deployment profile. Финальная One-click verification проверяет build/tests, корпоративный ingress/Compose contract, запуск Docker pilot, health/readiness, runtime smoke и PWA runtime.
 
 Физическое подключение к корпоративному IdP, внутреннему DNS и корпоративному CA остаётся отдельным Day 0 IT validation и не считается выполненным только по факту успешного CI.
