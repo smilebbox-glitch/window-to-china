@@ -21,6 +21,13 @@
 .DS_Store
 *.pem
 
+# Corporate TLS material must never be committed.
+deploy/tls/*.crt
+deploy/tls/*.key
+deploy/tls/*.p12
+deploy/tls/*.pfx
+!deploy/tls/README.md
+
 # debug
 npm-debug.log*
 yarn-debug.log*
