@@ -17,7 +17,9 @@ import { getSourceSnapshot, recordSourceRun, saveSourceSnapshot } from "@/lib/so
 
 export const dynamic = "force-dynamic";
 
-const NEWS_SOURCE_CATALOG_VERSION = 4;
+type NewsWithReceipt = NewsItem & { receivedAt?: string };
+
+const NEWS_SOURCE_CATALOG_VERSION = 5;
 const sourceNames = new Map(sourceChannels.map((source) => [source.handle, source.name]));
 
 const brandPatterns: Array<[Brand, RegExp]> = [
@@ -124,6 +126,16 @@ function canonicalUrl(value: string) {
   } catch {
     return normalized;
   }
+}
+
+function withReceivedAt(items: NewsItem[], previousItems: NewsWithReceipt[], receivedAt = new Date().toISOString()): NewsWithReceipt[] {
+  const previousById = new Map(previousItems.map((item) => [item.id, item]));
+  const previousByUrl = new Map(previousItems.map((item) => [canonicalUrl(item.url), item]));
+  return items.map((item) => {
+    const previous = previousById.get(item.id) ?? previousByUrl.get(canonicalUrl(item.url));
+    const previousReceivedAt = previous?.receivedAt && Number.isFinite(Date.parse(previous.receivedAt)) ? previous.receivedAt : undefined;
+    return { ...item, receivedAt: previousReceivedAt ?? receivedAt };
+  });
 }
 
 async function fetchText(url: string, requestSignal?: AbortSignal) {
@@ -410,7 +422,7 @@ function likelySameStory(left: NewsItem, right: NewsItem) {
   return score.common >= 3 && (score.jaccard >= 0.68 || score.containment >= 0.82);
 }
 
-function deduplicateNews(items: NewsItem[]) {
+function deduplicateNews<T extends NewsItem>(items: T[]): T[] {
   const candidates = [...items].sort((left, right) => {
     const priority = priorityForNewsItem(right) - priorityForNewsItem(left);
     if (priority) return priority;
@@ -418,7 +430,7 @@ function deduplicateNews(items: NewsItem[]) {
     if (live) return live;
     return Date.parse(right.publishedAt) - Date.parse(left.publishedAt);
   });
-  const accepted: NewsItem[] = [];
+  const accepted: T[] = [];
   const urls = new Set<string>();
   for (const item of candidates) {
     const canonical = canonicalUrl(item.url);
@@ -446,14 +458,15 @@ function withDeadline<T>(promise: Promise<T>, timeoutMs = Number(process.env.NEW
 }
 
 type NewsJob = { key: string; run: () => Promise<NewsItem[]> };
-type JobResult = { key: string; state: "live" | "stale" | "empty" | "error"; items: NewsItem[]; latencyMs: number; error?: string };
+type JobResult = { key: string; state: "live" | "stale" | "empty" | "error"; items: NewsWithReceipt[]; latencyMs: number; error?: string };
 
 async function executeJob(job: NewsJob): Promise<JobResult> {
   const started = Date.now();
   const cacheKey = `news:source:v${NEWS_SOURCE_CATALOG_VERSION}:${job.key}`;
-  const previous = getSourceSnapshot<NewsItem[]>(cacheKey);
+  const previous = getSourceSnapshot<NewsWithReceipt[]>(cacheKey);
   try {
-    const fetched = (await withDeadline(job.run())).filter(withinFreshnessWindow);
+    const rawFetched = (await withDeadline(job.run())).filter(withinFreshnessWindow);
+    const fetched = withReceivedAt(rawFetched, previous?.payload ?? []);
     if (!fetched.length && previous && previous.state !== "expired" && previous.payload.length) {
       recordSourceRun({ sourceKey: job.key, status: "empty-stale-fallback", qualityScore: 45, itemCount: 0, latencyMs: Date.now() - started });
       return { key: job.key, state: "stale", items: previous.payload.map((item) => ({ ...item, live: false })), latencyMs: Date.now() - started };
@@ -484,7 +497,7 @@ async function runWithConcurrency(jobs: NewsJob[], concurrency: number) {
 }
 
 type NewsPayload = {
-  news: NewsItem[];
+  news: NewsWithReceipt[];
   updatedAt: string;
   sourceCount: number;
   totalSources: number;
