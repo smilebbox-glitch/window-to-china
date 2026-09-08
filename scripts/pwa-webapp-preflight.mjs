@@ -55,4 +55,9 @@ const nextConfig = read("next.config.ts");
 assert.match(nextConfig, /Service-Worker-Allowed/);
 assert.match(nextConfig, /no-cache, no-store, must-revalidate/);
 
+const siteShell = read("components/site-shell.tsx");
+assert.match(siteShell, /corporate-mobile-nav/);
+assert.match(siteShell, /mobileNavigation/);
+assert.match(siteShell, /aria-label="Мобильная навигация"/);
+
 console.log("PASS: Web App + PWA contract is installable on secure origins and never caches intelligence APIs");

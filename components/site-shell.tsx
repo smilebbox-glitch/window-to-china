@@ -41,6 +41,8 @@ const serviceNavigation = [
   { href: "/admin", label: "Администрирование", icon: Settings },
 ] as const;
 
+const mobileNavigation = [...navigation, ...serviceNavigation] as const;
+
 function isActive(pathname: string, href: string) {
   if (href === "/") return pathname === "/";
   return pathname === href || pathname.startsWith(`${href}/`);
@@ -60,12 +62,12 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="corporate-app min-h-screen bg-[#f5f9fd] text-[#0b1d4b]">
       <header className="corporate-topbar sticky top-0 z-50 border-b border-[#dbe7f3] bg-white/95 backdrop-blur-xl">
-        <div className="flex h-[68px] items-center gap-4 px-4 md:px-6">
+        <div className="flex h-[68px] items-center gap-3 px-4 md:gap-4 md:px-6">
           <Link href="/" className="flex min-w-0 shrink-0 items-center gap-3" aria-label="Окно в Китай — главная">
             <span className="corporate-mark" aria-hidden="true"><i /><i /><i /></span>
-            <span className="hidden min-w-0 sm:block">
-              <span className="block truncate text-[21px] font-black tracking-[-0.035em] text-[#0a1d54]">Окно в Китай</span>
-              <span className="block text-[8px] font-bold uppercase tracking-[0.2em] text-[#6e86a5]">Автопром. Рынки. Возможности.</span>
+            <span className="min-w-0">
+              <span className="block truncate text-[17px] font-black tracking-[-0.035em] text-[#0a1d54] sm:text-[21px]">Окно в Китай</span>
+              <span className="hidden text-[8px] font-bold uppercase tracking-[0.2em] text-[#6e86a5] sm:block">Автопром. Рынки. Возможности.</span>
             </span>
           </Link>
 
@@ -99,6 +101,30 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
           </div>
         </div>
       </header>
+
+      <nav
+        className="corporate-mobile-nav sticky top-[68px] z-40 flex gap-1 overflow-x-auto border-b border-[#dce8f3] bg-white/95 px-3 py-2 backdrop-blur-xl lg:hidden"
+        aria-label="Мобильная навигация"
+      >
+        {mobileNavigation.map((item) => {
+          const Icon = item.icon;
+          const active = isActive(pathname, item.href);
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={`flex shrink-0 items-center gap-1.5 rounded-xl px-3 py-2 text-[11px] font-bold transition ${
+                active
+                  ? "bg-[#eaf4ff] text-[#147efb]"
+                  : "text-[#496784] hover:bg-[#f1f6fb] hover:text-[#173368]"
+              }`}
+            >
+              <Icon className="size-4" />
+              <span>{item.label}</span>
+            </Link>
+          );
+        })}
+      </nav>
 
       <div className="corporate-layout grid min-h-[calc(100vh-68px)] lg:grid-cols-[208px_minmax(0,1fr)]">
         <aside className="corporate-sidebar hidden border-r border-[#dce8f3] bg-white lg:flex lg:flex-col">
