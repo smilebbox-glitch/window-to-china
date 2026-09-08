@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { CorporatePageFrame, CorporatePageHero } from "@/components/corporate-page-hero";
 import { NewsDashboardLive } from "@/components/news-dashboard-live";
 
 export const metadata: Metadata = {
@@ -7,5 +8,16 @@ export const metadata: Metadata = {
 };
 
 export default function NewsPage() {
-  return <NewsDashboardLive />;
+  return (
+    <CorporatePageFrame className="corporate-page-news">
+      <CorporatePageHero
+        variant="home"
+        kicker="Новости"
+        title={<>Автопром Китая и России — без информационного шума</>}
+        subtitle="Свежие материалы из официальных, отраслевых и специализированных источников с переводом, дедупликацией и корпоративным приоритетом."
+        tagline={<>Проверенные источники.<br />Одна понятная лента.</>}
+      />
+      <NewsDashboardLive />
+    </CorporatePageFrame>
+  );
 }
