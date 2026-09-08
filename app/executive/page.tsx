@@ -1,5 +1,6 @@
 import { headers } from "next/headers";
 import { ExecutiveBrief } from "@/components/executive-brief";
+import { ExecutiveOperationsPanel } from "@/components/executive-operations-panel";
 import { hasRole, resolvePrincipal } from "@/lib/auth";
 import { executiveMinimumRole } from "@/lib/pilot-operations";
 
@@ -27,5 +28,10 @@ export default async function ExecutivePage() {
     );
   }
 
-  return <ExecutiveBrief />;
+  return (
+    <>
+      <ExecutiveOperationsPanel />
+      <ExecutiveBrief />
+    </>
+  );
 }
