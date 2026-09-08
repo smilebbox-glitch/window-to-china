@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import type { NewsItem } from "@/lib/data";
 import { rankNews, type RankedNewsItem } from "@/lib/intelligence-ranking";
+import { SourceTrustBadge } from "@/components/source-trust-badge";
 import {
   decisionMarketMetrics,
   marketDataMethodology,
@@ -27,7 +28,6 @@ import {
 const number = new Intl.NumberFormat("ru-RU");
 
 type NewsResponse = { news: NewsItem[]; errors?: string[]; updatedAt?: string };
-
 type Status = "live" | "partial" | "offline";
 
 export function DecisionCockpit() {
@@ -169,7 +169,7 @@ function SignalRow({ item }: { item: RankedNewsItem }) {
         <div className="flex flex-wrap gap-2 text-[11px] font-bold uppercase tracking-[0.08em] text-zinc-500"><span>{item.market}</span><span>·</span><span>{item.brand}</span>{item.commercialVehicle && <><span>·</span><span>{item.commercialVehicle.segment}</span></>}</div>
         <a href={item.url} target="_blank" rel="noopener noreferrer" className="mt-2 block text-lg font-black leading-6 hover:text-[#285fff]">{item.title}</a>
         <p className="mt-2 text-sm leading-6 text-zinc-600">{item.summary}</p>
-        <p className="mt-3 text-xs text-zinc-400">{item.source} · {new Date(item.publishedAt).toLocaleDateString("ru-RU")}</p>
+        <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-zinc-400"><span className="font-semibold text-zinc-600">{item.source}</span><SourceTrustBadge sourceType={item.sourceType} compact /><span>·</span><span>{new Date(item.publishedAt).toLocaleDateString("ru-RU")}</span></div>
       </div>
       <div className="space-y-3 text-xs leading-5">
         <div className="border border-zinc-200 bg-zinc-50 p-3"><p className="font-black uppercase tracking-[0.08em] text-zinc-500">Почему важно</p><p className="mt-1 text-zinc-700">{assessment.whyItMatters}</p></div>
