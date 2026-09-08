@@ -7,6 +7,8 @@ const sources = read("lib/news-sources.ts");
 const route = read("app/api/news/route.ts");
 const outbound = read("lib/outbound.ts");
 const page = read("app/page.tsx");
+const newsPage = read("app/news/page.tsx");
+const corporateHome = read("components/corporate-home.tsx");
 const liveDashboard = read("components/news-dashboard-live.tsx");
 const ranking = read("lib/intelligence-ranking.ts");
 const truckRadar = read("components/truck-radar.tsx");
@@ -59,9 +61,12 @@ for (const token of [
 check(route.includes("activeNewsWebsiteSources"), "active curated website catalog is not wired into news API");
 check(route.includes("sourceType: source.sourceType"), "source authority type is not preserved");
 check(route.includes("runtime.sources[\"news.chinaPortals\"]"), "backward-compatible runtime website toggle is not preserved");
-check(page.includes("NewsDashboardLive"), "home page is not using fresh-first dashboard entrypoint");
+check(page.includes("CorporateHome"), "home page is not using corporate live-data entrypoint");
+check(corporateHome.includes('fetch("/api/news"'), "corporate home is not connected to live news API");
+check(newsPage.includes("NewsDashboardLive"), "dedicated /news route is not using fresh-first dashboard entrypoint");
 check(liveDashboard.includes("seedNews.splice(0, seedNews.length)"), "legacy static seed stories can still be mixed into the live feed");
 check(shell.includes('href: "/trucks"'), "Truck Radar is missing from main navigation");
+check(shell.includes('href: "/news"'), "News route is missing from main navigation");
 check(truckRadar.includes("Грузовой радар"), "Truck Radar UI is missing");
 check(truckRadar.includes("Почему важно") && truckRadar.includes("Что проверить"), "Truck Radar lacks business impact/action blocks");
 check(analysisPage.includes("IntelligenceBrief"), "department intelligence ranking is not surfaced on analysis page");
@@ -72,4 +77,4 @@ if (failures.length) {
   process.exit(1);
 }
 
-console.log(`GO: v1.7.5 intelligence pipeline; curatedSources=${ids.length}; uniqueUrls=${urls.length}; strategicFocus=6; truckRadar=on; departmentRanking=on; fuzzyDedup=on; perSourceFallback=on`);
+console.log(`GO: v1.7.5 intelligence pipeline; curatedSources=${ids.length}; uniqueUrls=${urls.length}; strategicFocus=6; truckRadar=on; departmentRanking=on; freshNewsRoute=on; fuzzyDedup=on; perSourceFallback=on`);
