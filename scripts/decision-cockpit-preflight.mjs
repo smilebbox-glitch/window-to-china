@@ -12,7 +12,8 @@ const shell = read("components/site-shell.tsx");
 const runtime = read("tests/runtime-smoke.mjs");
 
 check(route.includes("DecisionCockpit"), "Decision Cockpit route is missing");
-check(shell.includes('href: "/decision"'), "Decision Cockpit is missing from navigation");
+check(!shell.includes('href: "/decision"'), "Decision Cockpit must stay hidden from pilot navigation");
+check(!shell.includes('label: "Решения"'), "retired Решения navigation label returned");
 check(cockpit.includes("Corporate Decision Cockpit"), "corporate cockpit header is missing");
 check(cockpit.includes("корпоративный порог 45/100"), "company-wide score threshold is missing");
 check(cockpit.includes("Corporate Priority Feed"), "corporate priority feed is missing");
@@ -43,4 +44,4 @@ if (failures.length) {
   process.exit(1);
 }
 
-console.log(`GO: v1.7.2 Corporate Decision Cockpit; actualMarketMetrics=${actualCount}; forecastMetrics=${forecastCount}; personalWatchlist=off; runtimeSmoke=on`);
+console.log(`GO: v1.7.2 Corporate Decision Cockpit; actualMarketMetrics=${actualCount}; forecastMetrics=${forecastCount}; navigation=hidden; personalWatchlist=off; runtimeSmoke=on`);
