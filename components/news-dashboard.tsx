@@ -19,8 +19,9 @@ type Topic = "Стратегия" | "Геополитика" | "Локализа
 type TopicFilter = "Все темы" | Topic;
 type MarketFilter = "Все рынки" | Market;
 type QuickView = "none" | "critical" | "strategic" | "focus";
-type RatedNews = NewsItem & { score: number; priority: Priority; topics: Topic[]; focusEntities: FocusEntity[] };
-type LiveResponse = { news: NewsItem[]; sourceCount: number; totalSources: number; errors: string[] };
+type NewsWithReceipt = NewsItem & { receivedAt?: string };
+type RatedNews = NewsWithReceipt & { score: number; priority: Priority; topics: Topic[]; focusEntities: FocusEntity[] };
+type LiveResponse = { news: NewsWithReceipt[]; sourceCount: number; totalSources: number; errors: string[] };
 
 const filters: Filter[] = ["Все", "В фокусе", ...focusEntities, "Отрасль"];
 const priorities: PriorityFilter[] = ["Все уровни", "Критично", "Высокая", "Средняя", "Фоновая"];
@@ -34,9 +35,17 @@ const patterns: Array<{ topic: Topic; pattern: RegExp; weight: number }> = [
   { topic: "Продажи", pattern: /продаж|рынок|спрос|цена|доля|регистрац|статист|sales|销量|市场|价格/iu, weight: 14 },
   { topic: "Технологии", pattern: /технолог|батаре|электро|гибрид|двигател|трансмисс|автопилот|безопасност|technology|电池|智能驾驶|新能源/iu, weight: 10 },
 ];
-const dateFormatter = new Intl.DateTimeFormat("ru-RU", { day: "2-digit", month: "short", year: "numeric", timeZone: "Europe/Moscow" });
+const dateTimeFormatter = new Intl.DateTimeFormat("ru-RU", {
+  day: "2-digit",
+  month: "short",
+  year: "numeric",
+  hour: "2-digit",
+  minute: "2-digit",
+  hour12: false,
+  timeZone: "Europe/Moscow",
+});
 
-function formatDate(value: string) { return dateFormatter.format(new Date(value)).replace(" г.", ""); }
+function formatDateTime(value: string) { return `${dateTimeFormatter.format(new Date(value)).replace(" г.", "")} МСК`; }
 function compactSummary(value: string, title: string) {
   const clean = value.replace(/\s+/gu, " ").trim();
   const titleWords = new Set(title.toLocaleLowerCase("ru-RU").match(/[\p{L}\p{N}]{4,}/gu) ?? []);
@@ -50,12 +59,12 @@ function compactSummary(value: string, title: string) {
   const shortened = withoutDots.slice(0, 166).replace(/\s+\S*$/u, "").replace(/[,:;–—-]+$/u, "").trim();
   return `${shortened}.`;
 }
-function mergeNews(live: NewsItem[]) {
-  const merged = new Map<string, NewsItem>();
-  for (const item of [...seedNews, ...live]) if (!merged.has(item.url)) merged.set(item.url, item);
+function mergeNews(live: NewsWithReceipt[]) {
+  const merged = new Map<string, NewsWithReceipt>();
+  for (const item of [...live, ...seedNews]) if (!merged.has(item.url)) merged.set(item.url, item);
   return [...merged.values()];
 }
-function rateNews(item: NewsItem): RatedNews {
+function rateNews(item: NewsWithReceipt): RatedNews {
   const text = `${item.title} ${item.summary} ${item.originalTitle ?? ""}`;
   const detectedTopics = patterns.filter((entry) => entry.pattern.test(text));
   const entities = detectFocusEntities(item);
@@ -87,7 +96,7 @@ export function NewsDashboard() {
   const [marketFilter, setMarketFilter] = useState<MarketFilter>("Все рынки");
   const [quickView, setQuickView] = useState<QuickView>("none");
   const [query, setQuery] = useState("");
-  const [news, setNews] = useState<NewsItem[]>(seedNews);
+  const [news, setNews] = useState<NewsWithReceipt[]>(seedNews);
   const [status, setStatus] = useState<"loading" | "live" | "partial" | "offline">("loading");
 
   const loadLiveNews = useCallback(async () => {
@@ -164,7 +173,7 @@ function FilterSelect({ value, values, onChange }: { value: string; values: read
   return <Select value={value} onValueChange={onChange}><SelectTrigger className="h-11 w-full cursor-pointer rounded-none border-zinc-300 bg-white text-zinc-950 hover:bg-zinc-50"><SelectValue /></SelectTrigger><SelectContent>{values.map((item) => <SelectItem key={item} value={item}>{item}</SelectItem>)}</SelectContent></Select>;
 }
 function NewsRow({ item, index }: { item: RatedNews; index: number }) {
-  return <article className="group grid gap-4 p-5 transition-colors hover:bg-zinc-50 sm:grid-cols-[56px_minmax(0,1fr)_190px] sm:p-6"><div><span className="font-mono text-xs font-bold text-zinc-400">{String(index + 1).padStart(2, "0")}</span><div className="mt-3 h-0.5 w-8 bg-[#285fff]" /></div><div className="min-w-0"><div className="mb-3 flex flex-wrap items-center gap-2"><Badge variant="outline" className={priorityClass(item.priority)}>{item.priority}</Badge>{item.focusEntities.length ? item.focusEntities.map((entity) => <Badge key={entity} variant="outline" className={focusClass(entity)}>{entity}</Badge>) : <Badge variant="outline" className="border-zinc-300 bg-white text-zinc-600">Отрасль</Badge>}{item.topics.slice(0, 2).map((topic) => <span key={topic} className="text-xs font-medium text-zinc-500">#{topic.toLocaleLowerCase("ru-RU")}</span>)}{item.translated && <span className="inline-flex items-center gap-1 text-xs text-violet-700"><Languages className="size-3.5" /> ZH → RU</span>}</div><h2 className="max-w-4xl text-lg font-bold leading-7 text-zinc-950 group-hover:text-[#1f4ed8]">{item.title}</h2><p className="mt-2 max-w-4xl text-[15px] leading-6 text-zinc-600">{compactSummary(item.summary, item.title)}</p>{item.originalTitle && <p className="mt-3 line-clamp-2 border-l-2 border-violet-300 pl-3 text-sm leading-6 text-zinc-500">{item.originalTitle}</p>}</div><div className="flex items-end justify-between gap-4 sm:flex-col sm:items-end"><div className="text-left text-xs sm:text-right"><div className="flex flex-col items-start gap-1.5 sm:items-end"><p className="font-semibold text-zinc-800">{item.source}</p><SourceTrustBadge sourceType={item.sourceType} /></div><p className="mt-2 inline-flex items-center gap-1 text-zinc-500"><Clock3 className="size-3" /> {formatDate(item.publishedAt)}</p><p className="mt-1 text-zinc-400">{item.market}</p></div><div className="flex flex-wrap justify-end gap-2"><FavoriteButton item={{ itemType: "news", itemId: item.id, title: item.title, url: item.url, metadata: { brand: item.brand, focusEntities: item.focusEntities, market: item.market, source: item.source, sourceType: item.sourceType } }} className="rounded-none border-zinc-300 bg-white text-zinc-700 hover:bg-zinc-100" /><a href={item.url} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-10 cursor-pointer items-center gap-1.5 px-1 text-sm font-bold text-[#1f4ed8] hover:text-[#111216] focus-visible:ring-2 focus-visible:ring-[#285fff]">Первоисточник <ArrowUpRight className="size-4" /></a></div></div></article>;
+  return <article className="group grid gap-4 p-5 transition-colors hover:bg-zinc-50 sm:grid-cols-[56px_minmax(0,1fr)_190px] sm:p-6"><div><span className="font-mono text-xs font-bold text-zinc-400">{String(index + 1).padStart(2, "0")}</span><div className="mt-3 h-0.5 w-8 bg-[#285fff]" /></div><div className="min-w-0"><div className="mb-3 flex flex-wrap items-center gap-2"><Badge variant="outline" className={priorityClass(item.priority)}>{item.priority}</Badge>{item.focusEntities.length ? item.focusEntities.map((entity) => <Badge key={entity} variant="outline" className={focusClass(entity)}>{entity}</Badge>) : <Badge variant="outline" className="border-zinc-300 bg-white text-zinc-600">Отрасль</Badge>}{item.topics.slice(0, 2).map((topic) => <span key={topic} className="text-xs font-medium text-zinc-500">#{topic.toLocaleLowerCase("ru-RU")}</span>)}{item.translated && <span className="inline-flex items-center gap-1 text-xs text-violet-700"><Languages className="size-3.5" /> ZH → RU</span>}</div><h2 className="max-w-4xl text-lg font-bold leading-7 text-zinc-950 group-hover:text-[#1f4ed8]">{item.title}</h2><p className="mt-2 max-w-4xl text-[15px] leading-6 text-zinc-600">{compactSummary(item.summary, item.title)}</p>{item.originalTitle && <p className="mt-3 line-clamp-2 border-l-2 border-violet-300 pl-3 text-sm leading-6 text-zinc-500">{item.originalTitle}</p>}</div><div className="flex items-end justify-between gap-4 sm:flex-col sm:items-end"><div className="text-left text-xs sm:text-right"><div className="flex flex-col items-start gap-1.5 sm:items-end"><p className="font-semibold text-zinc-800">{item.source}</p><SourceTrustBadge sourceType={item.sourceType} /></div><p className="mt-2 inline-flex items-center gap-1 font-medium text-zinc-600" title="Время первого получения новости сервисом «Окно в Китай»"><Clock3 className="size-3" /> Получено: {item.receivedAt ? formatDateTime(item.receivedAt) : "нет данных"}</p><p className="mt-1 text-zinc-400">Опубликовано: {formatDateTime(item.publishedAt)}</p><p className="mt-1 text-zinc-400">{item.market}</p></div><div className="flex flex-wrap justify-end gap-2"><FavoriteButton item={{ itemType: "news", itemId: item.id, title: item.title, url: item.url, metadata: { brand: item.brand, focusEntities: item.focusEntities, market: item.market, source: item.source, sourceType: item.sourceType } }} className="rounded-none border-zinc-300 bg-white text-zinc-700 hover:bg-zinc-100" /><a href={item.url} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-10 cursor-pointer items-center gap-1.5 px-1 text-sm font-bold text-[#1f4ed8] hover:text-[#111216] focus-visible:ring-2 focus-visible:ring-[#285fff]">Первоисточник <ArrowUpRight className="size-4" /></a></div></div></article>;
 }
 function Metric({ label, value, detail, accent, active, onClick }: { label: string; value: number; detail: string; accent: "red" | "blue" | "orange"; active: boolean; onClick: () => void }) {
   const accents = { red: "border-t-red-600 hover:bg-red-50", blue: "border-t-[#285fff] hover:bg-blue-50", orange: "border-t-orange-500 hover:bg-orange-50" };
