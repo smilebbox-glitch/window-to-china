@@ -17,7 +17,7 @@
     "pilot:security": "node scripts/pilot-security-preflight.mjs",
     "pilot:operations": "node scripts/pilot-operations-preflight.mjs",
     "pilot:sbom": "node scripts/generate-sbom.mjs",
-    "pilot:preflight": "npm run pilot:security && npm run pilot:operations && npm run pilot:reliability && npm run pilot:governance && npm run pilot:business && npm run pilot:oneclick && npm run pilot:intelligence && npm run pilot:decision && npm run pilot:executive && npm run pilot:syntax && npm run pilot:sbom",
+    "pilot:preflight": "npm run pilot:security && npm run pilot:operations && npm run pilot:reliability && npm run pilot:governance && npm run pilot:business && npm run pilot:oneclick && npm run pilot:intelligence && npm run pilot:decision && npm run pilot:executive && npm run pilot:ops174 && npm run pilot:syntax && npm run pilot:sbom",
     "pilot:preflight:online": "npm run pilot:preflight && npm run pilot:audit-deps",
     "pilot:audit-deps": "npm audit --audit-level=high --omit=dev",
     "pilot:host": "bash scripts/host-preflight.sh",
@@ -31,7 +31,9 @@
     "pilot:oneclick": "node scripts/pilot-oneclick-preflight.mjs",
     "pilot:intelligence": "node scripts/news-intelligence-preflight.mjs",
     "pilot:decision": "node scripts/decision-cockpit-preflight.mjs",
-    "pilot:executive": "node scripts/executive-brief-preflight.mjs"
+    "pilot:executive": "node scripts/executive-brief-preflight.mjs",
+    "pilot:ops174": "node scripts/pilot-operations-v174-preflight.mjs",
+    "pilot:go-no-go": "node scripts/pilot-go-no-go.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",
