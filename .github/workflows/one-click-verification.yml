@@ -8,9 +8,12 @@ on:
       - '.github/workflows/one-click-verification.yml'
       - '.devcontainer/**'
       - '.env.example'
+      - '.env.corporate.example'
       - '.gitattributes'
       - 'Dockerfile'
       - 'compose.yaml'
+      - 'compose.corporate.yaml'
+      - 'deploy/**'
       - 'package.json'
       - 'package-lock.json'
       - 'next.config.*'
@@ -20,6 +23,9 @@ on:
       - 'public/**'
       - 'scripts/**'
       - 'tests/**'
+      - 'START_CORPORATE_HTTPS.bat'
+      - 'STATUS_CORPORATE.bat'
+      - 'STOP_CORPORATE.bat'
       - 'start.sh'
       - 'stop.sh'
       - 'status.sh'
@@ -29,9 +35,12 @@ on:
       - '.github/workflows/one-click-verification.yml'
       - '.devcontainer/**'
       - '.env.example'
+      - '.env.corporate.example'
       - '.gitattributes'
       - 'Dockerfile'
       - 'compose.yaml'
+      - 'compose.corporate.yaml'
+      - 'deploy/**'
       - 'package.json'
       - 'package-lock.json'
       - 'next.config.*'
@@ -41,6 +50,9 @@ on:
       - 'public/**'
       - 'scripts/**'
       - 'tests/**'
+      - 'START_CORPORATE_HTTPS.bat'
+      - 'STATUS_CORPORATE.bat'
+      - 'STOP_CORPORATE.bat'
       - 'start.sh'
       - 'stop.sh'
       - 'status.sh'
@@ -89,6 +101,41 @@ jobs:
           text = path.read_text(encoding='utf-8').replace('\r\n', '\n').replace('\r', '\n')
           path.write_bytes(text.replace('\n', '\r\n').encode('utf-8'))
           PY
+      - name: Verify corporate HTTPS and SSO deployment contract
+        run: |
+          node scripts/corporate-https-sso-preflight.mjs
+          mkdir -p .ci-tls
+          openssl req -x509 -nodes -newkey rsa:2048 \
+            -keyout .ci-tls/tls.key \
+            -out .ci-tls/tls.crt \
+            -days 1 \
+            -subj '/CN=china-ci.example.internal' \
+            -addext 'subjectAltName=DNS:china-ci.example.internal'
+          docker run --rm \
+            --add-host china-auto-radar:127.0.0.1 \
+            --add-host oauth2-proxy:127.0.0.1 \
+            -e CORPORATE_HOST=china-ci.example.internal \
+            -e AUTH_PROXY_SECRET=ci-proxy-secret \
+            -e 'NGINX_ENVSUBST_FILTER=^(CORPORATE_HOST|AUTH_PROXY_SECRET)$' \
+            -v "$PWD/deploy/nginx/corporate.conf.template:/etc/nginx/templates/default.conf.template:ro" \
+            -v "$PWD/.ci-tls/tls.crt:/etc/nginx/tls/tls.crt:ro" \
+            -v "$PWD/.ci-tls/tls.key:/etc/nginx/tls/tls.key:ro" \
+            nginx:1.27-alpine nginx -t
+          CORPORATE_HOST=china-ci.example.internal \
+          OIDC_ISSUER_URL=https://issuer.example.invalid \
+          OIDC_CLIENT_ID=ci-client \
+          OIDC_CLIENT_SECRET=ci-client-secret \
+          OAUTH2_PROXY_COOKIE_SECRET=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA= \
+          AUTH_PROXY_SECRET=ci-proxy-secret \
+          AUDIT_HMAC_KEY=ci-audit-key \
+          SCHEDULER_TOKEN=ci-scheduler-token \
+          USER_DATA_HMAC_KEY=ci-user-hmac \
+          METRICS_TOKEN=ci-metrics-token \
+          TLS_CERT_FILE=./.ci-tls/tls.crt \
+          TLS_KEY_FILE=./.ci-tls/tls.key \
+          docker compose --env-file /dev/null -f compose.corporate.yaml config > /tmp/okno-corporate-compose.yaml
+          grep -q 'oauth2-proxy' /tmp/okno-corporate-compose.yaml
+          grep -q 'AUTH_MODE: proxy' /tmp/okno-corporate-compose.yaml
       - name: Start pilot
         run: |
           chmod +x start.sh stop.sh status.sh scripts/*.sh
