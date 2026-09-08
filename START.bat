@@ -13,6 +13,15 @@ if "%ERRORLEVEL%"=="0" if exist ".git" (
   if not "%ERRORLEVEL%"=="0" echo WARNING: Git update was skipped. Starting current local copy.
 )
 
+echo Synchronizing local pilot version...
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\sync-version.ps1"
+if not "%ERRORLEVEL%"=="0" (
+  echo.
+  echo Version synchronization failed. See the message above.
+  pause
+  exit /b %ERRORLEVEL%
+)
+
 echo Starting Okno v Kitai for this PC and other PCs on the same LAN...
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\start-lan.ps1"
 set RC=%ERRORLEVEL%
