@@ -67,7 +67,7 @@ test("Russia and China strategic sources are first-class ingestion jobs", () => 
   assert.ok(route.includes("truckIndustryPattern"));
   assert.ok(route.includes('focus === "truck"'));
   assert.ok(route.includes('language === "ru"'));
-  assert.ok(route.includes('NEWS_SOURCE_CATALOG_VERSION = 4'));
+  assert.ok(route.includes('NEWS_SOURCE_CATALOG_VERSION = 5'));
   for (const token of ["evolute", "voyah", "motorinvest", "моторинвест", "evia", "эвиа"]) assert.ok(route.toLowerCase().includes(token.toLowerCase()), token);
   assert.ok(route.includes('"evolute-official"'));
   assert.ok(route.includes('"voyah-official"'));
