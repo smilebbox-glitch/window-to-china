@@ -30,7 +30,7 @@ v1.7.5 переводит продукт из технического Pilot Can
 - pilot status;
 - даты.
 
-SSO login/e-mail в открытом виде в cohort table не сохраняется.
+SSO login/e-mail в открытом виде в cohort table не сохраняется. Автор, сохранивший Weekly/Final Review, также записывается только как HMAC fingerprint.
 
 ## Pilot role и application RBAC
 
@@ -59,6 +59,8 @@ AUTH_MODE=proxy
 PILOT_ENFORCE_COHORT=YES
 PILOT_COHORT_NAME=wave-1
 ```
+
+При `PILOT_ENFORCE_COHORT=YES` preflight дополнительно требует `AUTH_MODE=proxy`, сильный `AUTH_PROXY_SECRET`, сильный `USER_DATA_HMAC_KEY` и корректное соотношение `PILOT_TARGET_COHORT >= PILOT_MIN_COHORT`.
 
 Viewer вне активного cohort получает экран ограничения доступа. Editor/Admin имеют staff bypass для сопровождения пилота.
 
@@ -106,7 +108,7 @@ Operational gate возвращает `NO_GO` **или** зарегистрир�
    - `USER_DATA_HMAC_KEY`;
    - `AUDIT_HMAC_KEY`;
    - `SCHEDULER_TOKEN`.
-4. Выполнить:
+4. Пока cohort ещё заполняется, оставить `PILOT_ENFORCE_COHORT=NO` и выполнить:
 
 ```bash
 npm run pilot:preflight
@@ -117,11 +119,14 @@ npm run pilot:go-no-go
 6. После подтверждения roster включить:
 
 ```env
+AUTH_MODE=proxy
 PILOT_ENFORCE_COHORT=YES
+PILOT_COHORT_NAME=wave-1
 ```
 
-7. Проверить вход участника и отказ viewer, которого нет в cohort.
-8. Сделать backup до Day 1.
+7. Повторно выполнить `npm run pilot:preflight`. Теперь controlled-pilot gate проверяет уже строгую corporate-конфигурацию.
+8. Проверить вход участника и отказ viewer, которого нет в cohort.
+9. Сделать backup до Day 1.
 
 ## Day 1 — ограниченный старт
 
@@ -168,11 +173,24 @@ Decision на Day 5:
 ## Day 10 — Final Review
 
 1. Сохранить Final Review на `/pilot`.
-2. Сформировать evidence package:
+2. Сформировать evidence package.
+
+Если стенд работает в `AUTH_MODE=disabled`, можно использовать admin token:
 
 ```bash
 PILOT_BASE_URL=http://127.0.0.1:3000 \
 ADMIN_API_TOKEN=<admin-token> \
+PILOT_REPORT_DAYS=30 \
+npm run pilot:outcome
+```
+
+Для настоящего controlled corporate режима `AUTH_MODE=proxy` генератор должен пройти тот же доверенный proxy-auth contract:
+
+```bash
+PILOT_BASE_URL=http://127.0.0.1:3000 \
+AUTH_PROXY_SECRET=<proxy-secret> \
+PILOT_REPORT_SUBJECT=pilot-outcome-generator \
+PILOT_REPORT_GROUPS=okno-china-admin \
 PILOT_REPORT_DAYS=30 \
 npm run pilot:outcome
 ```
@@ -182,7 +200,7 @@ npm run pilot:outcome
 - `PILOT_OUTCOME_<timestamp>.json`;
 - `PILOT_OUTCOME_<timestamp>.md`.
 
-Отчёт содержит decision, KPI, operational state, причины и activity по функциям.
+Отчёт содержит decision, KPI, operational state, причины и activity по функциям. `STOP` завершает генератор non-zero; `GO` и `ADJUST` сохраняют evidence и завершаются успешно, чтобы corrective-action сценарий тоже оставлял отчёт.
 
 ## Feedback severity
 
@@ -212,6 +230,7 @@ npm run pilot:outcome
 - участники в UI представлены кодами P01/P02 и подразделением;
 - usage связывается с тем же псевдонимным user key;
 - feedback не требует имени/e-mail;
+- автор Weekly/Final Review хранится как HMAC, а в UI возвращается только короткий fingerprint;
 - HMAC key должен храниться как secret и не попадать в Git.
 
 ## Exit criteria
