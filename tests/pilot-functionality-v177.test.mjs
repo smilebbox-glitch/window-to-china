@@ -89,9 +89,12 @@ test("open news page refreshes its live feed every fifteen minutes", () => {
   assert.match(newsPage, /NewsDashboardLive/);
 });
 
-test("every news card exposes source, publication date and primary-source link", () => {
+test("every news card exposes source, receipt time, publication time and primary-source link", () => {
   assert.match(newsDashboard, /\{item\.source\}/);
-  assert.match(newsDashboard, /formatDate\(item\.publishedAt\)/);
+  assert.match(newsDashboard, /Получено:/u);
+  assert.match(newsDashboard, /item\.receivedAt \? formatDateTime\(item\.receivedAt\) : "нет данных"/u);
+  assert.match(newsDashboard, /Опубликовано:/u);
+  assert.match(newsDashboard, /formatDateTime\(item\.publishedAt\)/u);
   assert.match(newsDashboard, /href=\{item\.url\}/);
   assert.match(newsDashboard, /Первоисточник/);
   assert.match(newsDashboard, /ZH → RU/);
