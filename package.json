@@ -1,6 +1,6 @@
 {
   "name": "okno-v-kitai",
-  "version": "1.7.2-pilot",
+  "version": "1.6.1-pilot",
   "private": true,
   "engines": {
     "node": ">=22.13.0"
