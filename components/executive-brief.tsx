@@ -16,6 +16,7 @@ import {
 import type { NewsItem } from "@/lib/data";
 import { buildIntelligenceBrief, type BriefPeriod } from "@/lib/intelligence-brief";
 import { decisionMarketMetrics } from "@/lib/decision-market-data";
+import { SourceTrustBadge } from "@/components/source-trust-badge";
 
 const number = new Intl.NumberFormat("ru-RU");
 
@@ -105,7 +106,7 @@ export function ExecutiveBrief() {
                       <a href={signal.url} target="_blank" rel="noopener noreferrer" className="mt-2 block text-lg font-black leading-6 hover:text-[#285fff]">{signal.title}</a>
                       <p className="mt-2 text-sm leading-6 text-zinc-600">{signal.summary}</p>
                       <div className="mt-3 flex flex-wrap gap-2 text-[11px] text-zinc-500">{signal.audiences.map((audience) => <span key={audience} className="border border-zinc-200 px-2 py-1">{audience}</span>)}</div>
-                      <p className="mt-3 text-xs text-zinc-400">{signal.source} · {new Date(signal.publishedAt).toLocaleString("ru-RU")}</p>
+                      <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-zinc-400"><span className="font-semibold text-zinc-600">{signal.source}</span><SourceTrustBadge sourceType={signal.sourceType} compact /><span>·</span><span>{new Date(signal.publishedAt).toLocaleString("ru-RU")}</span></div>
                     </div>
                     <div className="space-y-3 text-xs leading-5">
                       <div className="border border-zinc-200 bg-zinc-50 p-3"><p className="font-black uppercase tracking-[0.08em] text-zinc-500">Почему важно</p><p className="mt-1 text-zinc-700">{signal.whyItMatters}</p></div>
