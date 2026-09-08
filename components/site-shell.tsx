@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { FormEvent, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { useState } from "react";
+import type { FormEvent } from "react";
 import { MaintenanceBanner } from "@/components/maintenance-banner";
 import {
   BarChart3,
@@ -29,8 +30,8 @@ const navigation = [
   { href: "/trucks", label: "Коммерческий транспорт", icon: Truck },
   { href: "/market", label: "Рынок", icon: ChartNoAxesCombined },
   { href: "/analysis", label: "Аналитика", icon: BarChart3 },
-  { href: "/decision", label: "Decision", icon: Crosshair },
-  { href: "/executive", label: "Executive", icon: Crown },
+  { href: "/decision", label: "Решения", icon: Crosshair },
+  { href: "/executive", label: "Руководство", icon: Crown },
   { href: "/calendar", label: "Выставки и события", icon: CalendarDays },
   { href: "/travel-guide", label: "Перед поездкой", icon: BriefcaseBusiness },
 ] as const;
@@ -48,8 +49,7 @@ function isActive(pathname: string, href: string) {
 export function SiteShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const [search, setSearch] = useState(searchParams.get("q") ?? "");
+  const [search, setSearch] = useState("");
 
   function submitSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
