@@ -12,25 +12,26 @@ function captures(pattern, text) {
   return [...text.matchAll(pattern)].map((match) => match[1]);
 }
 
-test("v1.7 source catalog is broad and contains no duplicate IDs or URLs", () => {
+test("v1.7.1 source catalog is broad and contains no duplicate IDs or URLs", () => {
   const ids = captures(/\bid:\s*"([^"]+)"/g, sources);
   const urls = captures(/\burl:\s*"(https:[^"]+)"/g, sources);
-  assert.ok(ids.length >= 20, `expected >=20 sources, got ${ids.length}`);
+  assert.ok(ids.length >= 27, `expected >=27 sources, got ${ids.length}`);
   assert.equal(new Set(ids).size, ids.length);
   assert.equal(new Set(urls).size, urls.length);
 
   for (const id of [
     "caam", "miit-auto", "mofcom-news", "cada", "nbs-china",
-    "gasgoo", "cnevpost", "yicai-auto", "china-briefing", "36kr-en", "carnewschina",
+    "chinatruck", "360che-truck", "gasgoo", "cnevpost", "yicai-auto", "china-briefing", "36kr-en", "carnewschina",
+    "ural-official", "gruzovoy-ru", "gruzovikpress", "reis-trucks",
   ]) assert.ok(sources.includes(`id: "${id}"`), id);
 });
 
 test("official and specialist sources outrank broad secondary feeds", () => {
   assert.match(sources, /id: "caam"[\s\S]*?priority: 100/);
   assert.match(sources, /id: "miit-auto"[\s\S]*?priority: 100/);
-  assert.match(sources, /id: "mofcom-news"[\s\S]*?priority: 100/);
-  assert.match(sources, /id: "nbs-china"[\s\S]*?priority: 100/);
-  assert.match(sources, /id: "cada"[\s\S]*?priority: 98/);
+  assert.match(sources, /id: "ural-official"[\s\S]*?priority: 100/);
+  assert.match(sources, /id: "chinatruck"[\s\S]*?priority: 93/);
+  assert.match(sources, /id: "360che-truck"[\s\S]*?priority: 92/);
   assert.match(sources, /id: "gasgoo"[\s\S]*?priority: 91/);
   assert.match(sources, /id: "cnevpost"[\s\S]*?priority: 90/);
   assert.match(sources, /id: "china-daily-motoring"[\s\S]*?enabledByDefault: false/);
@@ -48,6 +49,15 @@ test("news API performs fuzzy cross-source dedupe and source-priority selection"
     "jaccard >= 0.68",
     "containment >= 0.82",
   ]) assert.ok(route.includes(token), token);
+});
+
+test("Russia and China truck sources are first-class ingestion jobs", () => {
+  assert.ok(route.includes("truckIndustryPattern"));
+  assert.ok(route.includes('focus === "truck"'));
+  assert.ok(route.includes('language === "ru"'));
+  assert.ok(route.includes('NEWS_SOURCE_CATALOG_VERSION = 2'));
+  assert.ok(sources.includes('market: "Россия"'));
+  assert.ok(sources.includes('language: "ru"'));
 });
 
 test("source failures are isolated by per-source cache and limited concurrency", () => {
@@ -74,18 +84,11 @@ test("client no longer injects static seed stories into a successful live feed",
   assert.match(liveDashboard, /return <NewsDashboard \/>/);
 });
 
-test("outbound SSRF policy explicitly allows active curated sources", () => {
+test("outbound SSRF policy explicitly allows truck and general curated sources", () => {
   for (const host of [
-    "www.caam.org.cn",
-    "www.miit.gov.cn",
-    "english.mofcom.gov.cn",
-    "www.cada.cn",
-    "autonews.gasgoo.com",
-    "cnevpost.com",
-    "www.yicaiglobal.com",
-    "eu.36kr.com",
-    "www.china-briefing.com",
-    "www.stats.gov.cn",
-    "carnewschina.com",
+    "www.caam.org.cn", "www.miit.gov.cn", "english.mofcom.gov.cn", "www.cada.cn",
+    "www.chinatruck.org", "www.360che.com", "autonews.gasgoo.com", "cnevpost.com",
+    "www.yicaiglobal.com", "eu.36kr.com", "www.china-briefing.com", "www.stats.gov.cn", "carnewschina.com",
+    "uralaz.ru", "gruzovoy.ru", "www.gruzovikpress.ru", "reis.zr.ru",
   ]) assert.ok(outbound.includes(`"${host}"`), host);
 });
