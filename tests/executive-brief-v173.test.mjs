@@ -7,11 +7,11 @@ const component = fs.readFileSync("components/executive-brief.tsx", "utf8");
 const route = fs.readFileSync("app/executive/page.tsx", "utf8");
 const shell = fs.readFileSync("components/site-shell.tsx", "utf8");
 
-test("v1.7.3 exposes Executive View route and navigation", () => {
+test("v1.7.3 keeps Executive View available without exposing it in navigation", () => {
   assert.match(route, /ExecutiveBrief/);
   assert.match(component, /v1\.7\.3 · Executive Intelligence Brief/);
-  assert.match(shell, /href: "\/executive"/);
-  assert.match(shell, /label: "Руководство"/);
+  assert.doesNotMatch(shell, /href:\s*["']\/executive["']/u);
+  assert.doesNotMatch(shell, /label:\s*["']Руководство["']/u);
 });
 
 test("brief engine supports daily and weekly windows", () => {
