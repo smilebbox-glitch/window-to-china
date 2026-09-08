@@ -1,0 +1,29 @@
+Product: Окно в Китай
+Candidate: v1.7.6 Corporate UI
+Branch: design/v1.7.6-corporate-ui
+Base product: v1.7.5 Controlled Corporate Pilot
+
+Scope:
+- approved corporate shell and navigation
+- live-data corporate home
+- dedicated /news route
+- shared corporate hero/frame across visible user tabs
+- local/offline Shanghai, truck, exhibition and travel SVG artwork
+- retired right rails, red news CTA, recommendation/decision widgets and large Executive GO panel remain removed
+
+Compatibility:
+- backend API unchanged
+- SQLite schema unchanged
+- source catalog v3 unchanged
+- controlled pilot telemetry unchanged
+- one-click Docker deployment unchanged
+
+Release gates:
+- pilot:ui176
+- automated tests
+- Docker build/start
+- /api/health and /api/ready
+- runtime smoke including /news and corporate home
+- controlled shutdown
+
+Merge policy: do not merge automatically.
