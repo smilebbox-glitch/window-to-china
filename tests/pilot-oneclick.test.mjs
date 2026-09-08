@@ -7,8 +7,11 @@ const t = (p) => fs.readFile(new URL(`../${p}`, import.meta.url), 'utf8');
 test('current pilot packages native one-click launchers', async () => {
   const pkg = JSON.parse(await t('package.json'));
   assert.match(pkg.version, /^\d+\.\d+\.\d+-pilot$/u);
-  const [bat, sh, ps] = await Promise.all([t('START.bat'), t('start.sh'), t('scripts/one-click-start.ps1')]);
+  const [bat, sh, ps, sync] = await Promise.all([t('START.bat'), t('start.sh'), t('scripts/one-click-start.ps1'), t('scripts/sync-version.ps1')]);
+  assert.match(bat, /sync-version\.ps1/u);
   assert.match(bat, /start-lan\.ps1/u);
+  assert.match(sync, /package\.json/u);
+  assert.match(sync, /APP_VERSION/u);
   assert.match(sh, /one-click-start\.sh/u);
   assert.match(ps, /docker compose build/u);
   assert.match(ps, /docker compose up -d/u);
@@ -46,7 +49,6 @@ test('LAN access is enabled by default and launchers expose a LAN URL', async ()
 
   assert.match(winLan, /Set-EnvValue 'APP_BIND_ADDRESS' '0\.0\.0\.0'/u);
   assert.match(winLan, /Set-EnvValue 'ALLOW_PUBLIC_BIND' 'YES'/u);
-  assert.match(winLan, /APP_VERSION/u);
   assert.match(winLan, /New-NetFirewallRule/u);
   assert.match(winLan, /RemoteAddress LocalSubnet/u);
   assert.match(winLan, /Other PCs:/u);
