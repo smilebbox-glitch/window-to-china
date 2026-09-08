@@ -26,15 +26,18 @@ const feedback = read("components/pilot-feedback-form.tsx");
 const pilotPage = read("app/pilot/page.tsx");
 const env = read(".env.example");
 const compose = read("compose.yaml");
+const productPaths = program.match(/const pilotProductPaths = \[([^\]]+)\]/)?.[1] || "";
 
 for (const token of ["GO", "ADJUST", "STOP", "PILOT_TARGET_MIN_USERS", "PILOT_TARGET_MAX_USERS", "PILOT_MIN_USEFUL_PCT", "PILOT_MIN_REPEAT_PCT", "pilot_feedback", "pilot_issues", "P-"]) {
   check(program.includes(token), `pilot program missing ${token}`);
 }
-check(program.includes('targetMinUsers: intEnv("PILOT_TARGET_MIN_USERS", 5'), "default pilot minimum must be 5 users");
+check(program.includes('intEnv("PILOT_TARGET_MIN_USERS", 5'), "default pilot minimum must be 5 users");
 check(program.includes('intEnv("PILOT_TARGET_MAX_USERS", 10'), "default pilot maximum must be 10 users");
 check(program.includes("event_name='page_view'"), "cohort must be based on actual product page use");
-check(program.includes("/admin") === false, "control-plane /admin must not be a cohort product path");
-check(program.includes("/pilot-feedback") === false, "feedback page must not inflate cohort size");
+check(productPaths.includes('"/decision"') && productPaths.includes('"/trucks"'), "cohort paths must include real product routes");
+check(!productPaths.includes('"/admin"'), "control-plane /admin must not be a cohort product path");
+check(!productPaths.includes('"/pilot"'), "Pilot Control must not inflate cohort size");
+check(!productPaths.includes('"/pilot-feedback"'), "feedback page must not inflate cohort size");
 check(!program.includes("matchWatchlist") && !program.includes("user_preferences"), "controlled pilot outcome must not use personal Watchlist/preferences");
 
 check(feedbackApi.includes("resolveUserContext"), "feedback must use pseudonymous user context");
