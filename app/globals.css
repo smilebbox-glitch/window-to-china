@@ -104,6 +104,34 @@ body { margin:0; background:#f5f9fd; color:#10244f; font-family:var(--font-sans)
 .corp-pill-blue { background:#e7f2ff; color:#066fdf; }
 .corp-pill-green { background:#e8f8f4; color:#08765f; }
 
+/* Pages wrapped with the approved v1.7.6 hero reuse their functional content but retire the old hero. */
+.corporate-page > main { min-height:0 !important; background:transparent !important; }
+.corporate-page > main > div { max-width:none !important; padding:0 !important; }
+.corporate-page-news > main > div > section:first-child,
+.corporate-page-trucks > main > div > section:first-child,
+.corporate-page-market > main > div > section:first-child,
+.corporate-page-decision > main > div > section:first-child,
+.corporate-page-executive > main > div > section:first-child,
+.corporate-page-calendar > main > div > section:first-child,
+.corporate-page-travel > main > div > section:first-of-type { display:none !important; }
+.corporate-page-news > main > div,
+.corporate-page-trucks > main > div,
+.corporate-page-market > main > div,
+.corporate-page-decision > main > div,
+.corporate-page-executive > main > div,
+.corporate-page-calendar > main > div,
+.corporate-page-travel > main > div { padding-top:0 !important; }
+.corporate-page-news > main section,
+.corporate-page-trucks > main section,
+.corporate-page-market > main section,
+.corporate-page-decision > main section,
+.corporate-page-executive > main section,
+.corporate-page-calendar > main section,
+.corporate-page-travel > main section { border-radius:14px; overflow:hidden; }
+.corporate-page-analysis > section { border:1px solid #dce7f1 !important; border-radius:14px; background:#fff !important; box-shadow:0 7px 24px rgb(39 78 114 / .055); overflow:hidden; }
+.corporate-page-analysis > section .text-white { color:#10244f !important; }
+.corporate-page-analysis > section [class*="border-white/"] { border-color:#dce7f1 !important; }
+
 .pilot-content input,.pilot-content select,.pilot-content button,.pilot-content [role="combobox"] { border-radius:10px !important; }
 .pilot-content input,.pilot-content select,.pilot-content [role="combobox"] { border-color:#d8e5ef !important; background:#fff !important; color:#173368 !important; }
 .pilot-content button[class*="bg-[#285fff]"],.pilot-content [class*="bg-blue-700"] { background:#147efb !important; }
