@@ -99,6 +99,51 @@ const migrations: Migration[] = [
       CREATE INDEX IF NOT EXISTS idx_usage_events_name ON usage_events(event_name,created_at DESC);
     `,
   },
+  {
+    version: 4,
+    name: "controlled_corporate_pilot",
+    sql: `
+      CREATE TABLE IF NOT EXISTS pilot_members (
+        user_key TEXT PRIMARY KEY,
+        cohort TEXT NOT NULL,
+        participant_code TEXT NOT NULL,
+        department TEXT NOT NULL,
+        pilot_role TEXT NOT NULL CHECK(pilot_role IN ('participant','manager','sponsor','admin')),
+        status TEXT NOT NULL CHECK(status IN ('invited','active','paused','completed','removed')),
+        joined_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_pilot_members_cohort ON pilot_members(cohort,status,department);
+
+      CREATE TABLE IF NOT EXISTS pilot_feedback (
+        id TEXT PRIMARY KEY,
+        user_key TEXT NOT NULL,
+        cohort TEXT NOT NULL,
+        category TEXT NOT NULL,
+        severity TEXT NOT NULL CHECK(severity IN ('note','minor','major','blocker')),
+        rating INTEGER NOT NULL CHECK(rating BETWEEN 1 AND 5),
+        useful_signal INTEGER NOT NULL DEFAULT 0 CHECK(useful_signal IN (0,1)),
+        saved_minutes INTEGER NOT NULL DEFAULT 0 CHECK(saved_minutes BETWEEN 0 AND 1440),
+        comment TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        FOREIGN KEY(user_key) REFERENCES pilot_members(user_key)
+      );
+      CREATE INDEX IF NOT EXISTS idx_pilot_feedback_cohort ON pilot_feedback(cohort,created_at DESC);
+      CREATE INDEX IF NOT EXISTS idx_pilot_feedback_severity ON pilot_feedback(severity,created_at DESC);
+
+      CREATE TABLE IF NOT EXISTS pilot_reviews (
+        id TEXT PRIMARY KEY,
+        cohort TEXT NOT NULL,
+        review_type TEXT NOT NULL CHECK(review_type IN ('weekly','final')),
+        decision TEXT NOT NULL CHECK(decision IN ('GO','ADJUST','STOP')),
+        summary TEXT NOT NULL,
+        kpi_json TEXT NOT NULL DEFAULT '{}',
+        created_at TEXT NOT NULL,
+        created_by TEXT NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_pilot_reviews_cohort ON pilot_reviews(cohort,created_at DESC);
+    `,
+  },
 ];
 
 export function pilotDbPath() {
@@ -172,6 +217,8 @@ export function pilotDbStatus() {
     const row = db.prepare("SELECT COUNT(*) AS count FROM source_snapshots").get() as { count?: number } | undefined;
     const content = db.prepare("SELECT COUNT(*) AS count FROM content_items").get() as { count?: number } | undefined;
     const users = db.prepare("SELECT COUNT(*) AS count FROM user_preferences").get() as { count?: number } | undefined;
+    const pilotMembers = db.prepare("SELECT COUNT(*) AS count FROM pilot_members WHERE status IN ('invited','active')").get() as { count?: number } | undefined;
+    const pilotFeedback = db.prepare("SELECT COUNT(*) AS count FROM pilot_feedback").get() as { count?: number } | undefined;
     const migrationsState = migrationStatus();
     return {
       available: true,
@@ -179,6 +226,8 @@ export function pilotDbStatus() {
       snapshots: Number(row?.count || 0),
       contentItems: Number(content?.count || 0),
       userProfiles: Number(users?.count || 0),
+      pilotMembers: Number(pilotMembers?.count || 0),
+      pilotFeedback: Number(pilotFeedback?.count || 0),
       schemaVersion: migrationsState.current,
       schemaLatest: migrationsState.latest,
       migrationsPending: migrationsState.pending,
@@ -189,6 +238,8 @@ export function pilotDbStatus() {
       path: dbPath,
       snapshots: 0,
       contentItems: 0,
+      pilotMembers: 0,
+      pilotFeedback: 0,
       schemaVersion: 0,
       schemaLatest: migrations.at(-1)?.version || 0,
       migrationsPending: migrations.length,
