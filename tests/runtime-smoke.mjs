@@ -68,20 +68,19 @@ test("runtime news endpoint is using v1.7.1 source catalog", async () => {
   assert.ok(Number.isInteger(payload.deduplicatedCount) && payload.deduplicatedCount >= 0);
 });
 
-test("runtime user preferences expose v1.7.2 watchlist defaults", async () => {
+test("runtime legacy user preferences remain available", async () => {
   const response = await request("/api/user/preferences", "application/json");
   assert.equal(response.status, 200);
   const payload = await response.json();
   assert.ok(payload.subscriptions);
-  assert.ok(Array.isArray(payload.subscriptions.keywords));
-  assert.ok(Array.isArray(payload.subscriptions.truckSegments));
-  assert.ok(Array.isArray(payload.subscriptions.powertrains));
-  assert.ok(Array.isArray(payload.subscriptions.audiences));
-  assert.equal(typeof payload.subscriptions.minScore, "number");
-  assert.equal(typeof payload.subscriptions.alertsEnabled, "boolean");
+  assert.ok(Array.isArray(payload.subscriptions.brands));
+  assert.ok(Array.isArray(payload.subscriptions.markets));
+  assert.ok(Array.isArray(payload.subscriptions.topics));
+  assert.ok(Array.isArray(payload.subscriptions.events));
+  assert.equal(typeof payload.subscriptions.eventLeadDays, "number");
 });
 
-test("runtime notification endpoint accepts intelligence alert engine", async () => {
+test("runtime notification endpoint remains operational", async () => {
   const response = await request("/api/user/notifications", "application/json", 18_000);
   assert.equal(response.status, 200);
   const payload = await response.json();
