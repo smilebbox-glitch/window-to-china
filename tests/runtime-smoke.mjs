@@ -24,6 +24,7 @@ const htmlRoutes = [
   "/calendar",
   "/travel-guide",
   "/trip-planner",
+  "/pilot",
 ];
 
 for (const route of htmlRoutes) {
@@ -45,7 +46,7 @@ test("runtime health endpoint is healthy", async () => {
   assert.equal(payload.service, "okno-v-kitai");
 });
 
-test("runtime readiness endpoint is ready", async () => {
+test("runtime readiness endpoint is ready with current schema", async () => {
   const response = await request("/api/ready", "application/json");
   assert.equal(response.status, 200);
   assert.match(response.headers.get("content-type") ?? "", /^application\/json\b/i);
@@ -84,6 +85,27 @@ test("runtime v1.7.4 pilot operations endpoint exposes trust state", async () =>
   assert.equal(typeof payload.sla?.maxAgeSeconds, "number");
   assert.equal(typeof payload.sla?.minQuality, "number");
   assert.ok(Array.isArray(payload.reasons));
+});
+
+test("runtime v1.7.5 membership endpoint is available to participant context", async () => {
+  const response = await request("/api/pilot/me", "application/json");
+  assert.equal(response.status, 200);
+  assert.match(response.headers.get("content-type") ?? "", /^application\/json\b/i);
+  const payload = await response.json();
+  assert.equal(typeof payload.cohort, "string");
+  assert.equal(typeof payload.enforcement, "boolean");
+  assert.equal(typeof payload.eligible, "boolean");
+  assert.ok(payload.member === null || typeof payload.member === "object");
+});
+
+test("runtime corporate pilot KPI report is not exposed to anonymous viewer", async () => {
+  const response = await request("/api/pilot/report?days=14", "application/json");
+  assert.equal(response.status, 403);
+});
+
+test("runtime cohort register is not exposed to anonymous viewer", async () => {
+  const response = await request("/api/pilot/cohort", "application/json");
+  assert.equal(response.status, 403);
 });
 
 test("runtime legacy user preferences remain available", async () => {
