@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import type { NewsItem } from "@/lib/data";
 import { detectFocusEntities } from "@/lib/news-focus";
+import { SourceTrustBadge } from "@/components/source-trust-badge";
 
 type NewsResponse = { news?: NewsItem[]; errors?: string[] };
 
@@ -116,7 +117,7 @@ export function CorporateHome() {
                     <div className="flex flex-wrap gap-1.5">{focus.slice(0, 2).map((entity) => <span key={entity} className="corp-pill corp-pill-blue">{entity}</span>)}<span className="corp-pill">{item.market}</span></div>
                     <h3 className="mt-3 line-clamp-3 text-[15px] font-black leading-5 text-[#0e285b] group-hover:text-[#0877ec]">{item.title}</h3>
                     <p className="mt-2 line-clamp-3 text-xs leading-5 text-[#7186a2]">{item.summary}</p>
-                    <div className="mt-3 text-[10px] text-[#8a9bb0]">{new Date(item.publishedAt).toLocaleDateString("ru-RU")} · {item.source}</div>
+                    <div className="mt-3 flex flex-wrap items-center gap-2 text-[10px] text-[#8a9bb0]"><span>{new Date(item.publishedAt).toLocaleDateString("ru-RU")}</span><span>·</span><span className="font-semibold text-[#607894]">{item.source}</span><SourceTrustBadge sourceType={item.sourceType} compact /></div>
                   </div>
                 </a>
               );
@@ -144,7 +145,7 @@ export function CorporateHome() {
           </div>
         </Link>
 
-        {current.length > 0 && <section className="corp-card p-3 sm:p-4"><div className="mb-3 flex items-center justify-between"><h2 className="corp-section-title">Последние обновления</h2><span className={`corp-pill ${status === "partial" ? "" : "corp-pill-green"}`}>{status === "partial" ? "часть источников недоступна" : "лента обновлена"}</span></div><div className="divide-y divide-[#e8eff5]">{current.map((item) => <a key={item.id} href={item.url} target="_blank" rel="noreferrer" className="grid gap-2 py-3 text-sm sm:grid-cols-[110px_minmax(0,1fr)_130px] sm:items-center"><span className="text-xs text-[#8295ab]">{new Date(item.publishedAt).toLocaleDateString("ru-RU")}</span><span className="font-bold text-[#17305f] hover:text-[#0878ec]">{item.title}</span><span className="truncate text-right text-xs text-[#8295ab]">{item.source}</span></a>)}</div></section>}
+        {current.length > 0 && <section className="corp-card p-3 sm:p-4"><div className="mb-3 flex items-center justify-between"><h2 className="corp-section-title">Последние обновления</h2><span className={`corp-pill ${status === "partial" ? "" : "corp-pill-green"}`}>{status === "partial" ? "часть источников недоступна" : "лента обновлена"}</span></div><div className="divide-y divide-[#e8eff5]">{current.map((item) => <a key={item.id} href={item.url} target="_blank" rel="noreferrer" className="grid gap-2 py-3 text-sm sm:grid-cols-[110px_minmax(0,1fr)_260px] sm:items-center"><span className="text-xs text-[#8295ab]">{new Date(item.publishedAt).toLocaleDateString("ru-RU")}</span><span className="font-bold text-[#17305f] hover:text-[#0878ec]">{item.title}</span><span className="flex flex-wrap items-center justify-end gap-2 text-right text-xs text-[#8295ab]"><span className="max-w-[130px] truncate">{item.source}</span><SourceTrustBadge sourceType={item.sourceType} compact /></span></a>)}</div></section>}
       </div>
     </main>
   );

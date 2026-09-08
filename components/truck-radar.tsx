@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ArrowUpRight, BatteryCharging, Factory, Gauge, RefreshCw, Route, Search, ShieldAlert, Truck } from "lucide-react";
 import type { NewsItem } from "@/lib/data";
 import { rankCommercialVehicleNews, type TruckSegment } from "@/lib/intelligence-ranking";
+import { SourceTrustBadge } from "@/components/source-trust-badge";
 
 const dateFormatter = new Intl.DateTimeFormat("ru-RU", { day: "2-digit", month: "short", year: "numeric", timeZone: "Europe/Moscow" });
 const segments: Array<"Все сегменты" | TruckSegment> = [
@@ -144,7 +145,7 @@ export function TruckRadar() {
                   <div className="border-l-4 border-[#285fff] bg-blue-50/60 p-3"><div className="text-[11px] font-black uppercase tracking-[0.12em] text-[#1f4ed8]">Почему важно</div><p className="mt-1 text-sm leading-5 text-zinc-700">{truck.whyItMatters}</p></div>
                   <div className="border-l-4 border-orange-500 bg-orange-50/70 p-3"><div className="text-[11px] font-black uppercase tracking-[0.12em] text-orange-800">Что проверить</div><p className="mt-1 text-sm leading-5 text-zinc-700">{truck.recommendedAction}</p></div>
                 </div>
-                <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-zinc-200 pt-3 text-xs text-zinc-500"><span>{item.source}</span><span>·</span><span>{dateFormatter.format(new Date(item.publishedAt)).replace(" г.", "")}</span><span>·</span><span>Для: {truck.audiences.slice(0, 2).map((impact) => impact.audience).join(", ")}</span><a href={item.url} target="_blank" rel="noreferrer" className="ml-auto inline-flex items-center gap-1 font-bold text-[#1f4ed8] hover:underline">Источник <ArrowUpRight className="size-3.5" /></a></div>
+                <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-zinc-200 pt-3 text-xs text-zinc-500"><span className="font-semibold text-zinc-700">{item.source}</span><SourceTrustBadge sourceType={item.sourceType} compact /><span>·</span><span>{dateFormatter.format(new Date(item.publishedAt)).replace(" г.", "")}</span><span>·</span><span>Для: {truck.audiences.slice(0, 2).map((impact) => impact.audience).join(", ")}</span><a href={item.url} target="_blank" rel="noreferrer" className="ml-auto inline-flex items-center gap-1 font-bold text-[#1f4ed8] hover:underline">Источник <ArrowUpRight className="size-3.5" /></a></div>
               </article>;
             })}
           </div>

@@ -13,6 +13,7 @@ export type ExecutiveSignal = {
   brand: string;
   segment: string | null;
   source: string;
+  sourceType: NewsItem["sourceType"];
   url: string;
   publishedAt: string;
   whyItMatters: string;
@@ -132,6 +133,7 @@ function toExecutiveSignal(item: RankedNewsItem): ExecutiveSignal {
     brand: item.brand,
     segment: item.commercialVehicle?.segment ?? null,
     source: item.source,
+    sourceType: item.sourceType,
     url: item.url,
     publishedAt: item.publishedAt,
     whyItMatters: assessment.whyItMatters,

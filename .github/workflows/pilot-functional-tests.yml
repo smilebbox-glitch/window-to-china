@@ -6,6 +6,7 @@ on:
     branches:
       - main
       - design/v1.7.6-corporate-ui
+      - test/v1.7.7-pilot-functional-suite
     paths:
       - '.github/workflows/pilot-functional-tests.yml'
       - 'app/**'
@@ -49,6 +50,7 @@ jobs:
             echo '- Automated tests: PASS'
             echo '- Pilot preflight: PASS'
             echo '- Corporate UI/news/source contracts: PASS'
+            echo '- Source trust labels/provenance contracts: PASS'
           } >> "$GITHUB_STEP_SUMMARY"
 
   runtime-pilot:
@@ -70,6 +72,11 @@ jobs:
           BASE_URL: http://127.0.0.1:3000
           PILOT_TEST_TIMEOUT_MS: '12000'
         run: npm run pilot:functional:runtime
+      - name: Verify source trust badges against live pilot
+        env:
+          BASE_URL: http://127.0.0.1:3000
+          PILOT_TEST_TIMEOUT_MS: '12000'
+        run: node --test tests/source-trust-runtime-v178.mjs
       - name: Run regression runtime smoke
         env:
           BASE_URL: http://127.0.0.1:3000
@@ -85,6 +92,7 @@ jobs:
             echo '- Main UI routes: PASS'
             echo '- Health/readiness/SQLite: PASS'
             echo '- News API + source transparency: PASS'
+            echo '- Official / Industry Media / Telegram badges: PASS'
             echo '- Pilot operations + reliability: PASS'
             echo '- Controlled pilot KPI contract: PASS'
           } >> "$GITHUB_STEP_SUMMARY"
