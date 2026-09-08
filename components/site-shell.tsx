@@ -43,7 +43,7 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
   function submitSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const value = search.trim();
-    router.push(value ? `/news?q=${encodeURIComponent(value)}` : "/news");
+    router.push(value ? `/search?q=${encodeURIComponent(value)}` : "/search");
   }
 
   return (
