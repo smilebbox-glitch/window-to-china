@@ -12,12 +12,14 @@
     "start": "vinext start",
     "test": "npm run build && node --test tests/*.test.mjs",
     "test:runtime": "node --test tests/runtime-smoke.mjs",
+    "test:pilot:contracts": "node --test tests/pilot-functionality-v177.test.mjs",
+    "test:pilot:runtime": "node --test tests/pilot-runtime-v177.mjs",
     "lint": "bash scripts/sites-env.sh -- eslint . --ignore-pattern dist --ignore-pattern .next",
     "db:generate": "bash scripts/sites-env.sh -- drizzle-kit generate",
     "pilot:security": "node scripts/pilot-security-preflight.mjs",
     "pilot:operations": "node scripts/pilot-operations-preflight.mjs",
     "pilot:sbom": "node scripts/generate-sbom.mjs",
-    "pilot:preflight": "npm run pilot:security && npm run pilot:operations && npm run pilot:reliability && npm run pilot:governance && npm run pilot:business && npm run pilot:oneclick && npm run pilot:intelligence && npm run pilot:decision && npm run pilot:executive && npm run pilot:ops174 && npm run pilot:controlled && npm run pilot:ui176 && npm run pilot:syntax && npm run pilot:sbom",
+    "pilot:preflight": "npm run pilot:security && npm run pilot:operations && npm run pilot:reliability && npm run pilot:governance && npm run pilot:business && npm run pilot:oneclick && npm run pilot:intelligence && npm run pilot:decision && npm run pilot:executive && npm run pilot:ops174 && npm run pilot:controlled && npm run pilot:ui176 && npm run pilot:functional && npm run pilot:syntax && npm run pilot:sbom",
     "pilot:preflight:online": "npm run pilot:preflight && npm run pilot:audit-deps",
     "pilot:audit-deps": "npm audit --audit-level=high --omit=dev",
     "pilot:host": "bash scripts/host-preflight.sh",
@@ -36,7 +38,9 @@
     "pilot:go-no-go": "node scripts/pilot-go-no-go.mjs",
     "pilot:controlled": "node scripts/controlled-pilot-preflight.mjs",
     "pilot:outcome": "node scripts/pilot-outcome.mjs",
-    "pilot:ui176": "node scripts/corporate-ui-v176-preflight.mjs"
+    "pilot:ui176": "node scripts/corporate-ui-v176-preflight.mjs",
+    "pilot:functional": "node --test tests/pilot-functionality-v177.test.mjs",
+    "pilot:functional:runtime": "node --test tests/pilot-runtime-v177.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",
