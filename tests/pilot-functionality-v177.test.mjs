@@ -20,6 +20,7 @@ const reliabilityRoute = read("app/api/admin/reliability/route.ts");
 const runtimeSmoke = read("tests/runtime-smoke.mjs");
 const compose = read("compose.yaml");
 const startScript = read("start.sh");
+const oneClickStart = read("scripts/one-click-start.sh");
 
 const userRoutes = [
   "/",
@@ -133,7 +134,11 @@ test("runtime smoke already covers health, readiness, news, operations and pilot
 
 test("one-click pilot deployment remains packaged", () => {
   assert.ok(packageJson.scripts["pilot:preflight"], "pilot:preflight script missing");
-  assert.match(startScript, /docker compose|docker-compose/i);
+  assert.match(startScript, /one-click-start\.sh/);
+  assert.match(oneClickStart, /docker compose build/);
+  assert.match(oneClickStart, /docker compose up -d/);
+  assert.match(oneClickStart, /Application did not become healthy/);
+  assert.match(oneClickStart, /scheduler running/);
   assert.match(compose, /\/data/);
 });
 
