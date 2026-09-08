@@ -1,6 +1,6 @@
 services:
   china-auto-radar:
-    image: okno-v-kitai:${APP_VERSION:-1.6.1-pilot}
+    image: okno-v-kitai:${APP_VERSION:-1.7.9-pilot}
     build:
       context: .
       dockerfile: Dockerfile
@@ -8,7 +8,7 @@ services:
       - "${APP_BIND_ADDRESS:-0.0.0.0}:${APP_PORT:-3000}:3000"
     environment:
       NODE_ENV: production
-      APP_VERSION: ${APP_VERSION:-1.6.1-pilot}
+      APP_VERSION: ${APP_VERSION:-1.7.9-pilot}
       RAG_API_URL: ${RAG_API_URL:-}
       RAG_API_KEY: ${RAG_API_KEY:-}
       RAG_MODEL: ${RAG_MODEL:-}
@@ -99,14 +99,14 @@ services:
       start_period: 35s
 
   china-auto-radar-scheduler:
-    image: okno-v-kitai:${APP_VERSION:-1.6.1-pilot}
+    image: okno-v-kitai:${APP_VERSION:-1.7.9-pilot}
     depends_on:
       china-auto-radar:
         condition: service_healthy
     command: ["node", "scripts/scheduler-client.mjs"]
     environment:
       NODE_ENV: production
-      APP_VERSION: ${APP_VERSION:-1.6.1-pilot}
+      APP_VERSION: ${APP_VERSION:-1.7.9-pilot}
       SCHEDULER_APP_URL: http://china-auto-radar:3000
       SCHEDULER_TOKEN: ${SCHEDULER_TOKEN:-change-me-before-pilot}
       SCHEDULER_INTERVAL_SECONDS: ${SCHEDULER_INTERVAL_SECONDS:-300}
