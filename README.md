@@ -1,134 +1,143 @@
-# Окно в Китай — Pilot v1.6.1
+# Окно в Китай — Pilot v1.7.9
 
-Внутренняя информационная платформа для сотрудников компании, работающих с Китаем и китайским автопромом.
+Внутренняя корпоративная информационно-аналитическая платформа для сотрудников, работающих с Китаем, китайским автопромом и связанными бизнес-задачами.
+
+**Текущая версия `main`: Pilot v1.7.9.**
 
 ## Что есть в продукте
 
-- новости и приоритетный мониторинг SHACMAN / GWM / отрасли;
+- свежая новостная лента с приоритетным мониторингом **SHACMAN, GWM, EVOLUTE, VOYAH, Моторинвест, ЭВИА** и отрасли;
+- типизированный каталог китайских и российских источников;
+- автоматическая дедупликация похожих материалов и fresh-first выдача;
+- перевод китайских материалов на русский с контролем нагрузки и retry/cooldown;
+- бейджи происхождения: **Официальный источник / Отраслевое СМИ / Telegram**;
+- ссылки на первоисточник для проверки важных сигналов;
+- **Truck Radar** `/trucks` для коммерческого транспорта Китая и России;
+- **Intelligence Ranking** и аналитика `/analysis` с business score, «Почему важно» и «Что проверить»;
+- **Corporate Decision Cockpit** `/decision` с общей корпоративной приоритизацией сигналов;
+- **Executive View** `/executive` с Daily / Weekly Brief для руководства;
 - календарь автомобильных выставок и отраслевых событий;
-- доказательный ИИ-анализ по собранным материалам;
-- рыночный обзор;
-- подготовка к командировке в Китай;
-- CNY ↔ RUB: официальный курс ЦБ, конвертер и банковские наличные курсы;
-- pilot admin control plane `/admin`.
+- раздел подготовки к командировке в Китай;
+- CNY ↔ RUB и вспомогательные travel/business данные;
+- **Pilot Operations** с `GO / DEGRADED / STALE` и формальным `GO / NO_GO`;
+- **Controlled Corporate Pilot** на 5–10 сотрудников с feedback, KPI и итогом `GO / ADJUST / STOP`;
+- IT/Admin Reliability console, SQLite persistence, backup, audit и source diagnostics.
 
+## Что нового в v1.7.9
 
-## Pilot v1.6.1 — One-click Deployment
+v1.7.9 — актуальный hardening-релиз перед controlled corporate pilot:
 
-Patch-релиз v1.6.1 не меняет бизнес-функции v1.6 и добавляет нативный запуск без ручной подготовки конфигурации.
+- AUTOSTAT: RSS с автоматическим fallback на новостную страницу;
+- MOFCOM переведён на стабильный entrypoint;
+- нестабильные People Auto, Yiche и Грузовик Пресс сохранены как reserve-only источники;
+- Google Translate выполняет один translation request на материал с pacing и bounded retry/cooldown на `429`;
+- HTTPS → HTTP redirect того же hostname не разрешает downgrade;
+- aggregate health оценивается по общей quality, а не становится `PARTIAL` из-за единичного best-effort source failure;
+- Pilot Operations использует явный порог деградации источников;
+- GitHub Actions проверяет production dependency audit, production build, полный pilot preflight, live Docker pilot, runtime tests и `pilot:go-no-go`.
 
-**Windows:** дважды нажмите `START.bat`.
+Подробности: `docs/SOURCE_RELIABILITY_v1.7.9.md` и `PILOT_START_v1.7.9.md`.
 
-**Linux / macOS:**
+## Быстрый запуск
+
+### Windows
+
+Дважды нажмите:
+
+```text
+START.bat
+```
+
+Windows launcher автоматически подготавливает конфигурацию, запускает Docker pilot, проверяет health/readiness и показывает адрес для доступа из доверенной локальной сети. При конфликте порта используется свободный порт из разрешённого диапазона без остановки постороннего процесса.
+
+### Linux / macOS
 
 ```bash
 ./start.sh
 ```
 
-Launcher автоматически создаёт `.env`, генерирует pilot secrets, проверяет Docker/Compose, выполняет build + up, ждёт health/readiness, запускает smoke checks и создаёт локальный `.pilot-access.txt`. Для остановки и проверки состояния используются `STOP.bat` / `STATUS.bat` либо `./stop.sh` / `./status.sh`.
+Для остановки и проверки состояния используются `STOP.bat` / `STATUS.bat` либо `./stop.sh` / `./status.sh`.
 
-Если рядом лежит заранее собранный `okno-v-kitai-image.tar`, launcher использует `docker load` и стартует без обращения к npm registry. Подробности: `ONE_CLICK_DEPLOYMENT.md`.
+## Проверка Pilot Candidate
 
-## Pilot v1.6 — UX & Business Operations
-
-v1.6 добавляет персональный рабочий контур сотрудника без новой внешней БД или очереди:
-
-- `/my` — единый раздел подписок, уведомлений, избранного и активной командировки;
-- подписки по SHACMAN/GWM, рынкам, темам, городам и конкретным мероприятиям;
-- in-app notifications, которые scheduler формирует после обновления источников и дедуплицирует по event key;
-- сохранение новостей и событий в избранное;
-- персональная карточка поездки с маршрутом, датами, отелем, событием и заметками;
-- автономный HTML `offline travel pack` с поездкой, последним FX snapshot, корпоративными памятками и избранным;
-- page-view/business-event telemetry с retention policy;
-- агрегированная usage analytics в `/admin` без ФИО/e-mail;
-- пользовательский идентификатор хранится как HMAC-псевдоним; для controlled pilot `USER_DATA_HMAC_KEY` обязателен;
-- SQLite migration v3 обновляет v1.5/v1.4 БД in-place.
-
-Уведомления v1.6 — внутренние (in-app). E-mail/мессенджер push намеренно не включён в пилот, чтобы не добавлять новый канал обработки персональных данных без согласования IT/Security.
-
-## Pilot v1.5 — Governance & Deployment Assurance
-
-v1.5 добавляет поверх reliability-слоя v1.4 версионированные SQLite migrations, scheduler locking, retention policies, Source SLA, maintenance mode, managed-content import/export, configuration validation и автоматизированный IT acceptance report.
-
-Ключевой принцип релиза: **никакой скрытой ручной приёмки**. Package gates, target runtime gates и online CVE gate разделены и явно отражаются в отчёте.
-
-Быстрые команды:
+После установки зависимостей:
 
 ```bash
 npm run pilot:preflight
-ACCEPTANCE_MODE=package npm run pilot:acceptance
-# на целевом хосте после настройки .env и Docker:
-ACCEPTANCE_MODE=target ONLINE_ACCEPTANCE=YES npm run pilot:acceptance
 ```
 
-## Pilot v1.4 — Reliability & Content Operations
+Production dependency audit:
 
-v1.4 сохраняет security/operations baseline v1.3 и добавляет слой управляемых данных:
+```bash
+npm run pilot:audit-deps
+```
 
-- persistent SQLite database `/data/okno.sqlite` в Docker volume;
-- WAL + busy timeout для устойчивой single-host работы;
-- persistent cache для FX и новостей вместо process-memory cache;
-- TTL + stale window + состояния `FRESH / STALE / EXPIRED`;
-- graceful degradation: последний валидный snapshot используется при сбое внешнего источника;
-- source history: status, latency, item count, quality score, last success;
-- отдельный scheduler container для планового обновления источников;
-- authenticated internal refresh endpoint;
-- reliability dashboard в `/admin`;
-- managed content: `draft / published / archived`, роли editor/admin;
-- опубликованные корпоративные заметки выводятся в разделе «Перед поездкой» без пересборки приложения;
-- SQLite online backup через `VACUUM INTO`;
-- readiness теперь проверяет и writable `/data`, и доступность SQLite.
+После запуска сервиса:
 
-## Запуск
+```bash
+npm run pilot:go-no-go
+```
 
-Для обычного pilot-mode ручное редактирование `.env` больше не требуется:
+Отдельные функциональные проверки:
 
-- Windows: `START.bat`;
-- Linux/macOS: `./start.sh`.
+```bash
+npm run pilot:functional
+BASE_URL=http://127.0.0.1:3000 npm run pilot:functional:runtime
+```
 
-Ручной IT-путь `host-preflight → docker compose build → up → smoke` сохранён и описан в `PILOT_DEPLOYMENT.md`. По умолчанию web доступен только на `127.0.0.1:3000`; корпоративный доступ через TLS/SSO reverse proxy настраивается IT отдельно.
+## Ключевые маршруты
 
-## Основные endpoints
+- `/` — Главная;
+- `/news` — Новости;
+- `/trucks` — Truck Radar;
+- `/market` — Рынок;
+- `/analysis` — Аналитика / Intelligence Ranking;
+- `/decision` — Corporate Decision Cockpit;
+- `/executive` — Executive Daily / Weekly Brief;
+- `/calendar` — Выставки и события;
+- `/travel-guide` — Перед поездкой;
+- `/pilot-feedback` — обратная связь участника пилота;
+- `/pilot` — Pilot Control Room;
+- `/admin` — IT/Admin Reliability.
+
+## Ключевые API
 
 - `GET /api/health`
 - `GET /api/ready`
-- `GET /api/fx?city=kaluga|moskva`
 - `GET /api/news`
 - `POST /api/analyze`
-- `GET /api/content?section=travel-guide`
-- `GET /api/session`
-- `GET /api/admin/status`
-- `GET|PUT /api/admin/config`
+- `GET /api/pilot/operations`
+- `GET /api/pilot/report`
+- `POST /api/pilot/feedback`
 - `GET /api/admin/reliability`
-- `GET|POST|DELETE /api/admin/content`
-- `GET /api/admin/audit?limit=50`
-- `GET /api/admin/backup`
-- `POST /api/admin/restore`
-- `POST /api/internal/refresh` — только scheduler token
 - `GET /api/metrics`
 
-## Preflight
+## Controlled corporate pilot
 
-После `npm ci`:
+Рекомендуемая Wave 1: **5–10 сотрудников** на 10 дней. Основные KPI по умолчанию:
 
-```bash
-npm run pilot:preflight
-```
+- repeat usage ≥ 40%;
+- минимум 3 feedback responses;
+- usefulness 4–5 ≥ 70%;
+- отсутствие открытых S1;
+- отсутствие двух и более открытых S2.
 
-При доступе к npm advisory service:
+Pilot Control Room формирует итог `GO / ADJUST / STOP`.
 
-```bash
-npm run pilot:preflight:online
-```
+Для корпоративного режима через reverse proxy / SSO используйте `AUTH_MODE=proxy`, сильные pilot secrets и ограничения доступа согласно `PILOT_START_v1.7.9.md`.
 
-## Backup данных
+## Данные и безопасность
 
-В контейнере:
+- SQLite хранится в persistent Docker volume;
+- используются migrations, WAL, backup и retention policies;
+- source/network access ограничен explicit outbound policy;
+- downgrade HTTPS → HTTP блокируется;
+- pilot telemetry предназначена для оценки продукта, а не сотрудников;
+- пользовательские идентификаторы в pilot-контуре псевдонимизируются;
+- нестабильные внешние источники не должны отключать общий новостной контур.
 
-```bash
-docker compose exec china-auto-radar npm run pilot:data-backup
-```
+## Статус сборки
 
-Backup создаётся в `/data/backups`. Для реального DR скопируйте snapshot во внешнее корпоративное backup-хранилище; хранение копии только в том же Docker volume не защищает от потери volume/host.
+Pilot v1.7.9 прошёл GitHub Actions на актуальном head: production dependency audit, build, полный test/preflight suite, live Docker pilot, runtime smoke и Pilot Go/No-Go.
 
-Подробности: `PILOT_DEPLOYMENT.md`, `SECURITY_PILOT.md`, `PILOT_RELEASE_NOTES_v1.6.1.md`, `VERIFICATION_v1.6.1.md`, `ONE_CLICK_DEPLOYMENT.md`.
+Физический запуск во внутренней сети компании остаётся отдельным Day 0 IT validation и не считается выполненным только по факту успешного CI.
