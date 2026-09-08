@@ -182,6 +182,59 @@ test("runtime user preferences expose configurable web-notification fields", asy
   assert.equal(typeof payload.subscriptions.eventLeadDays, "number");
 });
 
+test("runtime web-notification preferences persist filters and master switch", async () => {
+  const enabledPreferences = {
+    notificationsEnabled: true,
+    brands: ["SHACMAN"],
+    segments: ["Коммерческий транспорт"],
+    markets: [],
+    topics: [],
+    cities: [],
+    events: [],
+    eventLeadDays: 30,
+  };
+
+  const writeResponse = await request("/api/user/preferences", "application/json", 10_000, {
+    method: "PUT",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(enabledPreferences),
+  });
+  assert.equal(writeResponse.status, 200, `/api/user/preferences PUT returned HTTP ${writeResponse.status}`);
+  const setCookie = writeResponse.headers.get("set-cookie") || "";
+  const cookie = setCookie.split(";", 1)[0];
+  assert.ok(cookie.includes("="), "preference write must establish a pseudonymous user cookie");
+  const writePayload = await writeResponse.json();
+  assert.equal(writePayload.subscriptions?.notificationsEnabled, true);
+  assert.deepEqual(writePayload.subscriptions?.brands, ["SHACMAN"]);
+  assert.deepEqual(writePayload.subscriptions?.segments, ["Коммерческий транспорт"]);
+
+  const readResponse = await request("/api/user/preferences", "application/json", 10_000, {
+    headers: { cookie },
+  });
+  assert.equal(readResponse.status, 200);
+  const readPayload = await readResponse.json();
+  assert.equal(readPayload.subscriptions?.notificationsEnabled, true);
+  assert.deepEqual(readPayload.subscriptions?.brands, ["SHACMAN"]);
+  assert.deepEqual(readPayload.subscriptions?.segments, ["Коммерческий транспорт"]);
+
+  const notificationResponse = await request("/api/user/notifications", "application/json", 18_000, {
+    headers: { cookie },
+  });
+  assert.equal(notificationResponse.status, 200);
+  const notificationPayload = await notificationResponse.json();
+  assert.ok(Array.isArray(notificationPayload.notifications));
+  assert.equal(typeof notificationPayload.unread, "number");
+
+  const disableResponse = await request("/api/user/preferences", "application/json", 10_000, {
+    method: "PUT",
+    headers: { "content-type": "application/json", cookie },
+    body: JSON.stringify({ ...enabledPreferences, notificationsEnabled: false }),
+  });
+  assert.equal(disableResponse.status, 200);
+  const disablePayload = await disableResponse.json();
+  assert.equal(disablePayload.subscriptions?.notificationsEnabled, false);
+});
+
 test("runtime notification endpoint remains operational", async () => {
   const response = await request("/api/user/notifications", "application/json", 18_000);
   assert.equal(response.status, 200);
