@@ -256,13 +256,14 @@ export function savePilotReview(actor: string, reviewType: "weekly" | "final", d
   const id = randomUUID();
   const createdAt = new Date().toISOString();
   const summary = snapshot.reasons.join(" ").slice(0, 4000);
+  const createdBy = identityKeyForSubject(actor);
   getPilotDb().prepare("INSERT INTO pilot_reviews(id,cohort,review_type,decision,summary,kpi_json,created_at,created_by) VALUES(?,?,?,?,?,?,?,?)")
-    .run(id, cohort, reviewType, snapshot.decision, summary, JSON.stringify(snapshot), createdAt, actor.slice(0, 160));
+    .run(id, cohort, reviewType, snapshot.decision, summary, JSON.stringify(snapshot), createdAt, createdBy);
   return { id, reviewType, decision: snapshot.decision, summary, snapshot, createdAt };
 }
 
 export function listPilotReviews(cohort = pilotCohortName(), limit = 50) {
   const rows = getPilotDb().prepare("SELECT id,review_type,decision,summary,kpi_json,created_at,created_by FROM pilot_reviews WHERE cohort=? ORDER BY created_at DESC LIMIT ?")
     .all(cohort, Math.max(1, Math.min(200, limit))) as Array<Record<string, unknown>>;
-  return rows.map((row) => ({ id: String(row.id), reviewType: String(row.review_type), decision: String(row.decision), summary: String(row.summary), createdAt: String(row.created_at), createdBy: String(row.created_by) }));
+  return rows.map((row) => ({ id: String(row.id), reviewType: String(row.review_type), decision: String(row.decision), summary: String(row.summary), createdAt: String(row.created_at), createdBy: `${String(row.created_by).slice(0, 12)}…` }));
 }
