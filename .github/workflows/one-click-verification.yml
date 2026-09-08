@@ -17,6 +17,7 @@ on:
       - 'app/**'
       - 'components/**'
       - 'lib/**'
+      - 'public/**'
       - 'scripts/**'
       - 'tests/**'
       - 'start.sh'
@@ -37,6 +38,7 @@ on:
       - 'app/**'
       - 'components/**'
       - 'lib/**'
+      - 'public/**'
       - 'scripts/**'
       - 'tests/**'
       - 'start.sh'
@@ -99,6 +101,10 @@ jobs:
         env:
           BASE_URL: http://127.0.0.1:3000
         run: npm run test:runtime
+      - name: Verify Web App and PWA runtime assets
+        env:
+          BASE_URL: http://127.0.0.1:3000
+        run: node --test tests/pwa-runtime.mjs
       - name: Show status
         run: ./status.sh
       - name: Diagnostics
