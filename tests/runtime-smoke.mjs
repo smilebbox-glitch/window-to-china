@@ -18,6 +18,7 @@ const htmlRoutes = [
   "/",
   "/trucks",
   "/decision",
+  "/executive",
   "/analysis",
   "/market",
   "/calendar",
