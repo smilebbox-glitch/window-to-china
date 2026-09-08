@@ -54,6 +54,26 @@ Outcome rules:
 
 Operational `NO_GO` v1.7.4 всегда переводит итог pilot в STOP до устранения технического blocker.
 
+### Strategic news focus
+
+Новостной фокус расширен до шести стратегических брендов и компаний:
+
+- SHACMAN;
+- GWM;
+- EVOLUTE;
+- VOYAH;
+- Моторинвест;
+- ЭВИА.
+
+Добавлен единый focus detector с русскими, английскими и китайскими вариантами названий. Материалы этих сущностей получают повышенный приоритет в пользовательской ленте, входят в быстрый фильтр «В фокусе», доступны через отдельные вкладки и получают отдельные badges.
+
+В source catalog включены официальные российские ленты:
+
+- EVOLUTE — `https://www.evolute.ru/about/news/announcements`;
+- VOYAH Россия — `https://voyah.ru/news/anons`.
+
+Моторинвест и ЭВИА отслеживаются как компании/юридические лица через общий поток АВТОСТАТ, Telegram и отраслевые источники; они не маскируются под автомобильные бренды.
+
 ### CLI / preflight
 
 Добавлены:
@@ -70,6 +90,8 @@ npm run pilot:outcome
 Добавлены:
 
 - `tests/controlled-pilot-v175.test.mjs`;
+- `tests/news-focus-v175.test.mjs`;
+- `tests/news-focus-sources-v175.test.mjs`;
 - runtime smoke для `/pilot`, `/pilot-feedback`, POST feedback и `/api/pilot/report`;
 - `scripts/controlled-pilot-preflight.mjs`;
 - `scripts/pilot-outcome.mjs`;
