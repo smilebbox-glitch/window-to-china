@@ -51,9 +51,10 @@ for (const token of [
   "function likelySameStory", "tokenSimilarity", "NEWS_DEDUPE_WINDOW_HOURS", "priorityForNewsItem",
   "runWithConcurrency", "NEWS_SOURCE_CONCURRENCY", "news:source:v", "empty-stale-fallback",
   "sourceBreakdown", "deduplicatedCount", "NEWS_MAX_AGE_DAYS", "truckIndustryPattern",
-  "source.language === \"ru\"", "NEWS_SOURCE_CATALOG_VERSION = 4",
+  "source.language === \"ru\"", "NEWS_SOURCE_CATALOG_VERSION = 5",
   "evolute-official", "voyah-official", "motorinvest", "моторинвест", "evia", "эвиа",
   "autostat_rss_fallback", "translateArticleFields", "NEWS_AGGREGATE_LIVE_QUALITY_MIN",
+  "withReceivedAt", "receivedAt", "previousById", "previousByUrl",
 ]) check(route.toLowerCase().includes(token.toLowerCase()), `news route missing ${token}`);
 
 for (const token of ["outbound_redirect_https_upgrade", "outbound_translate_rate_limited", "TRANSLATE_MIN_INTERVAL_MS"]) {
@@ -97,4 +98,4 @@ if (failures.length) {
   process.exit(1);
 }
 
-console.log(`GO: v1.7.9 intelligence/reliability pipeline; curatedSources=${ids.length}; uniqueUrls=${urls.length}; strategicFocus=6; truckRadar=on; translationThrottle=on; autostatFallback=on; aggregateQualityGate=on`);
+console.log(`GO: v1.7.9 intelligence/reliability pipeline; curatedSources=${ids.length}; uniqueUrls=${urls.length}; strategicFocus=6; truckRadar=on; translationThrottle=on; autostatFallback=on; receiptTimestamp=on; aggregateQualityGate=on`);
