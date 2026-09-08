@@ -4,15 +4,24 @@ import path from "node:path";
 const baseUrl = new URL(process.env.PILOT_BASE_URL || "http://127.0.0.1:3000");
 const days = Math.max(1, Math.min(90, Number(process.env.PILOT_REPORT_DAYS || 30)));
 const token = process.env.ADMIN_API_TOKEN?.trim() || "";
+const proxySecret = process.env.AUTH_PROXY_SECRET?.trim() || "";
+const proxySubject = process.env.PILOT_REPORT_SUBJECT?.trim() || "pilot-outcome-generator";
+const proxyGroups = process.env.PILOT_REPORT_GROUPS?.trim() || process.env.AUTH_ADMIN_GROUP?.trim() || "okno-china-admin";
 const url = new URL(`/api/pilot/report?days=${days}`, baseUrl);
 
 const headers = { accept: "application/json" };
 if (token) headers["x-admin-token"] = token;
+if (proxySecret) {
+  headers["x-okno-proxy-secret"] = proxySecret;
+  headers["x-forwarded-user"] = proxySubject;
+  headers["x-forwarded-groups"] = proxyGroups;
+}
 
 const response = await fetch(url, { headers, signal: AbortSignal.timeout(15_000) });
 if (!response.ok) {
   const body = await response.text().catch(() => "");
   console.error(`Pilot outcome report failed: HTTP ${response.status} ${body.slice(0, 500)}`);
+  console.error("For AUTH_MODE=disabled provide ADMIN_API_TOKEN. For AUTH_MODE=proxy provide AUTH_PROXY_SECRET and an editor/admin group via PILOT_REPORT_GROUPS.");
   process.exit(2);
 }
 
