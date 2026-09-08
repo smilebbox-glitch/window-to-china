@@ -6,18 +6,25 @@ const check = (cond, m) => cond ? pass(m) : fail(m);
 const text = (p) => fs.existsSync(p) ? fs.readFileSync(p, 'utf8') : '';
 
 const pkg = JSON.parse(text('package.json'));
-check(pkg.version === '1.6.1-pilot', 'package version is v1.6.1 pilot');
+const compose = text('compose.yaml');
+const env = text('.env.example');
+const sh = text('scripts/one-click-start.sh');
+const ps = text('scripts/one-click-start.ps1');
+
+check(/^\d+\.\d+\.\d+-pilot$/.test(pkg.version), 'package version is a valid pilot version');
+check(compose.includes(`APP_VERSION:-${pkg.version}`), 'Compose default version matches package.json');
+check(env.includes(`APP_VERSION=${pkg.version}`), '.env.example version matches package.json');
 for (const f of ['START.bat','STOP.bat','STATUS.bat','start.sh','stop.sh','status.sh','ONE_CLICK_DEPLOYMENT.md']) {
   check(fs.existsSync(f), `${f} packaged`);
 }
 for (const f of ['scripts/one-click-start.sh','scripts/one-click-stop.sh','scripts/one-click-status.sh','scripts/one-click-start.ps1','scripts/one-click-stop.ps1','scripts/one-click-status.ps1']) {
   check(fs.existsSync(f), `${f} packaged`);
 }
-const sh = text('scripts/one-click-start.sh');
-const ps = text('scripts/one-click-start.ps1');
 check(/\.env\.example[\s\S]*\.env/.test(sh) && /\.env\.example[\s\S]*\.env/.test(ps), 'launchers bootstrap .env');
 check(/SCHEDULER_TOKEN/.test(sh) && /USER_DATA_HMAC_KEY/.test(sh) && /AUDIT_HMAC_KEY/.test(sh), 'Linux launcher generates required secrets');
 check(/SCHEDULER_TOKEN/.test(ps) && /USER_DATA_HMAC_KEY/.test(ps) && /AUDIT_HMAC_KEY/.test(ps), 'Windows launcher generates required secrets');
+check(/target_version/.test(sh) && /package\.json/.test(sh), 'Linux launcher derives APP_VERSION from package.json');
+check(/targetVersion/.test(ps) && /package\.json/.test(ps), 'Windows launcher derives APP_VERSION from package.json');
 check(/docker compose build/.test(sh) && /docker compose up -d/.test(sh), 'Linux launcher builds and starts Compose');
 check(/docker compose build/.test(ps) && /docker compose up -d/.test(ps), 'Windows launcher builds and starts Compose');
 check(/okno-v-kitai-image\.tar/.test(sh) && /docker load/.test(sh) && /docker image inspect/.test(sh) && /--no-build/.test(sh), 'Linux offline image path validates tag and skips build');
