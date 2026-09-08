@@ -149,10 +149,12 @@ export function submitPilotFeedback(userKey: string, input: PilotFeedbackInput, 
   if (!member || member.status !== "active") throw new Error("Обратная связь доступна только активным участникам пилота.");
   const category = String(input.category || "general").trim().slice(0, 80) || "general";
   const severity = (["note", "minor", "major", "blocker"].includes(String(input.severity)) ? String(input.severity) : "note") as PilotFeedbackSeverity;
-  const rating = Math.max(1, Math.min(5, Math.round(Number(input.rating || 0))));
-  if (!Number.isFinite(rating) || rating < 1) throw new Error("Оценка 1–5 обязательна.");
+  const rawRating = Number(input.rating);
+  if (!Number.isFinite(rawRating) || rawRating < 1 || rawRating > 5) throw new Error("Оценка 1–5 обязательна.");
+  const rating = Math.round(rawRating);
   const usefulSignal = Boolean(input.usefulSignal);
-  const savedMinutes = Math.max(0, Math.min(1440, Math.round(Number(input.savedMinutes || 0))));
+  const rawSavedMinutes = Number(input.savedMinutes || 0);
+  const savedMinutes = Number.isFinite(rawSavedMinutes) ? Math.max(0, Math.min(1440, Math.round(rawSavedMinutes))) : 0;
   const comment = String(input.comment || "").trim().slice(0, 4000);
   if (!comment) throw new Error("Комментарий обязателен.");
   const id = randomUUID();
