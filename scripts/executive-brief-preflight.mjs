@@ -19,7 +19,8 @@ check(engine.includes("watchNext"), "watch-next output is missing");
 check(engine.includes("recommendedAction"), "recommended action is missing");
 
 check(route.includes("ExecutiveBrief"), "Executive View route is missing");
-check(shell.includes('href: "/executive"'), "Executive View navigation is missing");
+check(!shell.includes('href: "/executive"'), "Executive View must stay hidden from pilot navigation");
+check(!shell.includes('label: "Руководство"'), "retired Руководство navigation label returned");
 check(component.includes("Executive Intelligence Brief"), "Executive Brief UI is missing");
 check(component.includes("Executive Summary"), "Executive Summary section is missing");
 check(component.includes("Decision Signals"), "Decision Signals section is missing");
@@ -37,4 +38,4 @@ if (failures.length) {
   process.exit(1);
 }
 
-console.log("GO: v1.7.3 Executive Brief; daily=on; weekly=on; executiveView=on; personalWatchlist=off; printPdf=on");
+console.log("GO: v1.7.3 Executive Brief; daily=on; weekly=on; executiveView=on; navigation=hidden; personalWatchlist=off; printPdf=on");
