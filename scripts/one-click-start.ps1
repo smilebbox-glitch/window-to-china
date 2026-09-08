@@ -83,8 +83,13 @@ if (-not (Test-Path '.env')) {
 Ensure-Secret 'SCHEDULER_TOKEN' 'change-me-before-pilot'
 Ensure-Secret 'USER_DATA_HMAC_KEY' 'change-me-user-data-hmac-before-pilot'
 Ensure-Secret 'AUDIT_HMAC_KEY'
+$targetVersion = (Get-Content 'package.json' -Raw | ConvertFrom-Json).version
+if ([string]::IsNullOrWhiteSpace($targetVersion)) { Fail 'package.json does not contain a valid version.' }
 $currentVersion = Get-EnvValue 'APP_VERSION'
-if ([string]::IsNullOrWhiteSpace($currentVersion) -or $currentVersion -eq '1.6.0-pilot') { Set-EnvValue 'APP_VERSION' '1.6.1-pilot' }
+if ($currentVersion -ne $targetVersion) {
+    Set-EnvValue 'APP_VERSION' $targetVersion
+    Write-Host "Updated APP_VERSION to $targetVersion"
+}
 $authMode = Get-EnvValue 'AUTH_MODE'
 if ([string]::IsNullOrWhiteSpace($authMode)) { $authMode = 'disabled' }
 if ($authMode -eq 'disabled') {
@@ -112,7 +117,7 @@ foreach ($key in $policies.Keys) {
     }
 }
 
-# v1.6.1 LAN migration: old one-computer defaults are upgraded automatically.
+# LAN migration: old one-computer defaults are upgraded automatically.
 $bindAddress = Get-EnvValue 'APP_BIND_ADDRESS'; if (-not $bindAddress) { $bindAddress = '0.0.0.0' }
 $allowPublic = Get-EnvValue 'ALLOW_PUBLIC_BIND'; if (-not $allowPublic) { $allowPublic = 'YES' }
 if ($bindAddress -eq '127.0.0.1' -and $allowPublic -eq 'NO') {
@@ -134,7 +139,7 @@ if (Test-Path 'okno-v-kitai-image.tar') {
     Stage 'Loading offline Docker image'
     & docker load -i 'okno-v-kitai-image.tar'
     if ($LASTEXITCODE -ne 0) { Fail 'docker load failed.' }
-    $appVersion = Get-EnvValue 'APP_VERSION'; if (-not $appVersion) { $appVersion = '1.6.1-pilot' }
+    $appVersion = Get-EnvValue 'APP_VERSION'; if (-not $appVersion) { $appVersion = $targetVersion }
     $expectedImage = "okno-v-kitai:$appVersion"
     & docker image inspect $expectedImage *> $null
     if ($LASTEXITCODE -ne 0) { Fail "Offline image does not provide expected tag $expectedImage." }
@@ -176,7 +181,7 @@ $lanIp = Get-LanIPv4
 $lanBase = if ($lanIp) { "http://${lanIp}:$port" } else { '' }
 $adminToken = Get-EnvValue 'ADMIN_API_TOKEN'
 $access = @(
-    'Okno v Kitai Pilot v1.6.1',
+    "Okno v Kitai Pilot $targetVersion",
     "Local URL: $localBase"
 )
 if ($lanBase) { $access += "LAN URL: $lanBase" }
