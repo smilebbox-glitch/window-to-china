@@ -8,6 +8,7 @@ const home = read("components/corporate-home.tsx");
 const hero = read("components/corporate-page-hero.tsx");
 const css = read("app/globals.css");
 const executive = read("app/executive/page.tsx");
+const search = read("components/global-search.tsx");
 
 const pageFiles = [
   "app/news/page.tsx",
@@ -18,15 +19,21 @@ const pageFiles = [
   "app/executive/page.tsx",
   "app/calendar/page.tsx",
   "app/travel-guide/page.tsx",
+  "app/search/page.tsx",
 ];
 
-test("approved corporate shell uses left navigation and no retired right rail", () => {
-  for (const route of ["/news", "/trucks", "/market", "/analysis", "/decision", "/executive", "/calendar", "/travel-guide"]) {
+test("approved corporate shell uses simplified left navigation and no retired right rail", () => {
+  for (const route of ["/news", "/trucks", "/market", "/analysis", "/calendar", "/travel-guide"]) {
     assert.ok(shell.includes(`href: "${route}"`), route);
   }
   for (const retired of ["Ключевые темы", "Популярные разделы", "Быстрые действия", "Состояние источников"]) {
     assert.equal(shell.includes(retired), false, retired);
   }
+  assert.doesNotMatch(shell, /label:\s*["']Решения["']/u);
+  assert.doesNotMatch(shell, /label:\s*["']Руководство["']/u);
+  assert.doesNotMatch(shell, /<span>Сервис<\/span>/u);
+  assert.doesNotMatch(shell, /aria-label=["']Язык интерфейса["']/u);
+  assert.doesNotMatch(shell, /aria-label=["']Уведомления["']/u);
   assert.ok(shell.includes("corporate-sidebar"));
   assert.ok(shell.includes("corporate-topbar"));
 });
@@ -73,6 +80,19 @@ test("corporate design system includes four local offline hero assets", () => {
     assert.match(read(file), /<svg\b/);
   }
   for (const token of [".corp-hero", ".corp-card", ".corporate-nav-item", ".corp-hero-home", ".corp-hero-trucks", ".corp-hero-expo", ".corp-hero-travel"]) assert.ok(css.includes(token), token);
+});
+
+test("top search routes to functional global search", () => {
+  assert.match(shell, /\/search\?q=/u);
+  assert.match(search, /fetch\(["']\/api\/news["']/u);
+  assert.match(search, /autoEvents/u);
+  assert.match(search, /Поиск по сервису/u);
+});
+
+test("test-mode notice stays readable", () => {
+  assert.match(shell, /В тестовом режиме\. Данные могут быть неполны\./u);
+  assert.match(shell, /text-\[15px\]/u);
+  assert.match(shell, /text-\[#18345f\]/u);
 });
 
 test("Executive user view no longer renders operational GO panel", () => {
