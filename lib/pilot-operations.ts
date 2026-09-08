@@ -39,10 +39,7 @@ export type PilotOperationsStatus = {
     total: number;
     degraded: Array<{ source: string; state: string; items: number; latencyMs: number }>;
   };
-  sla: {
-    maxAgeSeconds: number;
-    minQuality: number;
-  };
+  sla: { maxAgeSeconds: number; minQuality: number };
   database: ReturnType<typeof pilotDbStatus>;
   migrations: ReturnType<typeof migrationStatus>;
   reasons: string[];
@@ -87,10 +84,12 @@ export function latestNewsAggregate() {
 export function pilotOperationsStatus(): PilotOperationsStatus {
   const generatedAt = new Date().toISOString();
   const database = pilotDbStatus();
-  const migrations = migrationStatus();
+  const migrations = database.available
+    ? migrationStatus()
+    : { current: 0, latest: database.schemaLatest || 0, pending: database.migrationsPending || 1, applied: [] };
   const policy = governancePolicy().sla["news.aggregate"];
-  const aggregate = latestNewsAggregate();
-  const reliability = sourceReliabilitySummary(300);
+  const aggregate = database.available ? latestNewsAggregate() : null;
+  const reliability = database.available ? sourceReliabilitySummary(300) : { sources: [], snapshots: [] };
   const aggregateBreakdown = aggregate?.payload.sourceBreakdown ?? [];
   const reasons: string[] = [];
 
