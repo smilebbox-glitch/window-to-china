@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { SiteShell } from "@/components/site-shell";
 import { UsageBeacon } from "@/components/usage-beacon";
 import { PwaInstallButton } from "@/components/pwa-install-button";
+import { WebNotifications } from "@/components/web-notifications";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -49,6 +50,7 @@ export default function RootLayout({
       <body className="antialiased">
         <UsageBeacon />
         <PwaInstallButton />
+        <WebNotifications />
         <SiteShell>{children}</SiteShell>
       </body>
     </html>

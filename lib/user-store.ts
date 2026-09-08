@@ -3,7 +3,9 @@ import { getPilotDb } from "@/lib/pilot-db";
 import { autoEvents, type NewsItem } from "@/lib/data";
 
 export type UserSubscriptions = {
+  notificationsEnabled: boolean;
   brands: string[];
+  segments: string[];
   markets: string[];
   topics: string[];
   cities: string[];
@@ -12,7 +14,8 @@ export type UserSubscriptions = {
 };
 
 export const defaultSubscriptions: UserSubscriptions = {
-  brands: [], markets: [], topics: [], cities: [], events: [], eventLeadDays: 30,
+  notificationsEnabled: false,
+  brands: [], segments: [], markets: [], topics: [], cities: [], events: [], eventLeadDays: 30,
 };
 
 export type UserFavorite = {
@@ -46,7 +49,9 @@ function arrayOfStrings(value: unknown, max = 50) {
 }
 function normalizeSubscriptions(input: Partial<UserSubscriptions>): UserSubscriptions {
   return {
-    brands: arrayOfStrings(input.brands, 20), markets: arrayOfStrings(input.markets, 20), topics: arrayOfStrings(input.topics, 20),
+    notificationsEnabled: input.notificationsEnabled === true,
+    brands: arrayOfStrings(input.brands, 30), segments: arrayOfStrings(input.segments, 30),
+    markets: arrayOfStrings(input.markets, 20), topics: arrayOfStrings(input.topics, 20),
     cities: arrayOfStrings(input.cities, 30), events: arrayOfStrings(input.events, 50),
     eventLeadDays: Math.max(1, Math.min(180, Math.round(Number(input.eventLeadDays || 30)))),
   };
@@ -117,8 +122,12 @@ export function saveTrip(userKey: string, input: Partial<UserTrip>) {
   return trip;
 }
 
+function newsText(item: NewsItem) {
+  return `${item.brand} ${item.title} ${item.summary} ${item.originalTitle || ""}`;
+}
+
 function detectTopics(item: NewsItem) {
-  const text = `${item.title} ${item.summary}`;
+  const text = newsText(item);
   const matches: string[] = [];
   const patterns: Array<[string, RegExp]> = [
     ["Стратегия", /стратег|инвестиц|партнер|альянс|сделк|развити|strategy|战略|合作/iu],
@@ -130,6 +139,46 @@ function detectTopics(item: NewsItem) {
   ];
   for (const [topic, pattern] of patterns) if (pattern.test(text)) matches.push(topic);
   return matches;
+}
+
+function detectCompanies(item: NewsItem) {
+  const text = newsText(item);
+  const matches = new Set<string>();
+  if (item.brand && item.brand !== "Отрасль") matches.add(item.brand);
+  const patterns: Array<[string, RegExp]> = [
+    ["SHACMAN", /shacman|shaanxi|陕汽|陕西汽车/iu],
+    ["GWM", /\bgwm\b|great\s*wall|长城|haval|哈弗|\btank\b|wey|魏牌|\bora\b|欧拉/iu],
+    ["EVOLUTE", /evolute|эволют/iu],
+    ["VOYAH", /voyah|воя|岚图/iu],
+    ["Моторинвест", /моторинвест|motorinvest/iu],
+    ["ЭВИА", /\bэвиа\b|\bevia\b/iu],
+    ["BYD", /\bbyd\b|比亚迪/iu],
+    ["Geely", /geely|джили|吉利/iu],
+    ["Chery", /chery|чери|奇瑞/iu],
+    ["Li Auto", /li\s*auto|lixiang|理想/iu],
+    ["NIO", /\bnio\b|蔚来/iu],
+    ["XPeng", /xpeng|xiaopeng|小鹏/iu],
+  ];
+  for (const [company, pattern] of patterns) if (pattern.test(text)) matches.add(company);
+  return [...matches];
+}
+
+function detectSegments(item: NewsItem) {
+  const text = newsText(item);
+  const matches = new Set<string>(["Весь автопром"]);
+  const patterns: Array<[string, RegExp]> = [
+    ["Коммерческий транспорт", /грузов|тягач|самосвал|коммерческ|heavy\s*truck|truck|重卡|商用车/iu],
+    ["Легковые автомобили", /легков|седан|кроссовер|suv|minivan|минивэн|乘用车|轿车/iu],
+    ["Электромобили и NEV", /электромоб|электрическ|гибрид|\bev\b|\bnev\b|phev|erev|батаре|新能源|电池/iu],
+    ["Компоненты и поставщики", /компонент|поставщик|двигател|коробк|трансмисс|шина|supplier|parts|零部件|供应商/iu],
+    ["Производство и локализация", /завод|производств|локализ|сборк|штамп|свар|окраск|factory|plant|本地化|工厂|生产/iu],
+    ["Логистика и цепочки поставок", /логист|цепочк|доставк|экспорт|импорт|supply\s*chain|物流|供应链|交付/iu],
+    ["Регулирование и геополитика", /санкц|тариф|пошлин|регулир|сертиф|утилизац|комплаенс|policy|关税|制裁|政策/iu],
+    ["Рынок и продажи", /продаж|рынок|доля|цена|спрос|sales|market|销量|市场|价格/iu],
+    ["Технологии и ADAS", /автопилот|adas|автоном|智能驾驶|software|софт|телемат|технолог/iu],
+  ];
+  for (const [segment, pattern] of patterns) if (pattern.test(text)) matches.add(segment);
+  return [...matches];
 }
 
 function insertNotification(userKey: string, eventKey: string, kind: string, title: string, body: string, url = "") {
@@ -149,14 +198,25 @@ export function generateUserNotifications() {
   for (const row of prefs) {
     const userKey = String(row.user_key);
     const subscriptions = normalizeSubscriptions(parseJson<Partial<UserSubscriptions>>(row.subscriptions_json, {}));
+    if (!subscriptions.notificationsEnabled) continue;
     const createdAt = Date.parse(String(row.created_at || "")) || (now - 7 * 86400000);
     for (const item of news.slice(0, 120)) {
       const published = Date.parse(item.publishedAt);
       if (!Number.isFinite(published) || published < Math.max(createdAt, now - 7 * 86400000)) continue;
       const topics = detectTopics(item);
-      const matches = subscriptions.brands.includes(item.brand) || subscriptions.markets.includes(item.market) || topics.some((topic) => subscriptions.topics.includes(topic));
-      if (!matches) continue;
-      created += insertNotification(userKey, `news:${item.id}`, "news", item.title, `${item.source} · ${item.market}${topics.length ? ` · ${topics.join(", ")}` : ""}`, item.url);
+      const companies = detectCompanies(item);
+      const segments = detectSegments(item);
+      const companyMatch = subscriptions.brands.some((company) => companies.includes(company));
+      const segmentMatch = subscriptions.segments.some((segment) => segments.includes(segment));
+      const marketMatch = subscriptions.markets.includes(item.market);
+      const topicMatch = topics.some((topic) => subscriptions.topics.includes(topic));
+      if (!companyMatch && !segmentMatch && !marketMatch && !topicMatch) continue;
+      const context = [
+        ...companies.slice(0, 2),
+        ...segments.filter((segment) => segment !== "Весь автопром").slice(0, 2),
+        ...topics.slice(0, 1),
+      ];
+      created += insertNotification(userKey, `news:${item.id}`, "news", item.title, `${item.source} · ${item.market}${context.length ? ` · ${context.join(", ")}` : ""}`, item.url);
     }
     for (const event of autoEvents) {
       const start = Date.parse(`${event.start}T00:00:00Z`);
