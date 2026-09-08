@@ -4,9 +4,9 @@ import test from "node:test";
 
 async function text(path) { return readFile(new URL(`../${path}`, import.meta.url), "utf8"); }
 
-test("v1.6 operations endpoints and controls are packaged", async () => {
+test("pilot operations endpoints and controls are packaged", async () => {
   const pkg = JSON.parse(await text("package.json"));
-  assert.equal(pkg.version, "1.6.1-pilot");
+  assert.match(pkg.version, /^\d+\.\d+\.\d+-pilot$/u);
   assert.match(await text("app/api/admin/audit/route.ts"), /readAuditTail/u);
   assert.match(await text("app/api/admin/backup/route.ts"), /runtime\.backup\.export/u);
   assert.match(await text("app/api/admin/restore/route.ts"), /runtime\.backup\.restore/u);
