@@ -92,13 +92,17 @@ test("runtime readiness endpoint is ready", async () => {
   assert.equal(payload.checks?.migrationsCurrent, true);
 });
 
-test("runtime news endpoint is using v1.7.9 reliability source catalog", async () => {
+test("runtime news endpoint is using v1.7.9 reliability source catalog with receipt timestamps", async () => {
   const response = await request("/api/news", "application/json", 40_000);
   assert.equal(response.status, 200, `/api/news returned HTTP ${response.status}`);
   assert.match(response.headers.get("content-type") ?? "", /^application\/json\b/i);
   const payload = await response.json();
-  assert.equal(payload.sourceCatalogVersion, 4);
+  assert.equal(payload.sourceCatalogVersion, 5);
   assert.ok(Array.isArray(payload.news));
+  for (const item of payload.news) {
+    assert.equal(typeof item.receivedAt, "string", `news item ${item.id ?? item.url ?? "unknown"} has no receivedAt`);
+    assert.ok(Number.isFinite(Date.parse(item.receivedAt)), `news item ${item.id ?? item.url ?? "unknown"} has invalid receivedAt`);
+  }
   assert.ok(Array.isArray(payload.sourceBreakdown));
   assert.ok(payload.sourceBreakdown.some((entry) => entry.source === "news.web:evolute-official"));
   assert.ok(payload.sourceBreakdown.some((entry) => entry.source === "news.web:voyah-official"));
