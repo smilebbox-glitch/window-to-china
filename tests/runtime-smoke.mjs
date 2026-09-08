@@ -4,18 +4,20 @@ import test from "node:test";
 const baseUrl = new URL(process.env.BASE_URL || "http://127.0.0.1:3000");
 const timeoutMs = Number(process.env.SMOKE_TIMEOUT_MS || 10_000);
 
-async function request(pathname, accept, timeout = timeoutMs) {
+async function request(pathname, accept, timeout = timeoutMs, init = {}) {
   const url = new URL(pathname, baseUrl);
   return fetch(url, {
-    headers: { accept },
+    headers: { accept, ...(init.headers || {}) },
     redirect: "follow",
     signal: AbortSignal.timeout(timeout),
+    ...init,
   });
 }
 
 const htmlRoutes = [
   "/",
   "/trucks",
+  "/decision",
   "/analysis",
   "/market",
   "/calendar",
@@ -64,4 +66,25 @@ test("runtime news endpoint is using v1.7.1 source catalog", async () => {
   assert.ok(payload.totalSources >= payload.sourceCount);
   assert.ok(Number.isInteger(payload.rawCount) && payload.rawCount >= 0);
   assert.ok(Number.isInteger(payload.deduplicatedCount) && payload.deduplicatedCount >= 0);
+});
+
+test("runtime user preferences expose v1.7.2 watchlist defaults", async () => {
+  const response = await request("/api/user/preferences", "application/json");
+  assert.equal(response.status, 200);
+  const payload = await response.json();
+  assert.ok(payload.subscriptions);
+  assert.ok(Array.isArray(payload.subscriptions.keywords));
+  assert.ok(Array.isArray(payload.subscriptions.truckSegments));
+  assert.ok(Array.isArray(payload.subscriptions.powertrains));
+  assert.ok(Array.isArray(payload.subscriptions.audiences));
+  assert.equal(typeof payload.subscriptions.minScore, "number");
+  assert.equal(typeof payload.subscriptions.alertsEnabled, "boolean");
+});
+
+test("runtime notification endpoint accepts intelligence alert engine", async () => {
+  const response = await request("/api/user/notifications", "application/json", 18_000);
+  assert.equal(response.status, 200);
+  const payload = await response.json();
+  assert.ok(Array.isArray(payload.notifications));
+  assert.equal(typeof payload.unread, "number");
 });
