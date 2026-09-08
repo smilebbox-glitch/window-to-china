@@ -18,6 +18,7 @@ export type PilotFeedbackInput = {
 
 const allowedFunctions = new Set(["R&D", "Закупки", "Логистика", "Производство", "Качество", "Руководство", "Другое"]);
 const allowedOutcomes = new Set(["useful_signal", "saved_time", "decision_support", "data_quality", "issue", "no_value", "other"]);
+const pilotProductPaths = ["/", "/trucks", "/decision", "/executive", "/analysis", "/market", "/calendar", "/travel-guide", "/trip-planner"] as const;
 
 function intEnv(name: string, fallback: number, min: number, max: number) {
   const value = Number(process.env[name] || fallback);
@@ -26,10 +27,12 @@ function intEnv(name: string, fallback: number, min: number, max: number) {
 }
 
 export function pilotPolicy() {
+  const targetMinUsers = intEnv("PILOT_TARGET_MIN_USERS", 5, 1, 100);
+  const targetMaxUsers = Math.max(targetMinUsers, intEnv("PILOT_TARGET_MAX_USERS", 10, 1, 200));
   return {
     windowDays: intEnv("PILOT_WINDOW_DAYS", 10, 3, 90),
-    targetMinUsers: intEnv("PILOT_TARGET_MIN_USERS", 5, 1, 100),
-    targetMaxUsers: intEnv("PILOT_TARGET_MAX_USERS", 10, 1, 200),
+    targetMinUsers,
+    targetMaxUsers,
     minFeedback: intEnv("PILOT_MIN_FEEDBACK", 3, 1, 100),
     minUsefulPct: intEnv("PILOT_MIN_USEFUL_PCT", 70, 0, 100),
     minRepeatPct: intEnv("PILOT_MIN_REPEAT_PCT", 40, 0, 100),
@@ -145,12 +148,17 @@ export function pilotProgramSummary() {
   const db = getPilotDb();
   const policy = pilotPolicy();
   const cutoff = new Date(Date.now() - policy.windowDays * 86400000).toISOString();
+  const pathPlaceholders = pilotProductPaths.map(() => "?").join(",");
 
+  // Cohort deliberately excludes /admin, /pilot and /pilot-feedback traffic so the
+  // control plane and feedback form cannot inflate the number of real product users.
   const userRows = db.prepare(`SELECT user_key, MIN(created_at) AS first_seen, MAX(created_at) AS last_seen,
       COUNT(*) AS events, COUNT(DISTINCT substr(created_at,1,10)) AS active_days
-    FROM usage_events WHERE created_at>=? GROUP BY user_key ORDER BY last_seen DESC`).all(cutoff) as Array<Record<string, unknown>>;
+    FROM usage_events WHERE created_at>=? AND event_name='page_view' AND path IN (${pathPlaceholders})
+    GROUP BY user_key ORDER BY last_seen DESC`).all(cutoff, ...pilotProductPaths) as Array<Record<string, unknown>>;
   const pageRows = db.prepare(`SELECT path, COUNT(*) AS views, COUNT(DISTINCT user_key) AS users
-    FROM usage_events WHERE created_at>=? AND event_name='page_view' GROUP BY path ORDER BY views DESC LIMIT 40`).all(cutoff) as Array<Record<string, unknown>>;
+    FROM usage_events WHERE created_at>=? AND event_name='page_view' AND path IN (${pathPlaceholders})
+    GROUP BY path ORDER BY views DESC LIMIT 40`).all(cutoff, ...pilotProductPaths) as Array<Record<string, unknown>>;
   const feedbackRows = db.prepare("SELECT user_key,work_function,rating,usefulness,saved_minutes,outcome,section,created_at FROM pilot_feedback WHERE created_at>=? ORDER BY created_at DESC").all(cutoff) as Array<Record<string, unknown>>;
   const issueRows = listPilotIssues();
 
