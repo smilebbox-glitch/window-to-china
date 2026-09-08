@@ -3,7 +3,7 @@ name: One-click verification
 on:
   workflow_dispatch:
   pull_request:
-    branches: [main]
+    branches: [main, feature/v1.7-intelligence-pipeline]
     paths:
       - '.github/workflows/one-click-verification.yml'
       - '.devcontainer/**'
