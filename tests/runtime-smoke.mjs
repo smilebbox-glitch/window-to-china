@@ -17,6 +17,7 @@ async function request(pathname, accept, timeout = timeoutMs, init = {}) {
 
 const htmlRoutes = [
   "/",
+  "/news",
   "/trucks",
   "/decision",
   "/executive",
@@ -38,6 +39,18 @@ for (const route of htmlRoutes) {
     assert.ok(body.length > 100, `${route} returned an unexpectedly small document`);
   });
 }
+
+test("runtime corporate home exposes approved v1.7.6 copy and no retired widgets", async () => {
+  const response = await request("/", "text/html");
+  assert.equal(response.status, 200);
+  const body = await response.text();
+  assert.match(body, /Китай\. Автопром\./u);
+  assert.match(body, /Главные новости/u);
+  assert.match(body, /Коммерческий транспорт/u);
+  for (const retired of ["Решения на сегодня", "Что взять с собой", "Ключевые темы", "Популярные разделы", "Смотреть новости"]) {
+    assert.equal(body.includes(retired), false, retired);
+  }
+});
 
 test("runtime health endpoint is healthy", async () => {
   const response = await request("/api/health", "application/json");

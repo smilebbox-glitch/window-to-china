@@ -6,6 +6,8 @@ const sources = fs.readFileSync("lib/news-sources.ts", "utf8");
 const route = fs.readFileSync("app/api/news/route.ts", "utf8");
 const outbound = fs.readFileSync("lib/outbound.ts", "utf8");
 const page = fs.readFileSync("app/page.tsx", "utf8");
+const newsPage = fs.readFileSync("app/news/page.tsx", "utf8");
+const corporateHome = fs.readFileSync("components/corporate-home.tsx", "utf8");
 const liveDashboard = fs.readFileSync("components/news-dashboard-live.tsx", "utf8");
 
 function captures(pattern, text) {
@@ -84,8 +86,10 @@ test("news feed rejects unbounded stale content and exposes dedup diagnostics", 
   assert.ok(route.includes("sourceCatalogVersion"));
 });
 
-test("client no longer injects static seed stories into a successful live feed", () => {
-  assert.match(page, /NewsDashboardLive/);
+test("fresh-first feed moved to dedicated news route while corporate home stays live-data driven", () => {
+  assert.match(page, /CorporateHome/);
+  assert.match(corporateHome, /fetch\("\/api\/news"/);
+  assert.match(newsPage, /NewsDashboardLive/);
   assert.match(liveDashboard, /seedNews\.splice\(0, seedNews\.length\)/);
   assert.match(liveDashboard, /return <NewsDashboard \/>/);
 });

@@ -4,7 +4,7 @@ import fs from "node:fs";
 
 const operations = fs.readFileSync("lib/pilot-operations.ts", "utf8");
 const executivePage = fs.readFileSync("app/executive/page.tsx", "utf8");
-const panel = fs.readFileSync("components/executive-operations-panel.tsx", "utf8");
+const reliabilityConsole = fs.readFileSync("components/reliability-console.tsx", "utf8");
 const route = fs.readFileSync("app/api/pilot/operations/route.ts", "utf8");
 const reliability = fs.readFileSync("app/api/admin/reliability/route.ts", "utf8");
 const compose = fs.readFileSync("compose.yaml", "utf8");
@@ -27,13 +27,15 @@ test("Executive View is protected by configurable RBAC", () => {
   assert.match(compose, /EXECUTIVE_MIN_ROLE: \$\{EXECUTIVE_MIN_ROLE:-viewer\}/);
 });
 
-test("Executive View displays operational trust state and SLA", () => {
-  assert.match(executivePage, /ExecutiveOperationsPanel/);
-  assert.match(panel, /Pilot Operations · \{status\.briefStatus\}/);
-  assert.match(panel, /Go\/No-Go: \{status\.decision\}/);
-  assert.match(panel, /SLA freshness/);
-  assert.match(panel, /Fresh sources/);
-  assert.match(panel, /Stale \/ Error/);
+test("operational trust state is kept in IT reliability instead of the user Executive view", () => {
+  assert.doesNotMatch(executivePage, /ExecutiveOperationsPanel/);
+  assert.match(reliability, /pilotOperations: pilotOperationsStatus\(\)/);
+  assert.match(reliabilityConsole, /IT \/ Pilot Operations/);
+  assert.match(reliabilityConsole, /Go\/No-Go: \{operations\.decision\}/);
+  assert.match(reliabilityConsole, /Pilot Operations · \{operations\.briefStatus\}/);
+  assert.match(reliabilityConsole, /SLA freshness/);
+  assert.match(reliabilityConsole, /Fresh sources/);
+  assert.match(reliabilityConsole, /Stale \/ Error/);
 });
 
 test("operational endpoint and admin reliability expose the same gate", () => {

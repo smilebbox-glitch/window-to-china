@@ -1,0 +1,81 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import fs from "node:fs";
+
+const read = (file) => fs.readFileSync(file, "utf8");
+const shell = read("components/site-shell.tsx");
+const home = read("components/corporate-home.tsx");
+const hero = read("components/corporate-page-hero.tsx");
+const css = read("app/globals.css");
+const executive = read("app/executive/page.tsx");
+
+const pageFiles = [
+  "app/news/page.tsx",
+  "app/trucks/page.tsx",
+  "app/market/page.tsx",
+  "app/analysis/page.tsx",
+  "app/decision/page.tsx",
+  "app/executive/page.tsx",
+  "app/calendar/page.tsx",
+  "app/travel-guide/page.tsx",
+];
+
+test("approved corporate shell uses left navigation and no retired right rail", () => {
+  for (const route of ["/news", "/trucks", "/market", "/analysis", "/decision", "/executive", "/calendar", "/travel-guide"]) {
+    assert.ok(shell.includes(`href: "${route}"`), route);
+  }
+  for (const retired of ["Ключевые темы", "Популярные разделы", "Быстрые действия", "Состояние источников"]) {
+    assert.equal(shell.includes(retired), false, retired);
+  }
+  assert.ok(shell.includes("corporate-sidebar"));
+  assert.ok(shell.includes("corporate-topbar"));
+});
+
+test("corporate home is live-data driven and keeps strategic focus", () => {
+  assert.ok(home.includes('fetch("/api/news"'));
+  for (const entity of ["VOYAH", "EVOLUTE", "Моторинвест", "ЭВИА", "GWM", "SHACMAN"]) assert.ok(home.includes(entity), entity);
+  assert.ok(home.includes("Главные новости"));
+  assert.ok(home.includes("Актуальные направления"));
+  assert.ok(home.includes("Коммерческий транспорт"));
+});
+
+test("retired design blocks stay removed from corporate home", () => {
+  for (const retired of [
+    "Смотреть новости",
+    "Решения на сегодня",
+    "Рекомендация",
+    "Что взять с собой",
+    "Открыть календарь",
+    "Быстрые действия",
+    "Состояние источников",
+    "Ключевые темы",
+    "Популярные разделы",
+  ]) assert.equal(home.includes(retired), false, retired);
+});
+
+test("all visible pilot tabs use shared approved hero/frame", () => {
+  for (const file of pageFiles) {
+    const source = read(file);
+    assert.ok(source.includes("CorporatePageFrame"), file);
+    assert.ok(source.includes("CorporatePageHero"), file);
+  }
+  assert.ok(hero.includes("corp-hero"));
+});
+
+test("corporate design system includes four local offline hero assets", () => {
+  for (const file of [
+    "public/corporate/hero-shanghai.svg",
+    "public/corporate/hero-trucks.svg",
+    "public/corporate/hero-expo.svg",
+    "public/corporate/hero-travel.svg",
+  ]) {
+    assert.ok(fs.existsSync(file), file);
+    assert.match(read(file), /<svg\b/);
+  }
+  for (const token of [".corp-hero", ".corp-card", ".corporate-nav-item", ".corp-hero-home", ".corp-hero-trucks", ".corp-hero-expo", ".corp-hero-travel"]) assert.ok(css.includes(token), token);
+});
+
+test("Executive user view no longer renders operational GO panel", () => {
+  assert.equal(executive.includes("ExecutiveOperationsPanel"), false);
+  assert.ok(executive.includes("ExecutiveBrief"));
+});
