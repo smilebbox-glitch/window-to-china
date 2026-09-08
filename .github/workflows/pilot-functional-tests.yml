@@ -1,0 +1,96 @@
+name: Pilot functionality tests
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+      - design/v1.7.6-corporate-ui
+    paths:
+      - '.github/workflows/pilot-functional-tests.yml'
+      - 'app/**'
+      - 'components/**'
+      - 'lib/**'
+      - 'scripts/**'
+      - 'tests/**'
+      - 'Dockerfile'
+      - 'compose.yaml'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'start.sh'
+      - 'stop.sh'
+      - 'status.sh'
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-contracts:
+    name: Build + pilot contracts
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.13.0'
+      - name: Install dependencies
+        run: npm ci
+      - name: Build and run automated test suite
+        run: npm test
+      - name: Run complete pilot preflight
+        run: npm run pilot:preflight
+      - name: Test summary
+        if: success()
+        run: |
+          {
+            echo '## Pilot contracts: PASS'
+            echo '- Production build: PASS'
+            echo '- Automated tests: PASS'
+            echo '- Pilot preflight: PASS'
+            echo '- Corporate UI/news/source contracts: PASS'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  runtime-pilot:
+    name: Live Docker pilot
+    needs: build-and-contracts
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.13.0'
+      - name: Start full pilot stack
+        run: |
+          chmod +x start.sh stop.sh status.sh scripts/*.sh
+          NO_BROWSER=1 ./start.sh
+      - name: Run dedicated functionality tests against live pilot
+        env:
+          BASE_URL: http://127.0.0.1:3000
+          PILOT_TEST_TIMEOUT_MS: '12000'
+        run: npm run pilot:functional:runtime
+      - name: Run regression runtime smoke
+        env:
+          BASE_URL: http://127.0.0.1:3000
+        run: npm run test:runtime
+      - name: Show pilot status
+        run: ./status.sh
+      - name: Runtime summary
+        if: success()
+        run: |
+          {
+            echo '## Live Docker pilot: PASS'
+            echo '- One-click Docker startup: PASS'
+            echo '- Main UI routes: PASS'
+            echo '- Health/readiness/SQLite: PASS'
+            echo '- News API + source transparency: PASS'
+            echo '- Pilot operations + reliability: PASS'
+            echo '- Controlled pilot KPI contract: PASS'
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Diagnostics
+        if: always()
+        run: docker compose logs --tail=180 || true
+      - name: Stop pilot
+        if: always()
+        run: ./stop.sh || true
