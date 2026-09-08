@@ -12,16 +12,17 @@ function captures(pattern, text) {
   return [...text.matchAll(pattern)].map((match) => match[1]);
 }
 
-test("v1.7.1 source catalog is broad and contains no duplicate IDs or URLs", () => {
+test("v1.7.5 source catalog is broad and contains no duplicate IDs or URLs", () => {
   const ids = captures(/\bid:\s*"([^"]+)"/g, sources);
   const urls = captures(/\burl:\s*"(https:[^"]+)"/g, sources);
-  assert.ok(ids.length >= 27, `expected >=27 sources, got ${ids.length}`);
+  assert.ok(ids.length >= 29, `expected >=29 sources, got ${ids.length}`);
   assert.equal(new Set(ids).size, ids.length);
   assert.equal(new Set(urls).size, urls.length);
 
   for (const id of [
     "caam", "miit-auto", "mofcom-news", "cada", "nbs-china",
     "chinatruck", "360che-truck", "gasgoo", "cnevpost", "yicai-auto", "china-briefing", "36kr-en", "carnewschina",
+    "evolute-official", "voyah-official",
     "ural-official", "gruzovoy-ru", "gruzovikpress", "reis-trucks",
   ]) assert.ok(sources.includes(`id: "${id}"`), id);
 });
@@ -29,6 +30,8 @@ test("v1.7.1 source catalog is broad and contains no duplicate IDs or URLs", () 
 test("official and specialist sources outrank broad secondary feeds", () => {
   assert.match(sources, /id: "caam"[\s\S]*?priority: 100/);
   assert.match(sources, /id: "miit-auto"[\s\S]*?priority: 100/);
+  assert.match(sources, /id: "evolute-official"[\s\S]*?priority: 100/);
+  assert.match(sources, /id: "voyah-official"[\s\S]*?priority: 100/);
   assert.match(sources, /id: "ural-official"[\s\S]*?priority: 100/);
   assert.match(sources, /id: "chinatruck"[\s\S]*?priority: 93/);
   assert.match(sources, /id: "360che-truck"[\s\S]*?priority: 92/);
@@ -51,11 +54,14 @@ test("news API performs fuzzy cross-source dedupe and source-priority selection"
   ]) assert.ok(route.includes(token), token);
 });
 
-test("Russia and China truck sources are first-class ingestion jobs", () => {
+test("Russia and China strategic sources are first-class ingestion jobs", () => {
   assert.ok(route.includes("truckIndustryPattern"));
   assert.ok(route.includes('focus === "truck"'));
   assert.ok(route.includes('language === "ru"'));
-  assert.ok(route.includes('NEWS_SOURCE_CATALOG_VERSION = 2'));
+  assert.ok(route.includes('NEWS_SOURCE_CATALOG_VERSION = 3'));
+  for (const token of ["evolute", "voyah", "motorinvest", "моторинвест", "evia", "эвиа"]) assert.ok(route.toLowerCase().includes(token.toLowerCase()), token);
+  assert.ok(route.includes('"evolute-official"'));
+  assert.ok(route.includes('"voyah-official"'));
   assert.ok(sources.includes('market: "Россия"'));
   assert.ok(sources.includes('language: "ru"'));
 });
@@ -84,11 +90,12 @@ test("client no longer injects static seed stories into a successful live feed",
   assert.match(liveDashboard, /return <NewsDashboard \/>/);
 });
 
-test("outbound SSRF policy explicitly allows truck and general curated sources", () => {
+test("outbound SSRF policy explicitly allows curated focus sources", () => {
   for (const host of [
     "www.caam.org.cn", "www.miit.gov.cn", "english.mofcom.gov.cn", "www.cada.cn",
     "www.chinatruck.org", "www.360che.com", "autonews.gasgoo.com", "cnevpost.com",
     "www.yicaiglobal.com", "eu.36kr.com", "www.china-briefing.com", "www.stats.gov.cn", "carnewschina.com",
+    "www.evolute.ru", "evolute.ru", "voyah.ru", "www.voyah.ru",
     "uralaz.ru", "gruzovoy.ru", "www.gruzovikpress.ru", "reis.zr.ru",
   ]) assert.ok(outbound.includes(`"${host}"`), host);
 });
