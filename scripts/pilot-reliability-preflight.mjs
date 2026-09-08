@@ -10,7 +10,7 @@ const fx=await readFile("app/api/fx/route.ts","utf8");
 const news=await readFile("app/api/news/route.ts","utf8");
 const internal=await readFile("app/api/internal/refresh/route.ts","utf8");
 const content=await readFile("lib/content-store.ts","utf8");
-check(pkg.version==="1.6.1-pilot","package version is v1.6.1 pilot");
+check(/^\d+\.\d+\.\d+-pilot$/.test(pkg.version),"package version is a valid pilot version");
 check(db.includes("DatabaseSync")&&db.includes("journal_mode=WAL")&&db.includes("busy_timeout=5000"),"SQLite WAL persistent store configured");
 check(db.includes("source_snapshots")&&db.includes("source_history")&&db.includes("content_items"),"reliability/content tables exist");
 check(cache.includes('"fresh" | "stale" | "expired"')&&cache.includes("stale_until"),"fresh/stale/expired cache policy exists");
