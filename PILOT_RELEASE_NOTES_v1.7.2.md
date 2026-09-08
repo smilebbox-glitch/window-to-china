@@ -1,46 +1,42 @@
 # Окно в Китай — Pilot v1.7.2
 
-## Decision Cockpit: Market Data, Watchlists & Alerts
+## Corporate Decision Cockpit: Market Data & Company Signals
 
-v1.7.2 строится поверх v1.7.1 и добавляет рабочий слой принятия решений без создания второй параллельной системы уведомлений или пользовательских настроек.
+v1.7.2 строится поверх v1.7.1 и добавляет общий корпоративный слой принятия решений без персонального Watchlist.
 
-### Decision Cockpit
+### Corporate Decision Cockpit
 
 Новый маршрут `/decision` объединяет:
 
 - ranked corporate intelligence feed;
-- персональный Watchlist;
+- единый business score;
+- `Почему важно` / `Что проверить`;
 - Market Data с первоисточниками;
 - HCV Snapshot;
-- последние intelligence alerts;
-- методологические guardrails.
+- методологические guardrails;
+- сводку затронутых функций.
 
-### Watchlists
+### Единая шкала приоритета
 
-Пользователь может наблюдать:
+- `72–100` — Критично;
+- `60–71` — Высокий приоритет;
+- `45–59` — Наблюдение;
+- `0–44` — Фон.
 
-- бренды;
-- рынки;
-- intelligence topics;
-- ключевые слова;
-- HCV / MCV / LCV и другие truck segments;
-- дизель / LNG-CNG / EV / battery swap / hydrogen / hybrid;
-- Руководство / R&D / Закупки / Производство / Логистика;
-- минимальный business score 30 / 45 / 60 / 72.
+Decision Cockpit использует общий корпоративный порог `45/100` и не зависит от персональных пользовательских критериев.
 
-Настройки сохраняются в существующем `user_preferences.subscriptions_json`. Новая DB migration не требуется.
+### Персональный Watchlist не используется
 
-### Automatic intelligence alerts
+Из v1.7.2 удалены:
 
-Existing scheduler notification cycle расширен:
+- персональный Watchlist;
+- пользовательские keywords для intelligence;
+- персональные truck segments / powertrains / audiences;
+- персональный minimum score;
+- watchlist-driven intelligence alerts;
+- интеграция Decision Cockpit с `/api/user/preferences`.
 
-1. берётся последний persistent news snapshot;
-2. материалы проходят `rankNews()`;
-3. применяется watchlist пользователя;
-4. проверяется минимальный score;
-5. создаётся notification kind `intelligence`.
-
-Alert содержит score, match reasons, `Почему важно`, `Что проверить` и ссылку на источник. `INSERT OR IGNORE` защищает от повторной отправки одного и того же сигнала.
+Существующие старые функции пользовательских preferences и notifications сервиса остаются совместимыми и не расширяются Decision Cockpit-ом.
 
 ### Market Data
 
@@ -62,40 +58,26 @@ Market facts физически и логически отделены от но
 - news mentions ≠ market share;
 - рыночная цифра без периода и источника не считается допустимой Market Data metric.
 
-### UI / navigation
-
-В основную навигацию добавлен пункт `Решения`.
-
-Decision Cockpit показывает:
-
-- critical signal count;
-- watchlist matches;
-- unread alerts;
-- market fact count;
-- приоритетные материалы;
-- рыночные факты;
-- грузовой market snapshot.
-
 ### Verification
 
-Добавлены:
+Добавлены/обновлены:
 
-- `lib/watchlist.ts`;
 - `lib/decision-market-data.ts`;
 - `components/decision-cockpit.tsx`;
 - `app/decision/page.tsx`;
 - `tests/decision-cockpit-v172.test.mjs`;
 - `scripts/decision-cockpit-preflight.mjs`;
-- `docs/DECISION_COCKPIT_v1.7.2.md`.
+- `docs/DECISION_COCKPIT_v1.7.2.md`;
+- `tests/runtime-smoke.mjs`.
 
-Runtime smoke дополнен `/decision`, user preferences watchlist contract и notification endpoint.
+`lib/watchlist.ts` удалён.
 
 `pilot:decision` включён в общий `pilot:preflight`.
 
 ## Data / migration
 
-Новая схема БД не требуется. Используются существующие `user_preferences`, `user_notifications` и `source_snapshots`.
+Новая схема БД не требуется.
 
 ## Next
 
-v1.7.3: Daily / Weekly Intelligence Brief + Executive View после подтверждения v1.7.2 CI/runtime smoke.
+v1.7.3: Daily / Weekly Intelligence Brief + Executive View для руководства на основе общих корпоративных сигналов, без персонального Watchlist.
