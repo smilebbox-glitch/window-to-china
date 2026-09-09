@@ -209,6 +209,14 @@ services:
       - no-new-privileges:true
     cap_drop:
       - ALL
+    # Official nginx still has to create worker-owned runtime files and drop
+    # from its root master to the nginx worker user. DAC_READ_SEARCH is the
+    # narrow read bypass required for a host-owned TLS private key kept at 0600.
+    cap_add:
+      - CHOWN
+      - DAC_READ_SEARCH
+      - SETGID
+      - SETUID
     pids_limit: 128
     mem_limit: 128m
     cpus: 0.5
