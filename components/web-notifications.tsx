@@ -248,16 +248,23 @@ export function WebNotifications() {
       <button
         type="button"
         onClick={() => setOpen((value) => !value)}
-        className="fixed right-4 top-[14px] z-[80] grid size-10 place-items-center rounded-xl border border-[#d8e6f2] bg-white text-[#24446d] shadow-sm transition hover:border-[#2587ff] hover:text-[#147efb] lg:right-[220px]"
+        className={`fixed right-4 top-[14px] z-[80] grid size-10 place-items-center rounded-full border ring-4 ring-white/90 transition-all hover:-translate-y-0.5 lg:right-[248px] ${
+          preferences.notificationsEnabled
+            ? "border-[#9fc9ff] bg-[#edf6ff] text-[#147efb] shadow-[0_8px_22px_rgba(20,126,251,0.18)] hover:border-[#2587ff] hover:bg-white"
+            : "border-[#d8e6f2] bg-white text-[#24446d] shadow-[0_6px_18px_rgba(15,57,100,0.10)] hover:border-[#2587ff] hover:text-[#147efb]"
+        }`}
         aria-label="Уведомления и интересы"
-        title="Уведомления"
+        aria-pressed={open}
+        title={preferences.notificationsEnabled ? "Уведомления включены" : "Уведомления"}
       >
-        <Bell className="size-5" aria-hidden="true" />
-        {unread > 0 && (
-          <span className="absolute -right-1 -top-1 min-w-5 rounded-full bg-[#ef4444] px-1 text-center text-[10px] font-black leading-5 text-white">
+        <Bell className="size-[19px]" aria-hidden="true" />
+        {unread > 0 ? (
+          <span className="absolute -right-1.5 -top-1.5 grid h-5 min-w-5 place-items-center rounded-full bg-[#ef4444] px-1 text-center text-[10px] font-black leading-none text-white shadow-sm ring-2 ring-white">
             {unread > 99 ? "99+" : unread}
           </span>
-        )}
+        ) : preferences.notificationsEnabled ? (
+          <span className="absolute right-0 top-0 size-2.5 rounded-full bg-[#13b58b] ring-2 ring-white" aria-hidden="true" />
+        ) : null}
       </button>
 
       {open && (
