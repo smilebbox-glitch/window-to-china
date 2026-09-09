@@ -33,6 +33,8 @@ assert.match(layout, /manifest:\s*"\/manifest\.json"/);
 assert.match(layout, /PwaInstallButton/);
 assert.match(layout, /apple-touch-icon\.png/);
 assert.match(layout, /themeColor:\s*"#0a1d54"/);
+assert.match(layout, /viewportFit:\s*"cover"/);
+assert.match(layout, /mobile-pwa\.css/);
 
 const component = read("components/pwa-install-button.tsx");
 assert.match(component, /serviceWorker/);
@@ -43,6 +45,8 @@ assert.match(component, /window\.isSecureContext/);
 assert.match(component, /isIosLikeDevice/);
 assert.match(component, /На экран Домой/);
 assert.match(component, /IOS_GUIDE_DISMISSED_KEY/);
+assert.match(component, /pwa-install-banner/);
+assert.match(component, /pwa-install-button/);
 
 const sw = read("public/sw.js");
 assert.match(sw, /url\.pathname\.startsWith\("\/api\/"\)/);
@@ -62,7 +66,18 @@ assert.match(nextConfig, /source:\s*"\/manifest\.json"/);
 
 const siteShell = read("components/site-shell.tsx");
 assert.match(siteShell, /corporate-mobile-nav/);
-assert.match(siteShell, /mobileNavigation/);
-assert.match(siteShell, /aria-label="Мобильная навигация"/);
+assert.match(siteShell, /mobile-app-nav/);
+assert.match(siteShell, /primaryMobileNavigation/);
+assert.match(siteShell, /mobileMoreNavigation/);
+assert.match(siteShell, /mobile-more-sheet/);
+assert.match(siteShell, /aria-label="Основная мобильная навигация"/);
 
-console.log("PASS: Web App + PWA contract is installable on secure origins, mobile-ready, iOS-guided, and never caches intelligence APIs");
+const mobileCss = read("app/mobile-pwa.css");
+assert.match(mobileCss, /safe-area-inset-bottom/);
+assert.match(mobileCss, /safe-area-inset-top/);
+assert.match(mobileCss, /\.mobile-app-nav/);
+assert.match(mobileCss, /\.mobile-more-sheet/);
+assert.match(mobileCss, /@media \(display-mode: standalone\)/);
+assert.match(mobileCss, /\.corporate-page-market tbody > tr/);
+
+console.log("PASS: Web App + PWA contract is installable on secure origins, mobile-app ready, safe-area aware, iOS-guided, and never caches intelligence APIs");
