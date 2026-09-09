@@ -14,6 +14,7 @@ on:
       - 'scripts/configure-vm-firewall.ps1'
       - 'scripts/start-both-vm.sh'
       - 'scripts/start-both-vm.ps1'
+      - 'START_BOTH_VM.bat'
       - 'CONFIGURE_VM_FIREWALL.bat'
       - 'CHECK_VM_FIREWALL.bat'
       - 'MGC_VM_CONTROL.bat'
@@ -76,8 +77,8 @@ jobs:
           GITHUB_ACTIONS: 'true'
           MGC_VM_FIREWALL_CONTRACT_ONLY: '1'
         run: |
-          MGC_VM_ALLOWED_CIDR=10.250.0.0/24 ./scripts/host-firewall-preflight.sh --contract-only
-          if MGC_VM_ALLOWED_CIDR=8.8.8.0/24 ./scripts/host-firewall-preflight.sh --contract-only; then
+          MGC_VM_ALLOWED_CIDR=10.250.0.0/24 bash scripts/host-firewall-preflight.sh --contract-only
+          if MGC_VM_ALLOWED_CIDR=8.8.8.0/24 bash scripts/host-firewall-preflight.sh --contract-only; then
             echo '[NO-GO] Public CIDR was unexpectedly accepted.' >&2
             exit 1
           fi
