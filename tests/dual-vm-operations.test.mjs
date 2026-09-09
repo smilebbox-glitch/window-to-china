@@ -16,6 +16,8 @@ const diagnosticsSh = read('scripts/diagnostics-both-vm.sh');
 const diagnosticsPs = read('scripts/diagnostics-both-vm.ps1');
 const updateSh = read('scripts/update-both-vm.sh');
 const updatePs = read('scripts/update-both-vm.ps1');
+const reportSh = read('scripts/ops-report-both-vm.sh');
+const reportPs = read('scripts/ops-report-both-vm.ps1');
 const controlSh = read('scripts/vm-control.sh');
 const statusBat = read('STATUS_BOTH_VM.bat');
 const stopBat = read('STOP_BOTH_VM.bat');
@@ -23,6 +25,7 @@ const backupBat = read('BACKUP_BOTH_VM.bat');
 const restoreBat = read('RESTORE_BOTH_VM.bat');
 const diagnosticsBat = read('DIAGNOSTICS_BOTH_VM.bat');
 const updateBat = read('UPDATE_BOTH_VM.bat');
+const reportBat = read('OPS_REPORT_BOTH_VM.bat');
 const controlBat = read('MGC_VM_CONTROL.bat');
 
 test('dual VM status checks both readiness endpoints and both compose profiles', () => {
@@ -158,8 +161,30 @@ test('dual update is backup-first, fast-forward-only and never force-resets loca
   assert.match(updateBat, /never force-reset/u);
 });
 
-test('single operations consoles expose the same seven safe lifecycle actions', () => {
-  for (const operation of ['START', 'STATUS', 'BACKUP', 'DIAGNOSTICS', 'UPDATE', 'RESTORE', 'STOP']) {
+test('IT operations report is read-only, capacity-aware and backup-freshness-aware', () => {
+  for (const source of [reportSh, reportPs]) {
+    assert.match(source, /MGC_VM_REPORT_ROOT/u);
+    assert.match(source, /MGC_VM_DISK_WARN_GB/u);
+    assert.match(source, /MGC_VM_DISK_NO_GO_GB/u);
+    assert.match(source, /MGC_VM_BACKUP_MAX_AGE_HOURS/u);
+    assert.match(source, /readiness-both-vm/u);
+    assert.match(source, /status-both-vm/u);
+    assert.match(source, /checksums\.sha256/u);
+    assert.match(source, /operations\.json/u);
+    assert.match(source, /backup_checksum_valid/u);
+    assert.match(source, /disk_free_gb/u);
+    assert.match(source, /MGC_VM_REPORT_CI_SKIP_ACCEPTANCE/u);
+    assert.match(source, /GITHUB_ACTIONS/u);
+    assert.doesNotMatch(source, /Config\.Env/u);
+    assert.doesNotMatch(source, /(?:cp|Copy-Item)[^\n\r]*\.env\.vm/u);
+    assert.doesNotMatch(source, /docker\s+compose[^\n\r]*(?:up|down)/u);
+  }
+  assert.match(reportBat, /ops-report-both-vm\.ps1/u);
+  assert.match(reportBat, /Read-only check/u);
+});
+
+test('single operations consoles expose lifecycle, acceptance/readiness and IT report actions', () => {
+  for (const operation of ['START', 'STATUS', 'BACKUP', 'DIAGNOSTICS', 'UPDATE', 'RESTORE', 'STOP', 'ACCEPTANCE', 'READINESS', 'OPS REPORT']) {
     assert.match(controlBat, new RegExp(operation, 'u'));
     assert.match(controlSh, new RegExp(operation, 'u'));
   }
@@ -171,10 +196,14 @@ test('single operations consoles expose the same seven safe lifecycle actions', 
     'update-both-vm',
     'restore-both-vm',
     'stop-both-vm',
+    'readiness-both-vm',
+    'ops-report-both-vm',
   ]) {
     assert.match(controlSh, new RegExp(`${script}\\.sh`, 'u'));
   }
   assert.match(controlBat, /START_BOTH_VM\.bat/u);
   assert.match(controlBat, /UPDATE_BOTH_VM\.bat/u);
   assert.match(controlBat, /RESTORE_BOTH_VM\.bat/u);
+  assert.match(controlBat, /READINESS_BOTH_VM\.bat/u);
+  assert.match(controlBat, /OPS_REPORT_BOTH_VM\.bat/u);
 });
