@@ -1,0 +1,101 @@
+name: VM host firewall verification
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/vm-host-firewall-verification.yml'
+      - '.env.vm-host.example'
+      - 'scripts/host-firewall-preflight.sh'
+      - 'scripts/apply-vm-firewall.sh'
+      - 'scripts/configure-vm-firewall.sh'
+      - 'scripts/host-firewall-preflight.ps1'
+      - 'scripts/configure-vm-firewall.ps1'
+      - 'scripts/start-both-vm.sh'
+      - 'scripts/start-both-vm.ps1'
+      - 'CONFIGURE_VM_FIREWALL.bat'
+      - 'CHECK_VM_FIREWALL.bat'
+      - 'MGC_VM_CONTROL.bat'
+      - 'scripts/vm-control.sh'
+      - 'tests/vm-host-firewall.test.mjs'
+      - 'VM_HOST_FIREWALL.md'
+
+permissions:
+  contents: read
+
+jobs:
+  firewall-contracts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.13.0'
+
+      - name: Run firewall regression contract
+        run: node --test tests/vm-host-firewall.test.mjs
+
+      - name: Parse Linux firewall and shared-start scripts
+        shell: bash
+        run: |
+          bash -n \
+            scripts/host-firewall-preflight.sh \
+            scripts/apply-vm-firewall.sh \
+            scripts/configure-vm-firewall.sh \
+            scripts/start-both-vm.sh \
+            scripts/vm-control.sh
+
+      - name: Parse Windows firewall and shared-start scripts
+        shell: pwsh
+        run: |
+          $files = @(
+            'scripts/host-firewall-preflight.ps1',
+            'scripts/configure-vm-firewall.ps1',
+            'scripts/start-both-vm.ps1'
+          )
+          foreach ($file in $files) {
+            $tokens = $null
+            $errors = $null
+            [System.Management.Automation.Language.Parser]::ParseFile(
+              (Resolve-Path $file).Path,
+              [ref]$tokens,
+              [ref]$errors
+            ) | Out-Null
+            if ($errors.Count -gt 0) {
+              $errors | ForEach-Object { Write-Error ('{0}: {1}' -f $file, $_.Message) }
+              exit 1
+            }
+          }
+
+      - name: Verify Linux contract-only CIDR gate
+        shell: bash
+        env:
+          GITHUB_ACTIONS: 'true'
+          MGC_VM_FIREWALL_CONTRACT_ONLY: '1'
+        run: |
+          MGC_VM_ALLOWED_CIDR=10.250.0.0/24 ./scripts/host-firewall-preflight.sh --contract-only
+          if MGC_VM_ALLOWED_CIDR=8.8.8.0/24 ./scripts/host-firewall-preflight.sh --contract-only; then
+            echo '[NO-GO] Public CIDR was unexpectedly accepted.' >&2
+            exit 1
+          fi
+
+      - name: Verify Windows contract-only CIDR gate
+        shell: pwsh
+        env:
+          GITHUB_ACTIONS: 'true'
+          MGC_VM_FIREWALL_CONTRACT_ONLY: '1'
+        run: |
+          $env:MGC_VM_ALLOWED_CIDR = '10.250.0.0/24'
+          & ./scripts/host-firewall-preflight.ps1 -ContractOnly
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+          $env:MGC_VM_ALLOWED_CIDR = '8.8.8.0/24'
+          & ./scripts/host-firewall-preflight.ps1 -ContractOnly
+          if ($LASTEXITCODE -eq 0) {
+            Write-Error '[NO-GO] Public CIDR was unexpectedly accepted.'
+            exit 1
+          }
+          exit 0
