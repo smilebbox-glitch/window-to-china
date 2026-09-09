@@ -14,9 +14,11 @@ import {
   ChartNoAxesCombined,
   Home,
   Info,
+  Menu,
   Newspaper,
   Search,
   Truck,
+  X,
 } from "lucide-react";
 
 const navigation = [
@@ -25,11 +27,12 @@ const navigation = [
   { href: "/trucks", label: "Коммерческий транспорт", displayLabel: "Коммерческий транспорт", icon: Truck },
   { href: "/market", label: "Рынок", displayLabel: "Рынок и продажи", icon: ChartNoAxesCombined },
   { href: "/analysis", label: "Аналитика", displayLabel: "Аналитика", icon: BarChart3 },
-  { href: "/calendar", label: "Выставки и события", displayLabel: "Выставки и события", icon: CalendarDays },
-  { href: "/travel-guide", label: "Перед поездкой", displayLabel: "Перед поездкой", icon: BriefcaseBusiness },
+  { href: "/calendar", label: "События", displayLabel: "Выставки и события", icon: CalendarDays },
+  { href: "/travel-guide", label: "Поездка", displayLabel: "Перед поездкой", icon: BriefcaseBusiness },
 ] as const;
 
-const mobileNavigation = navigation;
+const primaryMobileNavigation = [navigation[0], navigation[1], navigation[3], navigation[5]] as const;
+const mobileMoreNavigation = [navigation[2], navigation[4], navigation[6]] as const;
 
 function isActive(pathname: string, href: string) {
   if (href === "/") return pathname === "/";
@@ -40,12 +43,15 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const [search, setSearch] = useState("");
+  const [mobileMoreOpen, setMobileMoreOpen] = useState(false);
 
   function submitSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const value = search.trim();
     router.push(value ? `/search?q=${encodeURIComponent(value)}` : "/search");
   }
+
+  const moreActive = mobileMoreNavigation.some((item) => isActive(pathname, item.href));
 
   return (
     <div className="corporate-app min-h-screen bg-[#f4f8fc] text-[#0b1d4b]">
@@ -65,23 +71,16 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
             </label>
           </form>
 
-          <div className="ml-auto flex shrink-0 items-center gap-2.5">
+          <div className="ml-auto flex shrink-0 items-center gap-2.5 pr-12 lg:pr-0">
+            <Link href="/search" className="mobile-top-search md:hidden" aria-label="Открыть поиск"><Search className="size-[18px]" /></Link>
             <div className="hidden items-center gap-2 rounded-full bg-[#eefaf6] px-3 py-1.5 text-[11px] font-black text-[#087458] lg:flex"><span className="signal-dot !size-1.5" /> Live</div>
-            <div className="flex items-center gap-2 rounded-xl border border-[#e2ebf3] bg-white px-2.5 py-1.5">
+            <div className="hidden items-center gap-2 rounded-xl border border-[#e2ebf3] bg-white px-2.5 py-1.5 lg:flex">
               <span className="grid size-8 place-items-center rounded-full bg-[#0d2b5c] text-[11px] font-black text-white">M</span>
-              <span className="hidden pr-1 sm:block"><span className="block text-xs font-black text-[#122657]">MGC</span><span className="block text-[9px] text-[#7c90aa]">Корпоративный пилот</span></span>
+              <span className="pr-1"><span className="block text-xs font-black text-[#122657]">MGC</span><span className="block text-[9px] text-[#7c90aa]">Корпоративный пилот</span></span>
             </div>
           </div>
         </div>
       </header>
-
-      <nav className="corporate-mobile-nav sticky top-[68px] z-40 flex gap-1 overflow-x-auto border-b border-[#dce8f3] bg-white/95 px-3 py-2 backdrop-blur-xl lg:hidden" aria-label="Мобильная навигация">
-        {mobileNavigation.map((item) => {
-          const Icon = item.icon;
-          const active = isActive(pathname, item.href);
-          return <Link key={item.href} href={item.href} className={`flex shrink-0 items-center gap-1.5 rounded-xl px-3 py-2 text-[11px] font-bold transition ${active ? "bg-[#eaf4ff] text-[#147efb]" : "text-[#496784] hover:bg-[#f1f6fb] hover:text-[#173368]"}`}><Icon className="size-4" /><span>{item.label}</span></Link>;
-        })}
-      </nav>
 
       <div className="corporate-layout grid min-h-[calc(100vh-68px)] lg:grid-cols-[228px_minmax(0,1fr)]">
         <aside className="corporate-sidebar hidden bg-[#081a31] text-white lg:flex lg:flex-col">
@@ -122,6 +121,34 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
           </footer>
         </div>
       </div>
+
+      {mobileMoreOpen && (
+        <>
+          <button type="button" className="mobile-more-backdrop lg:hidden" onClick={() => setMobileMoreOpen(false)} aria-label="Закрыть дополнительное меню" />
+          <section className="mobile-more-sheet lg:hidden" aria-label="Дополнительные разделы">
+            <div className="mobile-more-sheet-header">
+              <div><p className="text-[9px] font-black uppercase tracking-[.16em] text-[#8fc5ff]">MGC Intelligence</p><p className="mt-1 text-base font-black text-white">Ещё разделы</p></div>
+              <button type="button" onClick={() => setMobileMoreOpen(false)} className="grid size-10 place-items-center rounded-xl border border-white/15 bg-white/10 text-white" aria-label="Закрыть меню"><X className="size-5" /></button>
+            </div>
+            <div className="mobile-more-sheet-grid">
+              <Link href="/search" onClick={() => setMobileMoreOpen(false)} className="mobile-more-sheet-link"><Search /><span>Поиск</span></Link>
+              {mobileMoreNavigation.map((item) => {
+                const Icon = item.icon;
+                return <Link key={item.href} href={item.href} onClick={() => setMobileMoreOpen(false)} className="mobile-more-sheet-link"><Icon /><span>{item.displayLabel}</span></Link>;
+              })}
+            </div>
+          </section>
+        </>
+      )}
+
+      <nav className="mobile-app-nav lg:hidden" aria-label="Основная мобильная навигация">
+        {primaryMobileNavigation.map((item) => {
+          const Icon = item.icon;
+          const active = isActive(pathname, item.href);
+          return <Link key={item.href} href={item.href} className={`mobile-app-nav-item ${active ? "is-active" : ""}`}><Icon /><span>{item.label}</span></Link>;
+        })}
+        <button type="button" onClick={() => setMobileMoreOpen((value) => !value)} className={`mobile-app-nav-item ${moreActive || mobileMoreOpen ? "is-active" : ""}`} aria-expanded={mobileMoreOpen} aria-label="Ещё разделы"><Menu /><span>Ещё</span></button>
+      </nav>
     </div>
   );
 }
