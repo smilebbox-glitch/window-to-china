@@ -13,6 +13,8 @@ const preflightPs = read('scripts/host-firewall-preflight.ps1');
 const configurePs = read('scripts/configure-vm-firewall.ps1');
 const configureBat = read('CONFIGURE_VM_FIREWALL.bat');
 const checkBat = read('CHECK_VM_FIREWALL.bat');
+const controlBat = read('MGC_VM_CONTROL.bat');
+const controlSh = read('scripts/vm-control.sh');
 const example = read('.env.vm-host.example');
 
 test('shared launchers fail closed through host firewall preflight before service start', () => {
@@ -64,6 +66,18 @@ test('Windows firewall rules are exact-port, exact-CIDR and non-public-profile',
   assert.match(preflightPs, /Broad inbound allow rule/u);
   assert.match(configureBat, /Run as administrator/u);
   assert.match(checkBat, /host-firewall-preflight\.ps1/u);
+});
+
+test('operator consoles expose firewall setup and firewall check before START', () => {
+  for (const source of [controlBat, controlSh]) {
+    assert.match(source, /FIREWALL SETUP/u);
+    assert.match(source, /FIREWALL CHECK/u);
+    assert.ok(source.indexOf('FIREWALL SETUP') < source.indexOf('START'));
+  }
+  assert.match(controlBat, /CONFIGURE_VM_FIREWALL\.bat/u);
+  assert.match(controlBat, /CHECK_VM_FIREWALL\.bat/u);
+  assert.match(controlSh, /configure-vm-firewall\.sh/u);
+  assert.match(controlSh, /host-firewall-preflight\.sh/u);
 });
 
 test('firewall scripts never encode a public-any ingress rule', () => {
