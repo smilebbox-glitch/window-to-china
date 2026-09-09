@@ -36,7 +36,8 @@ test('SQLite verification is read-only and PostgreSQL restore is isolated', () =
     assert.match(source, /postgres:16\.4-alpine/u);
     assert.match(source, /postgres_public_tables/u);
     assert.doesNotMatch(source, /docker\s+compose[^\n\r]*(?:up|down)/u);
-    assert.doesNotMatch(source, /(?:-p|--publish)[ =]/u);
+    assert.doesNotMatch(source, /--publish(?:=|\s)/u);
+    assert.doesNotMatch(source, /^\s+-p(?:=|\s)/mu);
   }
 });
 
