@@ -3,35 +3,8 @@ name: Server and mobile security gate
 on:
   push:
     branches: [main]
-    paths:
-      - '.github/workflows/security-hardening.yml'
-      - '.github/dependabot.yml'
-      - '.gitignore'
-      - 'next.config.ts'
-      - 'public/sw.js'
-      - 'deploy/nginx/**'
-      - 'deploy/tls/**'
-      - 'compose.corporate.yaml'
-      - 'lib/**'
-      - 'app/api/**'
-      - 'scripts/secret-preflight.mjs'
-      - 'tests/server-mobile-security.test.mjs'
-      - 'package.json'
-      - 'package-lock.json'
   pull_request:
-    paths:
-      - '.gitignore'
-      - 'next.config.ts'
-      - 'public/sw.js'
-      - 'deploy/nginx/**'
-      - 'deploy/tls/**'
-      - 'compose.corporate.yaml'
-      - 'lib/**'
-      - 'app/api/**'
-      - 'scripts/secret-preflight.mjs'
-      - 'tests/server-mobile-security.test.mjs'
-      - 'package.json'
-      - 'package-lock.json'
+    branches: [main]
   schedule:
     - cron: '17 3 * * 1'
   workflow_dispatch:
