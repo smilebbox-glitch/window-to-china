@@ -73,12 +73,13 @@ This calls the existing VM launcher in each repository. Each service creates its
 
 ## Daily IT operations
 
-Windows operators can use four files in `window-to-china`:
+Windows operators use the following files in `window-to-china`:
 
 ```text
 START_BOTH_VM.bat
 STATUS_BOTH_VM.bat
 BACKUP_BOTH_VM.bat
+RESTORE_BOTH_VM.bat
 STOP_BOTH_VM.bat
 ```
 
@@ -88,6 +89,7 @@ Linux equivalents:
 ./scripts/start-both-vm.sh
 ./scripts/status-both-vm.sh
 ./scripts/backup-both-vm.sh
+./scripts/restore-both-vm.sh
 ./scripts/stop-both-vm.sh
 ```
 
@@ -137,6 +139,65 @@ MGC_VM_BACKUP_INCLUDE_SECRETS=YES
 ```
 
 If secrets are included, the resulting backup must be treated as confidential infrastructure material and stored only in an approved protected location.
+
+## Verified restore / disaster recovery
+
+Restore is a maintenance operation. Do not run it while users are actively working in either pilot service.
+
+Before replacing any data, `RESTORE_BOTH_VM`:
+
+1. verifies that `okno.sqlite`, `mgc_languages.dump`, `manifest.json` and `checksums.sha256` exist;
+2. verifies all SHA-256 checksums;
+3. checks that the manifest belongs to the `dual-vm-cpu-only-no-ai` profile;
+4. creates a fresh **pre-restore safety backup** under `vm-backups/pre-restore/`;
+5. validates the PostgreSQL dump with `pg_restore --list`;
+6. requires explicit confirmation by typing `RESTORE`;
+7. stops application writers, restores both databases, restarts the services and waits for both readiness endpoints.
+
+The restore intentionally replaces **database data only**. The current VM `.env.vm` secrets, Okno runtime configuration and audit logs are preserved. This prevents an old backup from silently reverting current infrastructure credentials or operational configuration.
+
+### Windows
+
+To restore the newest timestamped backup in the default backup folder, double-click:
+
+```text
+RESTORE_BOTH_VM.bat
+```
+
+To restore a specific backup from Command Prompt:
+
+```bat
+RESTORE_BOTH_VM.bat "C:\MGC\vm-backups\20260909T120000Z"
+```
+
+The operator must type exactly:
+
+```text
+RESTORE
+```
+
+before destructive database replacement begins.
+
+### Linux
+
+Restore a specific bundle:
+
+```bash
+cd /opt/mgc/window-to-china
+./scripts/restore-both-vm.sh /opt/mgc/vm-backups/20260909T120000Z
+```
+
+If no path is supplied, the launcher selects the newest timestamped backup from the configured backup root and still requires confirmation.
+
+A custom backup root is supported through:
+
+```text
+MGC_VM_BACKUP_ROOT=<path>
+```
+
+If a restore step fails, the launcher prints the location of the automatically created pre-restore safety backup and attempts to bring both services back up for diagnostics.
+
+After every restore, run `STATUS_BOTH_VM` and confirm both readiness endpoints before users reconnect.
 
 ## URLs
 
