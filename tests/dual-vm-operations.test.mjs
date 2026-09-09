@@ -51,3 +51,9 @@ test('dual VM backup is database-consistent and integrity-verified', () => {
   }
   assert.match(backupBat, /backup-both-vm\.ps1/u);
 });
+
+test('Linux backup treats optional runtime artifacts as optional', () => {
+  assert.match(backupSh, /if \[\[ -d "\$DEST\/okno-audit" \]\]; then/u);
+  assert.match(backupSh, /if \[\[ -f "\$DEST\/runtime-config\.json" \]\]; then/u);
+  assert.match(backupSh, /exit 0\s*$/u);
+});
