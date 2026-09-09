@@ -14,6 +14,14 @@ The acceptance command must finish with:
 [GO] VM PILOT ACCEPTANCE PASSED.
 ```
 
+For the lighter operational view after acceptance, use:
+
+```text
+READINESS_BOTH_VM.bat
+```
+
+It verifies live service status and confirms that the current repository revisions and corporate CIDR still match the latest accepted `GO` receipt.
+
 ## Linux
 
 After the firewall has been configured with `sudo ./scripts/configure-vm-firewall.sh` and the services are running:
@@ -23,7 +31,13 @@ cd /opt/mgc/window-to-china
 sudo ./scripts/accept-both-vm.sh
 ```
 
-The command checks four independent layers:
+For the later read-only readiness/drift check:
+
+```bash
+./scripts/readiness-both-vm.sh
+```
+
+The acceptance command checks four independent layers:
 
 1. **Host firewall boundary** — only the explicitly configured private corporate CIDR may reach TCP 3000 and 8080.
 2. **Runtime readiness and ingress isolation** — both services are healthy; the Okno scheduler stays internal; only the hardened MGC nginx edge is published.
@@ -65,7 +79,33 @@ MGC_VM_ACCEPTANCE_ROOT=<approved path>
 
 Treat the receipt as internal infrastructure metadata because it includes the corporate CIDR and deployment revision identifiers.
 
-## When to run again
+## Acceptance drift / readiness report
+
+`READINESS_BOTH_VM` is intentionally read-only. It combines:
+
+- current `STATUS_BOTH_VM` readiness and Docker ingress-isolation result;
+- current Git SHA of both repositories;
+- SHA-256 validation of the newest acceptance receipt;
+- comparison of current SHA/CIDR against the last accepted SHA/CIDR;
+- the newest normal backup and checksum validation of its `manifest.json`.
+
+If either repository revision changes after acceptance, or if the configured corporate CIDR changes, the report returns:
+
+```text
+[NO-GO] ACCEPTANCE STALE
+```
+
+and instructs IT to run `ACCEPT_BOTH_VM` again. This prevents an update from silently inheriting an older deployment approval.
+
+A missing or older backup is shown as `[WARN]`, not as a false successful backup claim. Create a fresh `BACKUP_BOTH_VM` before risky maintenance or sustained pilot use.
+
+A fully current state ends with:
+
+```text
+[GO] PILOT READINESS: CURRENT ACCEPTANCE / SERVICES READY.
+```
+
+## When to run acceptance again
 
 Run the acceptance gate again after:
 
@@ -78,4 +118,4 @@ Run the acceptance gate again after:
 
 Each successful run creates a separate receipt, so IT can retain a simple deployment-admission history without storing application secrets.
 
-`STATUS_BOTH_VM` remains the lighter daily service check. `ACCEPT_BOTH_VM` is the stronger deployment-admission check that additionally validates the host firewall, the no-AI runtime contract and writes acceptance evidence.
+`STATUS_BOTH_VM` is the fastest live service check. `READINESS_BOTH_VM` adds acceptance-drift and backup context. `ACCEPT_BOTH_VM` is the strongest deployment-admission gate because it validates the host firewall, the no-AI runtime contract and writes new acceptance evidence.
