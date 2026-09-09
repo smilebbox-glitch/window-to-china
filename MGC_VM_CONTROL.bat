@@ -15,6 +15,7 @@ echo   4. STATUS          Check both services and readiness
 echo   A. ACCEPTANCE      Full pilot GO/NO-GO gate
 echo   R. READINESS       Current status + acceptance drift + backup
 echo   O. OPS REPORT      Read-only IT health/capacity/backup report
+echo   D. DAILY OPS       Run/install/status daily backup + health check
 echo   5. BACKUP          Create verified backup of both DBs
 echo   6. DIAGNOSTICS     Create secret-safe diagnostics bundle
 echo   7. UPDATE          Backup + safe fast-forward update
@@ -22,9 +23,10 @@ echo   8. RESTORE         Controlled restore of both DBs
 echo   9. STOP            Stop both services, preserve data
 echo   Q. EXIT
 echo.
-choice /C 123456789AROQ /N /M "Select: "
+choice /C 123456789ARODQ /N /M "Select: "
 
-if errorlevel 13 goto END
+if errorlevel 14 goto END
+if errorlevel 13 goto DAILY_OPS
 if errorlevel 12 goto OPS_REPORT
 if errorlevel 11 goto READINESS
 if errorlevel 10 goto ACCEPTANCE
@@ -64,6 +66,10 @@ goto MENU
 
 :OPS_REPORT
 call "%~dp0OPS_REPORT_BOTH_VM.bat"
+goto MENU
+
+:DAILY_OPS
+call "%~dp0DAILY_VM_HEALTH.bat"
 goto MENU
 
 :BACKUP
