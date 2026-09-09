@@ -1,0 +1,253 @@
+.newsPage,
+.trucksPage,
+.analysisPage,
+.calendarPage {
+  --exec-navy: #102a58;
+  --exec-blue: #147efb;
+  --exec-line: #dce7f1;
+  --exec-soft: #f6f9fc;
+  --exec-muted: #7186a2;
+}
+
+/* News: keep live KPI logic, remove the old duplicate brand hero. */
+.newsPage :global(.mgc-surface) {
+  min-height: 0 !important;
+  background: transparent !important;
+}
+.newsPage :global(.mgc-surface > div) {
+  max-width: none !important;
+  padding: 0 !important;
+}
+.newsPage :global(.mgc-surface > div > section:first-child) {
+  margin-bottom: 1rem !important;
+  overflow: hidden;
+  border: 1px solid var(--exec-line) !important;
+  border-radius: 16px;
+  box-shadow: 0 12px 36px rgba(22, 48, 83, .055) !important;
+}
+.newsPage :global(.mgc-surface > div > section:first-child > div) {
+  display: block !important;
+}
+.newsPage :global(.mgc-surface > div > section:first-child > div > div:first-child) {
+  display: none !important;
+}
+.newsPage :global(.mgc-surface > div > section:first-child > div > div:last-child) {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  background: white !important;
+}
+.newsPage :global(.mgc-surface > div > section:first-child button) {
+  border-color: #e5edf4 !important;
+  border-top-width: 3px !important;
+  border-bottom-width: 0 !important;
+  border-radius: 0 !important;
+  background: white !important;
+}
+.newsPage :global(#news-feed > div > div:first-child),
+.newsPage :global(#news-feed > div > div:nth-child(3)) {
+  overflow: hidden;
+  border-color: var(--exec-line) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 12px 36px rgba(22, 48, 83, .05) !important;
+}
+.newsPage :global(#news-feed article) {
+  background: white;
+  transition: background-color .18s ease, transform .18s ease;
+}
+.newsPage :global(#news-feed article:hover) {
+  background: #f8fbfe !important;
+}
+.newsPage :global(#news-feed input),
+.newsPage :global(#news-feed button),
+.newsPage :global(#news-feed [role="combobox"]) {
+  border-radius: 10px !important;
+}
+.newsPage :global(#news-feed [role="tablist"]) {
+  border-radius: 12px !important;
+  background: #f3f7fb !important;
+}
+.newsPage :global(#news-feed [role="tab"]) {
+  border-radius: 9px !important;
+}
+
+/* Truck Radar: preserve live KPIs, turn the module into the same light executive workspace. */
+.trucksPage :global(main[class*="bg-[#eef1f5]"]) {
+  min-height: 0 !important;
+  background: transparent !important;
+}
+.trucksPage :global(main[class*="bg-[#eef1f5]"] > div) {
+  max-width: none !important;
+  padding: 0 !important;
+}
+.trucksPage :global(main[class*="bg-[#eef1f5]"] > div > section:first-child) {
+  margin-bottom: 1rem !important;
+  overflow: hidden;
+  border-color: var(--exec-line) !important;
+  border-radius: 16px;
+  background: white !important;
+  box-shadow: 0 12px 36px rgba(22, 48, 83, .055) !important;
+}
+.trucksPage :global(main[class*="bg-[#eef1f5]"] > div > section:first-child > div) {
+  display: block !important;
+}
+.trucksPage :global(main[class*="bg-[#eef1f5]"] > div > section:first-child > div > div:first-child) {
+  display: none !important;
+}
+.trucksPage :global(main[class*="bg-[#eef1f5]"] > div > section:first-child > div > div:last-child) {
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  background: white !important;
+}
+.trucksPage :global(main article),
+.trucksPage :global(main aside > div),
+.trucksPage :global(main section > div > div[class*="bg-white"]) {
+  border-color: var(--exec-line) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 10px 30px rgba(22, 48, 83, .045) !important;
+}
+.trucksPage :global(main article:hover) {
+  border-color: #bcd8f0 !important;
+  box-shadow: 0 14px 34px rgba(22, 48, 83, .08) !important;
+}
+.trucksPage :global(main button[class*="border"]),
+.trucksPage :global(main input),
+.trucksPage :global(main select) {
+  border-radius: 10px !important;
+}
+.trucksPage :global(main [class*="border-l-4"]) {
+  border-radius: 10px;
+}
+
+/* Analysis: convert the legacy dark RAG workbench into the executive light system. */
+.analysisPage :global(.radar-grid) {
+  min-height: 0 !important;
+  background: transparent !important;
+}
+.analysisPage :global(.radar-grid > div) {
+  max-width: none !important;
+  padding: 0 !important;
+}
+.analysisPage :global(.radar-grid [class*="bg-[#0a1516]"]) {
+  background: white !important;
+}
+.analysisPage :global(.radar-grid [class*="bg-[#071011]"]) {
+  background: #f7fbff !important;
+}
+.analysisPage :global(.radar-grid [class*="border-white"]) {
+  border-color: var(--exec-line) !important;
+}
+.analysisPage :global(.radar-grid [class*="text-white"]),
+.analysisPage :global(.radar-grid [class*="text-slate-100"]),
+.analysisPage :global(.radar-grid [class*="text-slate-200"]) {
+  color: var(--exec-navy) !important;
+}
+.analysisPage :global(.radar-grid [class*="text-slate-300"]),
+.analysisPage :global(.radar-grid [class*="text-slate-400"]) {
+  color: #4f6987 !important;
+}
+.analysisPage :global(.radar-grid [class*="text-slate-500"]),
+.analysisPage :global(.radar-grid [class*="text-slate-600"]) {
+  color: var(--exec-muted) !important;
+}
+.analysisPage :global(.radar-grid aside > div),
+.analysisPage :global(.radar-grid section > div[class*="rounded-2xl"]),
+.analysisPage :global(.radar-grid div[class*="rounded-2xl"]) {
+  border-color: var(--exec-line) !important;
+  box-shadow: 0 12px 36px rgba(22, 48, 83, .05);
+}
+.analysisPage :global(.radar-grid textarea),
+.analysisPage :global(.radar-grid [role="combobox"]) {
+  border-color: #d5e2ed !important;
+  background: #f7fbff !important;
+  color: #17345f !important;
+}
+.analysisPage :global(.radar-grid button[class*="border-white"]) {
+  border-color: #d7e4ef !important;
+  background: #f7fbff !important;
+  color: #506b89 !important;
+}
+
+/* Calendar: keep next-event intelligence and trip controls, remove the redundant title panel. */
+.calendarPage :global(.radar-grid) {
+  min-height: 0 !important;
+  background: transparent !important;
+}
+.calendarPage :global(.radar-grid > div) {
+  max-width: none !important;
+  padding: 0 !important;
+}
+.calendarPage :global(.radar-grid > div > section:first-child) {
+  display: block !important;
+  margin-bottom: 1rem !important;
+  overflow: hidden;
+  border-color: var(--exec-line) !important;
+  border-radius: 16px !important;
+  background: white !important;
+  box-shadow: 0 12px 36px rgba(22, 48, 83, .05) !important;
+}
+.calendarPage :global(.radar-grid > div > section:first-child > div:first-child) {
+  display: none !important;
+}
+.calendarPage :global(.radar-grid > div > section:first-child > div:last-child) {
+  border: 0 !important;
+  background: linear-gradient(135deg, #fff9f2, #ffffff) !important;
+}
+.calendarPage :global(.radar-grid [class*="bg-[#0a1516]"]) {
+  background: white !important;
+}
+.calendarPage :global(.radar-grid [class*="bg-[#071011]"]) {
+  background: #f7fbff !important;
+}
+.calendarPage :global(.radar-grid [class*="border-white"]) {
+  border-color: var(--exec-line) !important;
+}
+.calendarPage :global(.radar-grid [class*="text-white"]),
+.calendarPage :global(.radar-grid [class*="text-slate-100"]),
+.calendarPage :global(.radar-grid [class*="text-slate-200"]) {
+  color: var(--exec-navy) !important;
+}
+.calendarPage :global(.radar-grid [class*="text-slate-300"]),
+.calendarPage :global(.radar-grid [class*="text-slate-400"]) {
+  color: #526c89 !important;
+}
+.calendarPage :global(.radar-grid [class*="text-slate-500"]),
+.calendarPage :global(.radar-grid [class*="text-slate-600"]) {
+  color: var(--exec-muted) !important;
+}
+.calendarPage :global(.radar-grid article) {
+  border-color: var(--exec-line) !important;
+  box-shadow: 0 10px 30px rgba(22, 48, 83, .045);
+}
+.calendarPage :global(.radar-grid article:hover) {
+  border-color: #bdd9f1 !important;
+  box-shadow: 0 14px 34px rgba(22, 48, 83, .075);
+}
+.calendarPage :global(.radar-grid details) {
+  border-color: #dcdcf3 !important;
+  background: #fafaff !important;
+}
+.calendarPage :global(.radar-grid [role="tablist"]) {
+  background: #f3f7fb !important;
+}
+.calendarPage :global(.radar-grid [role="tab"]) {
+  color: #607995 !important;
+}
+.calendarPage :global(.radar-grid [role="tab"][data-state="active"]) {
+  background: white !important;
+  color: #17345f !important;
+  box-shadow: 0 3px 10px rgba(22, 48, 83, .08);
+}
+
+@media (max-width: 900px) {
+  .newsPage :global(.mgc-surface > div > section:first-child > div > div:last-child),
+  .trucksPage :global(main[class*="bg-[#eef1f5]"] > div > section:first-child > div > div:last-child) {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 560px) {
+  .newsPage :global(.mgc-surface > div > section:first-child > div > div:last-child),
+  .trucksPage :global(main[class*="bg-[#eef1f5]"] > div > section:first-child > div > div:last-child) {
+    grid-template-columns: 1fr !important;
+  }
+}
