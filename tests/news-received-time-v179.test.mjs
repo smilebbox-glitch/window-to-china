@@ -5,6 +5,7 @@ import test from "node:test";
 const data = fs.readFileSync(new URL("../lib/data.ts", import.meta.url), "utf8");
 const route = fs.readFileSync(new URL("../app/api/news/route.ts", import.meta.url), "utf8");
 const dashboard = fs.readFileSync(new URL("../components/news-dashboard.tsx", import.meta.url), "utf8");
+const truckRadar = fs.readFileSync(new URL("../components/truck-radar.tsx", import.meta.url), "utf8");
 const readme = fs.readFileSync(new URL("../README.md", import.meta.url), "utf8");
 
 test("news pipeline records and preserves the service receipt timestamp", () => {
@@ -19,7 +20,7 @@ test("news pipeline records and preserves the service receipt timestamp", () => 
   assert.match(route, /payload: fetched/u);
 });
 
-test("news UI shows exact Moscow receipt and publication time", () => {
+test("main news UI shows exact Moscow receipt and publication time", () => {
   assert.match(dashboard, /type NewsWithReceipt = NewsItem & \{ receivedAt\?: string \}/u);
   assert.match(dashboard, /hour: "2-digit"/u);
   assert.match(dashboard, /minute: "2-digit"/u);
@@ -29,6 +30,15 @@ test("news UI shows exact Moscow receipt and publication time", () => {
   assert.match(dashboard, /Опубликовано:/u);
   assert.match(dashboard, /formatDateTime\(item\.publishedAt\)/u);
   assert.match(dashboard, /\[\.\.\.live, \.\.\.seedNews\]/u, "live item must override a matching seed item so receivedAt is not lost");
+});
+
+test("commercial vehicle feed preserves and displays the same receipt-time contract", () => {
+  assert.match(truckRadar, /type NewsWithReceipt = NewsItem & \{ receivedAt\?: string \}/u);
+  assert.match(truckRadar, /type LiveResponse = \{ news: NewsWithReceipt\[\]/u);
+  assert.match(truckRadar, /timeZone: "Europe\/Moscow"/u);
+  assert.match(truckRadar, /const receivedAt = \(item as NewsWithReceipt\)\.receivedAt;/u);
+  assert.match(truckRadar, /Получено: \{receivedAt \? formatDateTime\(receivedAt\) : "нет данных"\}/u);
+  assert.match(truckRadar, /Опубликовано: \{formatDateTime\(item\.publishedAt\)\}/u);
 });
 
 test("static seed news is not assigned invented receipt timestamps", () => {
