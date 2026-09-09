@@ -57,6 +57,32 @@ jobs:
         working-directory: window-to-china
         run: node --test tests/dual-vm-launcher.test.mjs tests/dual-vm-operations.test.mjs
 
+      - name: Parse Windows PowerShell operator scripts
+        working-directory: window-to-china
+        shell: pwsh
+        run: |
+          $files = @(
+            'scripts/start-both-vm.ps1',
+            'scripts/status-both-vm.ps1',
+            'scripts/backup-both-vm.ps1',
+            'scripts/restore-both-vm.ps1',
+            'scripts/stop-both-vm.ps1'
+          )
+          foreach ($file in $files) {
+            $tokens = $null
+            $errors = $null
+            [System.Management.Automation.Language.Parser]::ParseFile(
+              (Resolve-Path $file).Path,
+              [ref]$tokens,
+              [ref]$errors
+            ) | Out-Null
+            if ($errors.Count -gt 0) {
+              $errors | ForEach-Object { Write-Error "$file: $($_.Message)" }
+              exit 1
+            }
+          }
+          Write-Host 'PowerShell operator scripts parsed successfully.'
+
       - name: Start both CPU-only profiles through shared launcher
         working-directory: window-to-china
         run: |
