@@ -9,6 +9,7 @@ const sw = read('public/sw.js');
 const nginx = read('deploy/nginx/corporate.conf.template');
 const compose = read('compose.corporate.yaml');
 const corporateEnv = read('.env.corporate.example');
+const dockerignore = read('.dockerignore');
 
 test('browser and PWA responses carry hardened security controls', () => {
   assert.match(nextConfig, /Content-Security-Policy/u);
@@ -69,4 +70,23 @@ test('corporate application remains isolated and SSO is limited to the approved 
   assert.match(compose, /OAUTH2_PROXY_COOKIE_SECRET/u);
   assert.match(compose, /AUDIT_HMAC_KEY/u);
   assert.match(compose, /USER_DATA_HMAC_KEY/u);
+});
+
+test('hardened nginx can read a locked host TLS key without broad container privilege', () => {
+  const nginxStart = compose.indexOf('\n  nginx:');
+  const nginxEnd = compose.indexOf('\nnetworks:', nginxStart);
+  assert.notEqual(nginxStart, -1);
+  assert.notEqual(nginxEnd, -1);
+  const nginxBlock = compose.slice(nginxStart, nginxEnd);
+  assert.match(nginxBlock, /read_only: true/u);
+  assert.match(nginxBlock, /no-new-privileges:true/u);
+  assert.match(nginxBlock, /cap_drop:\s*\n\s*- ALL/u);
+  assert.match(nginxBlock, /cap_add:\s*\n\s*- CHOWN\s*\n\s*- DAC_READ_SEARCH\s*\n\s*- SETGID\s*\n\s*- SETUID/u);
+  assert.doesNotMatch(nginxBlock, /privileged:\s*true/u);
+  assert.doesNotMatch(nginxBlock, /- SYS_ADMIN/u);
+  assert.doesNotMatch(nginxBlock, /- NET_ADMIN/u);
+});
+
+test('CI runtime TLS and secret material can never enter the Docker build context', () => {
+  assert.match(dockerignore, /^\.ci-runtime$/mu);
 });
