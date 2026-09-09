@@ -73,7 +73,19 @@ This calls the existing VM launcher in each repository. Each service creates its
 
 ## Daily IT operations
 
-Windows operators use the following files in `window-to-china`:
+The simplest Windows entry point is:
+
+```text
+MGC_VM_CONTROL.bat
+```
+
+It opens one menu with Start, Status, Backup, Diagnostics, Update, Restore and Stop. On Linux the equivalent operations console is:
+
+```bash
+./scripts/vm-control.sh
+```
+
+The individual Windows commands remain available when IT wants to automate or run one action directly:
 
 ```text
 START_BOTH_VM.bat
@@ -269,6 +281,7 @@ Allow inbound TCP 3000 and 8080 only from the required internal subnet. Do not e
 - Okno v Kitai keeps runtime data in its Docker volume.
 - MGC Languages keeps PostgreSQL data in its Docker volume.
 - Restarting or normally stopping containers does not delete the named volumes.
+- Both Docker stacks use `restart: unless-stopped`, so after a normal VM reboot they can return automatically when Docker itself starts, unless an operator explicitly stopped the stacks.
 
 ## Manual health checks
 
