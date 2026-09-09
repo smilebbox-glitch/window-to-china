@@ -158,8 +158,9 @@ services:
       - --cookie-expire=${SSO_COOKIE_EXPIRE:-8h}
       - --cookie-refresh=${SSO_COOKIE_REFRESH:-15m}
       - --email-domain=*
-      - --scope=${OIDC_SCOPE:-openid profile email}
+      - --scope=${OIDC_SCOPE:-openid profile email groups}
       - --oidc-groups-claim=${OIDC_GROUPS_CLAIM:-groups}
+      - --allowed-group=${SSO_ALLOWED_GROUP:?SSO_ALLOWED_GROUP is required}
       - --prefer-email-to-user=true
       - --upstream=static://202
       - --whitelist-domain=${CORPORATE_HOST:?CORPORATE_HOST is required}
