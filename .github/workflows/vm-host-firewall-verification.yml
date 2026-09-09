@@ -89,11 +89,11 @@ jobs:
           MGC_VM_FIREWALL_CONTRACT_ONLY: '1'
         run: |
           $env:MGC_VM_ALLOWED_CIDR = '10.250.0.0/24'
-          & ./scripts/host-firewall-preflight.ps1 -ContractOnly
+          & pwsh -NoProfile -File ./scripts/host-firewall-preflight.ps1 -ContractOnly
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
           $env:MGC_VM_ALLOWED_CIDR = '8.8.8.0/24'
-          & ./scripts/host-firewall-preflight.ps1 -ContractOnly
+          & pwsh -NoProfile -File ./scripts/host-firewall-preflight.ps1 -ContractOnly
           if ($LASTEXITCODE -eq 0) {
             Write-Error '[NO-GO] Public CIDR was unexpectedly accepted.'
             exit 1
