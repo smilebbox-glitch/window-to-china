@@ -8,6 +8,8 @@ on:
       - '.github/workflows/vm-pilot-acceptance-verification.yml'
       - 'scripts/accept-both-vm.sh'
       - 'scripts/accept-both-vm.ps1'
+      - 'scripts/write-vm-acceptance-receipt.sh'
+      - 'scripts/write-vm-acceptance-receipt.ps1'
       - 'ACCEPT_BOTH_VM.bat'
       - 'MGC_VM_CONTROL.bat'
       - 'scripts/vm-control.sh'
@@ -53,7 +55,7 @@ jobs:
       - name: Parse acceptance launchers
         working-directory: window-to-china
         shell: bash
-        run: bash -n scripts/accept-both-vm.sh scripts/start-both-vm.sh scripts/status-both-vm.sh scripts/host-firewall-preflight.sh
+        run: bash -n scripts/accept-both-vm.sh scripts/write-vm-acceptance-receipt.sh scripts/start-both-vm.sh scripts/status-both-vm.sh scripts/host-firewall-preflight.sh
 
       - name: Parse Windows acceptance launcher
         working-directory: window-to-china
@@ -61,6 +63,7 @@ jobs:
         run: |
           $files = @(
             'scripts/accept-both-vm.ps1',
+            'scripts/write-vm-acceptance-receipt.ps1',
             'scripts/start-both-vm.ps1',
             'scripts/status-both-vm.ps1',
             'scripts/host-firewall-preflight.ps1'
@@ -93,7 +96,35 @@ jobs:
         shell: bash
         env:
           MGC_VM_ALLOWED_CIDR: 10.250.0.0/24
+          MGC_VM_ACCEPTANCE_ROOT: ${{ runner.temp }}/mgc-vm-acceptance
         run: bash scripts/accept-both-vm.sh
+
+      - name: Verify acceptance evidence receipt
+        working-directory: window-to-china
+        shell: bash
+        env:
+          MGC_VM_ACCEPTANCE_ROOT: ${{ runner.temp }}/mgc-vm-acceptance
+        run: |
+          RECEIPT_DIR="$(find "$MGC_VM_ACCEPTANCE_ROOT" -mindepth 1 -maxdepth 1 -type d -name '20??????T??????Z' | sort | tail -n1)"
+          test -n "$RECEIPT_DIR"
+          test -s "$RECEIPT_DIR/acceptance.json"
+          test -s "$RECEIPT_DIR/checksums.sha256"
+          (cd "$RECEIPT_DIR" && sha256sum -c checksums.sha256)
+          node --input-type=module - "$RECEIPT_DIR/acceptance.json" <<'NODE'
+          import fs from 'node:fs';
+          const file = process.argv[2];
+          const receipt = JSON.parse(fs.readFileSync(file, 'utf8'));
+          if (receipt.profile !== 'dual-vm-cpu-only-no-ai') process.exit(2);
+          if (receipt.result !== 'GO') process.exit(3);
+          if (receipt.allowed_cidr !== '10.250.0.0/24') process.exit(4);
+          if (JSON.stringify(receipt.ports) !== JSON.stringify([3000, 8080])) process.exit(5);
+          for (const key of ['host_firewall','runtime_readiness','ingress_isolation','no_ai_runtime']) {
+            if (receipt.checks?.[key] !== 'passed') process.exit(6);
+          }
+          NODE
+          test "$(node -p "JSON.parse(require('fs').readFileSync('$RECEIPT_DIR/acceptance.json','utf8')).okno_commit")" = "$(git rev-parse HEAD)"
+          test "$(node -p "JSON.parse(require('fs').readFileSync('$RECEIPT_DIR/acceptance.json','utf8')).mgc_languages_commit")" = "$(git -C ../mgc-languages rev-parse HEAD)"
+          test -z "$(grep -Ei 'RAG_API_KEY|ADMIN_API_TOKEN|SCHEDULER_TOKEN|POSTGRES_PASSWORD' "$RECEIPT_DIR/acceptance.json" || true)"
 
       - name: Cleanup MGC Languages
         if: always()
