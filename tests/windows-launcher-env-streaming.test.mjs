@@ -9,8 +9,10 @@ const envUtils = read("scripts/env-file-utils.ps1");
 
 test("Windows launchers never load .env with Get-Content", () => {
   for (const [name, source] of [["start-lan", lan], ["one-click-start", oneClick]]) {
-    assert.doesNotMatch(source, /Get-Content\s+['\"]\.env['\"]/u, `${name} must not load .env via Get-Content`);
-    assert.doesNotMatch(source, /@\(Get-Content\s+['\"]\.env['\"]\)/u, `${name} must not materialize .env into memory`);
+    assert.equal(source.includes("Get-Content '.env'"), false, `${name} must not load .env via Get-Content`);
+    assert.equal(source.includes('Get-Content ".env"'), false, `${name} must not load .env via Get-Content`);
+    assert.equal(source.includes("@(Get-Content '.env')"), false, `${name} must not materialize .env into memory`);
+    assert.equal(source.includes('@(Get-Content ".env")'), false, `${name} must not materialize .env into memory`);
     assert.match(source, /env-file-utils\.ps1/u, `${name} must use the shared streaming env helper`);
     assert.match(source, /Get-EnvFileValue/u);
     assert.match(source, /Set-EnvFileValue/u);
