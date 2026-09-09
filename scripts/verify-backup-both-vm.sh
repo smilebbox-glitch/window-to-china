@@ -76,7 +76,7 @@ docker run --rm \
     try {
       const row = db.prepare("PRAGMA integrity_check").get();
       if (!row || row.integrity_check !== "ok") process.exit(2);
-      const tables = db.prepare("SELECT count(*) AS n FROM sqlite_master WHERE type = \\"table\\"").get();
+      const tables = db.prepare(`SELECT count(*) AS n FROM sqlite_master WHERE type = 'table'`).get();
       if (!tables || Number(tables.n) < 1) process.exit(3);
       console.log(`SQLite integrity=ok tables=${tables.n}`);
     } finally { db.close(); }
@@ -139,7 +139,7 @@ cat > "$DEST/verification.json" <<EOF
 EOF
 (
   cd "$DEST"
-  sha256sum verification.json verification.txt > checksums.sha256
+  sha256sum verification.json > checksums.sha256
   sha256sum -c checksums.sha256 >/dev/null
 )
 chmod 600 "$DEST/verification.json" "$DEST/verification.txt" "$DEST/checksums.sha256" 2>/dev/null || true
