@@ -38,6 +38,16 @@ test("notification preferences support master switch, companies and automotive s
   assert.match(component, /method:\s*"PUT"/);
 });
 
+test("notification bell stays visually separated from the corporate pilot profile", () => {
+  assert.ok(component.includes("fixed right-4 top-[14px]"), "desktop/mobile anchor changed");
+  assert.ok(component.includes("lg:right-[248px]"), "desktop offset protecting the corporate pilot profile is missing");
+  assert.ok(component.includes("size-10 place-items-center rounded-full"), "bell must remain a compact circular control");
+  assert.ok(component.includes("ring-4 ring-white/90"), "bell separation ring is missing");
+  assert.ok(component.includes("-right-1.5 -top-1.5"), "unread badge must remain outside the bell center");
+  assert.ok(component.includes("bg-[#13b58b]"), "enabled-state indicator is missing");
+  assert.match(component, /title=\{preferences\.notificationsEnabled \? "Уведомления включены" : "Уведомления"\}/u);
+});
+
 test("backend generates only enabled and matching notifications", () => {
   assert.match(store, /notificationsEnabled:\s*boolean/);
   assert.match(store, /segments:\s*string\[\]/);
