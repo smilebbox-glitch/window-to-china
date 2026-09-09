@@ -29,7 +29,7 @@
     "pilot:smoke": "bash scripts/container-smoke.sh",
     "pilot:syntax": "tsc --noEmit --noCheck",
     "pilot:reliability": "node scripts/pilot-reliability-preflight.mjs",
-    "pilot:data-backup": "bash scripts/sqlite-backup.mjs",
+    "pilot:data-backup": "node scripts/sqlite-backup.mjs",
     "pilot:governance": "node scripts/pilot-governance-preflight.mjs",
     "pilot:acceptance": "node scripts/generate-acceptance-report.mjs",
     "pilot:business": "node scripts/pilot-business-preflight.mjs",
