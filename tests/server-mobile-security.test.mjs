@@ -1,0 +1,61 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import test from 'node:test';
+
+const read = (path) => fs.readFileSync(path, 'utf8');
+
+const nextConfig = read('next.config.ts');
+const sw = read('public/sw.js');
+const nginx = read('deploy/nginx/corporate.conf.template');
+const compose = read('compose.corporate.yaml');
+
+test('browser and PWA responses carry hardened security controls', () => {
+  assert.match(nextConfig, /Content-Security-Policy/u);
+  assert.match(nextConfig, /X-Permitted-Cross-Domain-Policies/u);
+  assert.match(nextConfig, /Origin-Agent-Cluster/u);
+  assert.match(nextConfig, /Cross-Origin-Opener-Policy/u);
+  assert.match(nextConfig, /Permissions-Policy/u);
+  assert.match(nextConfig, /worker-src 'self' blob:/u);
+  assert.match(nextConfig, /manifest-src 'self'/u);
+  assert.match(nextConfig, /source: "\/api\/\(\.\*\)"/u);
+  assert.match(nextConfig, /no-store, max-age=0/u);
+});
+
+test('service worker never caches API or cross-origin application data', () => {
+  assert.match(sw, /url\.origin !== self\.location\.origin/u);
+  assert.match(sw, /url\.pathname\.startsWith\("\/api\/"\)/u);
+  assert.match(sw, /request\.mode === "navigate"/u);
+  assert.match(sw, /caches\.match\("\/offline\.html"\)/u);
+  assert.doesNotMatch(sw, /PRECACHE[\s\S]*\/api\//u);
+});
+
+test('corporate ingress requires modern TLS, SSO and layered abuse controls', () => {
+  assert.match(nginx, /ssl_protocols TLSv1\.2 TLSv1\.3/u);
+  assert.match(nginx, /ssl_session_tickets off/u);
+  assert.match(nginx, /server_tokens off/u);
+  assert.match(nginx, /limit_req_zone/u);
+  assert.match(nginx, /limit_conn_zone/u);
+  assert.match(nginx, /limit_req_status 429/u);
+  assert.match(nginx, /auth_request \/_oauth2_auth/u);
+  assert.match(nginx, /X-Okno-Proxy-Secret/u);
+  assert.match(nginx, /proxy_hide_header X-Powered-By/u);
+  assert.match(nginx, /location ~ \/\\\./u);
+  assert.match(nginx, /Permissions-Policy/u);
+  assert.match(nginx, /X-Permitted-Cross-Domain-Policies/u);
+});
+
+test('corporate application remains isolated behind the reverse proxy', () => {
+  const appBlock = compose.split(/\n  china-auto-radar-scheduler:/u)[0];
+  assert.doesNotMatch(appBlock, /\n    ports:/u);
+  assert.match(appBlock, /AUTH_MODE: proxy/u);
+  assert.match(appBlock, /AUTH_PROXY_SECRET/u);
+  assert.match(appBlock, /read_only: true/u);
+  assert.match(appBlock, /no-new-privileges:true/u);
+  assert.match(appBlock, /cap_drop:\s*\n\s*- ALL/u);
+  assert.match(compose, /--cookie-secure=true/u);
+  assert.match(compose, /--cookie-samesite=lax/u);
+  assert.match(compose, /OIDC_ISSUER_URL/u);
+  assert.match(compose, /OAUTH2_PROXY_COOKIE_SECRET/u);
+  assert.match(compose, /AUDIT_HMAC_KEY/u);
+  assert.match(compose, /USER_DATA_HMAC_KEY/u);
+});
