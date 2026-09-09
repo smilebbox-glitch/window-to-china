@@ -32,5 +32,8 @@ echo [GO] Both services are ready behind the approved host firewall boundary:
 echo      Okno v Kitai - port 3000
 echo      MGC Languages - port 8080
 echo.
+echo Before inviting pilot users, run ACCEPT_BOTH_VM.bat once.
+echo It verifies firewall + readiness + ingress isolation + no-AI runtime state.
+echo.
 pause
 exit /b 0
