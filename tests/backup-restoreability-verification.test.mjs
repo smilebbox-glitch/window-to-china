@@ -41,6 +41,17 @@ test('SQLite verification is read-only and PostgreSQL restore is isolated', () =
   }
 });
 
+test('schema compatibility role is disposable NOLOGIN only', () => {
+  for (const source of [sh, ps]) {
+    assert.match(source, /CREATE ROLE app NOLOGIN/u);
+    assert.match(source, /rolcanlogin/u);
+    assert.match(source, /compatibility_role_app/u);
+    assert.match(source, /NOLOGIN/u);
+    assert.doesNotMatch(source, /CREATE ROLE app\s+LOGIN/u);
+    assert.doesNotMatch(source, /ALTER ROLE app[^\n\r]*PASSWORD/u);
+  }
+});
+
 test('restoreability drill never targets the live pilot database services', () => {
   for (const source of [sh, ps]) {
     assert.doesNotMatch(source, /pg_restore[^\n\r]*(?:mgc-languages-db|\bdb\b.*5432)/u);
