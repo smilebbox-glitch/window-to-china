@@ -38,6 +38,25 @@ test('dual VM status checks both readiness endpoints and both compose profiles',
   assert.match(statusBat, /status-both-vm\.ps1/u);
 });
 
+test('dual VM status validates MGC LAN ingress isolation and hardened nginx runtime', () => {
+  for (const source of [statusSh, statusPs]) {
+    assert.match(source, /ReadonlyRootfs/u);
+    assert.match(source, /SecurityOpt/u);
+    assert.match(source, /CapDrop/u);
+    assert.match(source, /CapAdd/u);
+    assert.match(source, /no-new-privileges/u);
+    assert.match(source, /CHOWN/u);
+    assert.match(source, /SETGID/u);
+    assert.match(source, /SETUID/u);
+    assert.match(source, /SYS_ADMIN/u);
+    assert.match(source, /NET_ADMIN/u);
+    assert.match(source, /SYS_PTRACE/u);
+    assert.match(source, /DAC_OVERRIDE/u);
+    assert.match(source, /docker port/u);
+    assert.match(source, /ingress isolation/u);
+  }
+});
+
 test('dual VM stop preserves Docker volumes', () => {
   for (const source of [stopSh, stopPs]) {
     assert.match(source, /down --remove-orphans/u);
