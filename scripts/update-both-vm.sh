@@ -15,9 +15,11 @@ check_repo() {
   local branch
   branch="$(git -C "$repo" branch --show-current)"
   [[ "$branch" == "main" ]] || { echo "[NO-GO] $name must be on main, current branch: ${branch:-detached}" >&2; exit 1; }
-  if [[ -n "$(git -C "$repo" status --porcelain)" ]]; then
+  # Linux operators may chmod tracked .sh launchers after checkout. Ignore mode-only
+  # differences but never overwrite real content changes or untracked files.
+  if [[ -n "$(git -C "$repo" -c core.fileMode=false status --porcelain)" ]]; then
     echo "[NO-GO] $name has local changes or untracked files. Update aborted without overwriting them." >&2
-    git -C "$repo" status --short >&2 || true
+    git -C "$repo" -c core.fileMode=false status --short >&2 || true
     exit 1
   fi
 }
