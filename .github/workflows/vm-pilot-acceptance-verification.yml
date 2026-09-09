@@ -1,0 +1,106 @@
+name: VM pilot acceptance verification
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/vm-pilot-acceptance-verification.yml'
+      - 'scripts/accept-both-vm.sh'
+      - 'scripts/accept-both-vm.ps1'
+      - 'ACCEPT_BOTH_VM.bat'
+      - 'MGC_VM_CONTROL.bat'
+      - 'scripts/vm-control.sh'
+      - 'scripts/start-both-vm.sh'
+      - 'scripts/start-both-vm.ps1'
+      - 'scripts/status-both-vm.sh'
+      - 'scripts/status-both-vm.ps1'
+      - 'scripts/host-firewall-preflight.sh'
+      - 'scripts/host-firewall-preflight.ps1'
+      - 'tests/vm-pilot-acceptance.test.mjs'
+      - '.env.vm.example'
+      - 'compose.yaml'
+      - 'compose.vm.yaml'
+
+permissions:
+  contents: read
+
+jobs:
+  acceptance-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - name: Checkout Okno v Kitai
+        uses: actions/checkout@v4
+        with:
+          path: window-to-china
+
+      - name: Checkout MGC Languages main
+        uses: actions/checkout@v4
+        with:
+          repository: smilebbox-glitch/mgc-languages
+          ref: main
+          path: mgc-languages
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.13.0'
+
+      - name: Verify acceptance contract
+        working-directory: window-to-china
+        run: node --test tests/vm-pilot-acceptance.test.mjs
+
+      - name: Parse acceptance launchers
+        working-directory: window-to-china
+        shell: bash
+        run: bash -n scripts/accept-both-vm.sh scripts/start-both-vm.sh scripts/status-both-vm.sh scripts/host-firewall-preflight.sh
+
+      - name: Parse Windows acceptance launcher
+        working-directory: window-to-china
+        shell: pwsh
+        run: |
+          $files = @(
+            'scripts/accept-both-vm.ps1',
+            'scripts/start-both-vm.ps1',
+            'scripts/status-both-vm.ps1',
+            'scripts/host-firewall-preflight.ps1'
+          )
+          foreach ($file in $files) {
+            $tokens = $null
+            $errors = $null
+            [System.Management.Automation.Language.Parser]::ParseFile(
+              (Resolve-Path $file).Path,
+              [ref]$tokens,
+              [ref]$errors
+            ) | Out-Null
+            if ($errors.Count -gt 0) {
+              $errors | ForEach-Object { Write-Error ('{0}: {1}' -f $file, $_.Message) }
+              exit 1
+            }
+          }
+
+      - name: Start both CPU-only no-AI services
+        working-directory: window-to-china
+        shell: bash
+        env:
+          MGC_VM_ALLOWED_CIDR: 10.250.0.0/24
+        run: |
+          chmod +x ../mgc-languages/scripts/start-vm.sh ../mgc-languages/scripts/entrypoint.sh
+          bash scripts/start-both-vm.sh
+
+      - name: Run full pilot acceptance gate
+        working-directory: window-to-china
+        shell: bash
+        env:
+          MGC_VM_ALLOWED_CIDR: 10.250.0.0/24
+        run: bash scripts/accept-both-vm.sh
+
+      - name: Cleanup MGC Languages
+        if: always()
+        working-directory: mgc-languages
+        run: docker compose --env-file .env.vm -f docker-compose.lan.yml -f docker-compose.vm.yml down -v --remove-orphans || true
+
+      - name: Cleanup Okno v Kitai
+        if: always()
+        working-directory: window-to-china
+        run: docker compose --env-file .env.vm -f compose.yaml -f compose.vm.yaml down -v --remove-orphans || true
