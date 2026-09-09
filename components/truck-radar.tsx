@@ -1,12 +1,20 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { ArrowUpRight, BatteryCharging, Factory, Gauge, RefreshCw, Route, Search, ShieldAlert, Truck } from "lucide-react";
+import { ArrowUpRight, BatteryCharging, Clock3, Factory, Gauge, RefreshCw, Route, Search, ShieldAlert, Truck } from "lucide-react";
 import type { NewsItem } from "@/lib/data";
 import { rankCommercialVehicleNews, type TruckSegment } from "@/lib/intelligence-ranking";
 import { SourceTrustBadge } from "@/components/source-trust-badge";
 
-const dateFormatter = new Intl.DateTimeFormat("ru-RU", { day: "2-digit", month: "short", year: "numeric", timeZone: "Europe/Moscow" });
+const dateTimeFormatter = new Intl.DateTimeFormat("ru-RU", {
+  day: "2-digit",
+  month: "short",
+  year: "numeric",
+  hour: "2-digit",
+  minute: "2-digit",
+  hour12: false,
+  timeZone: "Europe/Moscow",
+});
 const segments: Array<"Все сегменты" | TruckSegment> = [
   "Все сегменты",
   "HCV · тяжёлые",
@@ -19,7 +27,12 @@ const segments: Array<"Все сегменты" | TruckSegment> = [
 ];
 
 type MarketFilter = "Все" | "Китай" | "Россия" | "Китай ↔ Россия";
-type LiveResponse = { news: NewsItem[]; updatedAt?: string; errors?: string[]; sourceCount?: number; totalSources?: number };
+type NewsWithReceipt = NewsItem & { receivedAt?: string };
+type LiveResponse = { news: NewsWithReceipt[]; updatedAt?: string; errors?: string[]; sourceCount?: number; totalSources?: number };
+
+function formatDateTime(value: string) {
+  return `${dateTimeFormatter.format(new Date(value)).replace(" г.", "")} МСК`;
+}
 
 function levelClass(level: string) {
   if (level === "Критично") return "bg-red-600 text-white";
@@ -29,7 +42,7 @@ function levelClass(level: string) {
 }
 
 export function TruckRadar() {
-  const [news, setNews] = useState<NewsItem[]>([]);
+  const [news, setNews] = useState<NewsWithReceipt[]>([]);
   const [status, setStatus] = useState<"loading" | "live" | "partial" | "offline">("loading");
   const [market, setMarket] = useState<MarketFilter>("Все");
   const [segment, setSegment] = useState<(typeof segments)[number]>("Все сегменты");
@@ -145,7 +158,17 @@ export function TruckRadar() {
                   <div className="border-l-4 border-[#285fff] bg-blue-50/60 p-3"><div className="text-[11px] font-black uppercase tracking-[0.12em] text-[#1f4ed8]">Почему важно</div><p className="mt-1 text-sm leading-5 text-zinc-700">{truck.whyItMatters}</p></div>
                   <div className="border-l-4 border-orange-500 bg-orange-50/70 p-3"><div className="text-[11px] font-black uppercase tracking-[0.12em] text-orange-800">Что проверить</div><p className="mt-1 text-sm leading-5 text-zinc-700">{truck.recommendedAction}</p></div>
                 </div>
-                <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-zinc-200 pt-3 text-xs text-zinc-500"><span className="font-semibold text-zinc-700">{item.source}</span><SourceTrustBadge sourceType={item.sourceType} compact /><span>·</span><span>{dateFormatter.format(new Date(item.publishedAt)).replace(" г.", "")}</span><span>·</span><span>Для: {truck.audiences.slice(0, 2).map((impact) => impact.audience).join(", ")}</span><a href={item.url} target="_blank" rel="noreferrer" className="ml-auto inline-flex items-center gap-1 font-bold text-[#1f4ed8] hover:underline">Источник <ArrowUpRight className="size-3.5" /></a></div>
+                <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-zinc-200 pt-3 text-xs text-zinc-500">
+                  <span className="font-semibold text-zinc-700">{item.source}</span>
+                  <SourceTrustBadge sourceType={item.sourceType} compact />
+                  <span>·</span>
+                  <span className="inline-flex items-center gap-1 font-medium text-zinc-600" title="Время первого получения новости сервисом «Окно в Китай»"><Clock3 className="size-3" /> Получено: {item.receivedAt ? formatDateTime(item.receivedAt) : "нет данных"}</span>
+                  <span>·</span>
+                  <span>Опубликовано: {formatDateTime(item.publishedAt)}</span>
+                  <span>·</span>
+                  <span>Для: {truck.audiences.slice(0, 2).map((impact) => impact.audience).join(", ")}</span>
+                  <a href={item.url} target="_blank" rel="noreferrer" className="ml-auto inline-flex items-center gap-1 font-bold text-[#1f4ed8] hover:underline">Источник <ArrowUpRight className="size-3.5" /></a>
+                </div>
               </article>;
             })}
           </div>
