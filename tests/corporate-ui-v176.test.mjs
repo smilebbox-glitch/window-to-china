@@ -22,6 +22,13 @@ const pageFiles = [
   "app/search/page.tsx",
 ];
 
+const premiumIntelligencePages = [
+  "app/news/page.tsx",
+  "app/trucks/page.tsx",
+  "app/analysis/page.tsx",
+  "app/calendar/page.tsx",
+];
+
 test("approved corporate shell uses simplified left navigation and no retired right rail", () => {
   for (const route of ["/news", "/trucks", "/market", "/analysis", "/calendar", "/travel-guide"]) {
     assert.ok(shell.includes(`href: "${route}"`), route);
@@ -44,7 +51,7 @@ test("corporate home is live-data driven and keeps strategic focus", () => {
   assert.ok(home.includes("Требует внимания"));
   assert.ok(home.includes("Executive Brief"));
   assert.ok(home.includes("Продажи автомобилей в России"));
-  assert.ok(home.includes("Коммерческий транспорт"));
+  assert.ok(home.includes("Truck Radar"));
   assert.ok(home.includes("SourceTrustBadge"));
   assert.ok(home.includes("sourceType"));
 });
@@ -70,6 +77,16 @@ test("all visible pilot tabs use shared approved hero/frame", () => {
     assert.ok(source.includes("CorporatePageHero"), file);
   }
   assert.ok(hero.includes("corp-hero"));
+});
+
+test("premium intelligence modules share the executive page framework", () => {
+  for (const file of premiumIntelligencePages) {
+    const source = read(file);
+    assert.ok(source.includes("ExecutivePageLens"), `${file} must render ExecutivePageLens`);
+    assert.ok(source.includes("executive-pages.module.css"), `${file} must use executive page polish`);
+  }
+  assert.ok(hero.includes("MGC China Automotive Intelligence"));
+  assert.ok(read("components/intelligence-brief.tsx").includes("SourceTrustBadge"));
 });
 
 test("corporate design system includes four local offline hero assets", () => {
