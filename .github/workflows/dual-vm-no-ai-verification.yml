@@ -24,6 +24,8 @@ on:
       - 'scripts/update-both-vm.ps1'
       - 'scripts/stop-both-vm.sh'
       - 'scripts/stop-both-vm.ps1'
+      - 'scripts/vm-control.sh'
+      - 'MGC_VM_CONTROL.bat'
       - 'START_BOTH_VM.bat'
       - 'STATUS_BOTH_VM.bat'
       - 'BACKUP_BOTH_VM.bat'
@@ -67,7 +69,7 @@ jobs:
         working-directory: window-to-china
         shell: bash
         run: |
-          bash -n scripts/start-both-vm.sh scripts/status-both-vm.sh scripts/backup-both-vm.sh scripts/restore-both-vm.sh scripts/diagnostics-both-vm.sh scripts/update-both-vm.sh scripts/stop-both-vm.sh
+          bash -n scripts/start-both-vm.sh scripts/status-both-vm.sh scripts/backup-both-vm.sh scripts/restore-both-vm.sh scripts/diagnostics-both-vm.sh scripts/update-both-vm.sh scripts/stop-both-vm.sh scripts/vm-control.sh
 
       - name: Parse Windows PowerShell operator scripts
         working-directory: window-to-china
@@ -100,7 +102,7 @@ jobs:
       - name: Start both CPU-only profiles through shared launcher
         working-directory: window-to-china
         run: |
-          chmod +x scripts/start-vm.sh scripts/start-both-vm.sh scripts/status-both-vm.sh scripts/backup-both-vm.sh scripts/restore-both-vm.sh scripts/diagnostics-both-vm.sh scripts/update-both-vm.sh scripts/stop-both-vm.sh scripts/build-verified.sh
+          chmod +x scripts/start-vm.sh scripts/start-both-vm.sh scripts/status-both-vm.sh scripts/backup-both-vm.sh scripts/restore-both-vm.sh scripts/diagnostics-both-vm.sh scripts/update-both-vm.sh scripts/stop-both-vm.sh scripts/vm-control.sh scripts/build-verified.sh
           chmod +x ../mgc-languages/scripts/start-vm.sh ../mgc-languages/scripts/entrypoint.sh
           ./scripts/start-both-vm.sh
 
