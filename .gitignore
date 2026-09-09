@@ -49,6 +49,7 @@ next-env.d.ts
 /work/
 /vm-backups/
 /vm-diagnostics/
+/vm-acceptance/
 
 .env
 .pilot-access.txt
