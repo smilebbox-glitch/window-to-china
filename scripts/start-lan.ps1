@@ -1,25 +1,15 @@
 $ErrorActionPreference = 'Stop'
 $Root = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 Set-Location $Root
+$EnvPath = Join-Path $Root '.env'
+. (Join-Path $PSScriptRoot 'env-file-utils.ps1')
 
 function Get-EnvValue([string]$Key) {
-    if (-not (Test-Path '.env')) { return '' }
-    $line = Get-Content '.env' | Where-Object { $_ -match ('^' + [regex]::Escape($Key) + '=') } | Select-Object -Last 1
-    if (-not $line) { return '' }
-    return $line.Substring($Key.Length + 1)
+    return (Get-EnvFileValue -Path $EnvPath -Key $Key)
 }
 
 function Set-EnvValue([string]$Key, [string]$Value) {
-    $lines = if (Test-Path '.env') { @(Get-Content '.env') } else { @() }
-    $found = $false
-    for ($i = 0; $i -lt $lines.Count; $i++) {
-        if ($lines[$i] -match ('^' + [regex]::Escape($Key) + '=')) {
-            $lines[$i] = "$Key=$Value"
-            $found = $true
-        }
-    }
-    if (-not $found) { $lines += "$Key=$Value" }
-    [System.IO.File]::WriteAllLines((Join-Path $Root '.env'), $lines, [System.Text.UTF8Encoding]::new($false))
+    Set-EnvFileValue -Path $EnvPath -Key $Key -Value $Value
 }
 
 function Test-Administrator {
