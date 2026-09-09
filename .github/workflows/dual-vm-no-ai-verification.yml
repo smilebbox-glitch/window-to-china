@@ -1,0 +1,85 @@
+name: Dual services VM no-AI verification
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/dual-vm-no-ai-verification.yml'
+      - '.env.vm.example'
+      - 'compose.yaml'
+      - 'compose.vm.yaml'
+      - 'scripts/start-vm.sh'
+      - 'Dockerfile'
+
+permissions:
+  contents: read
+
+jobs:
+  dual-vm-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - name: Checkout Okno v Kitai
+        uses: actions/checkout@v4
+        with:
+          path: window-to-china
+
+      - name: Checkout MGC Languages main
+        uses: actions/checkout@v4
+        with:
+          repository: smilebbox-glitch/mgc-languages
+          ref: main
+          path: mgc-languages
+
+      - name: Start Okno v Kitai CPU-only profile
+        working-directory: window-to-china
+        run: |
+          chmod +x scripts/start-vm.sh scripts/build-verified.sh
+          ./scripts/start-vm.sh
+
+      - name: Start MGC Languages CPU-only profile
+        working-directory: mgc-languages
+        run: |
+          chmod +x scripts/start-vm.sh scripts/entrypoint.sh
+          ./scripts/start-vm.sh
+
+      - name: Verify both services are healthy together
+        shell: bash
+        run: |
+          curl -fsS http://127.0.0.1:3000/api/health
+          curl -fsS http://127.0.0.1:3000/api/ready
+          curl -fsS http://127.0.0.1:8080/health/live
+          curl -fsS http://127.0.0.1:8080/health/ready
+
+          OKNO_CID="$(cd window-to-china && docker compose --env-file .env.vm -f compose.yaml -f compose.vm.yaml ps -q china-auto-radar)"
+          LANG_CID="$(cd mgc-languages && docker compose --env-file .env.vm -f docker-compose.lan.yml -f docker-compose.vm.yml ps -q app)"
+          test -n "$OKNO_CID"
+          test -n "$LANG_CID"
+
+          OKNO_ENV="$(docker inspect --format '{{range .Config.Env}}{{println .}}{{end}}' "$OKNO_CID")"
+          LANG_ENV="$(docker inspect --format '{{range .Config.Env}}{{println .}}{{end}}' "$LANG_CID")"
+          test -z "$(printf '%s\n' "$OKNO_ENV" | sed -n 's/^RAG_API_URL=//p')"
+          test -z "$(printf '%s\n' "$OKNO_ENV" | sed -n 's/^RAG_MODEL=//p')"
+          test "$(printf '%s\n' "$LANG_ENV" | sed -n 's/^TTS_ENABLED=//p')" = "false"
+
+          echo 'Both services are healthy concurrently on ports 3000 and 8080.'
+          docker ps --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'
+
+      - name: Diagnostics
+        if: failure()
+        shell: bash
+        run: |
+          (cd window-to-china && docker compose --env-file .env.vm -f compose.yaml -f compose.vm.yaml logs --no-color --tail=180) || true
+          (cd mgc-languages && docker compose --env-file .env.vm -f docker-compose.lan.yml -f docker-compose.vm.yml logs --no-color --tail=180) || true
+          docker ps -a || true
+
+      - name: Stop MGC Languages
+        if: always()
+        working-directory: mgc-languages
+        run: docker compose --env-file .env.vm -f docker-compose.lan.yml -f docker-compose.vm.yml down -v --remove-orphans || true
+
+      - name: Stop Okno v Kitai
+        if: always()
+        working-directory: window-to-china
+        run: docker compose --env-file .env.vm -f compose.yaml -f compose.vm.yaml down -v --remove-orphans || true
