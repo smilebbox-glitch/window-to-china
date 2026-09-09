@@ -1,0 +1,99 @@
+$ErrorActionPreference = 'Stop'
+$Root = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
+$LanguagesRoot = $env:MGC_LANGUAGES_PATH
+if (-not $LanguagesRoot) { $LanguagesRoot = Join-Path (Split-Path $Root -Parent) 'mgc-languages' }
+$rc = 0
+
+function Get-SmallEnvValue([string]$Path, [string]$Key, [string]$Default) {
+    if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) { return $Default }
+    $value = $null
+    $reader = [System.IO.StreamReader]::new($Path)
+    try {
+        while (($line = $reader.ReadLine()) -ne $null) {
+            if ($line.StartsWith("$Key=")) { $value = $line.Substring($Key.Length + 1) }
+        }
+    } finally { $reader.Dispose() }
+    if ([string]::IsNullOrWhiteSpace($value)) { return $Default }
+    return $value.Trim()
+}
+
+function Get-ContainerHealth([string]$ContainerId) {
+    if ([string]::IsNullOrWhiteSpace($ContainerId)) { return 'not-running' }
+    $health = [string](& docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' $ContainerId 2>$null)
+    if ([string]::IsNullOrWhiteSpace($health)) { return 'unknown' }
+    return $health.Trim()
+}
+
+function Test-ReadyUrl([string]$Url) {
+    try {
+        $response = Invoke-WebRequest -UseBasicParsing -Uri $Url -TimeoutSec 5
+        return ($response.StatusCode -ge 200 -and $response.StatusCode -lt 300)
+    } catch { return $false }
+}
+
+if (-not (Get-Command docker -ErrorAction SilentlyContinue)) { throw 'Docker is not installed or not in PATH.' }
+& docker info *> $null
+if ($LASTEXITCODE -ne 0) { throw 'Docker daemon is not running.' }
+& docker compose version *> $null
+if ($LASTEXITCODE -ne 0) { throw 'Docker Compose v2 is required.' }
+
+Write-Host '=== Okno v Kitai VM ===' -ForegroundColor Cyan
+$oknoEnv = Join-Path $Root '.env.vm'
+if (-not (Test-Path -LiteralPath (Join-Path $Root 'compose.yaml')) -or -not (Test-Path -LiteralPath (Join-Path $Root 'compose.vm.yaml'))) {
+    Write-Host "[NO-GO] Okno VM files are missing: $Root" -ForegroundColor Red
+    $rc = 1
+} elseif (-not (Test-Path -LiteralPath $oknoEnv -PathType Leaf)) {
+    Write-Host '[NO-GO] .env.vm is missing. Run START_BOTH_VM first.' -ForegroundColor Red
+    $rc = 1
+} else {
+    $oknoPort = Get-SmallEnvValue $oknoEnv 'APP_PORT' '3000'
+    Push-Location $Root
+    try {
+        $oknoArgs = @('compose','--env-file','.env.vm','-f','compose.yaml','-f','compose.vm.yaml')
+        & docker @oknoArgs ps
+        $oknoCid = ([string](& docker @oknoArgs ps -q china-auto-radar 2>$null)).Trim()
+    } finally { Pop-Location }
+    $oknoHealth = Get-ContainerHealth $oknoCid
+    $oknoUrl = "http://127.0.0.1:$oknoPort/api/ready"
+    if ($oknoHealth -eq 'healthy' -and (Test-ReadyUrl $oknoUrl)) {
+        Write-Host "[GO] Okno v Kitai: healthy - http://127.0.0.1:$oknoPort" -ForegroundColor Green
+    } else {
+        Write-Host "[NO-GO] Okno v Kitai: $oknoHealth" -ForegroundColor Red
+        $rc = 1
+    }
+}
+
+Write-Host ''
+Write-Host '=== MGC Languages VM ===' -ForegroundColor Cyan
+$langEnv = Join-Path $LanguagesRoot '.env.vm'
+if (-not (Test-Path -LiteralPath (Join-Path $LanguagesRoot 'docker-compose.lan.yml')) -or -not (Test-Path -LiteralPath (Join-Path $LanguagesRoot 'docker-compose.vm.yml'))) {
+    Write-Host "[NO-GO] MGC Languages was not found at: $LanguagesRoot" -ForegroundColor Red
+    $rc = 1
+} elseif (-not (Test-Path -LiteralPath $langEnv -PathType Leaf)) {
+    Write-Host '[NO-GO] MGC Languages .env.vm is missing. Run START_BOTH_VM first.' -ForegroundColor Red
+    $rc = 1
+} else {
+    $langPort = Get-SmallEnvValue $langEnv 'MGC_PORT' '8080'
+    Push-Location $LanguagesRoot
+    try {
+        $langArgs = @('compose','--env-file','.env.vm','-f','docker-compose.lan.yml','-f','docker-compose.vm.yml')
+        & docker @langArgs ps
+        $langCid = ([string](& docker @langArgs ps -q app 2>$null)).Trim()
+    } finally { Pop-Location }
+    $langHealth = Get-ContainerHealth $langCid
+    $langUrl = "http://127.0.0.1:$langPort/health/ready"
+    if ($langHealth -eq 'healthy' -and (Test-ReadyUrl $langUrl)) {
+        Write-Host "[GO] MGC Languages: healthy - http://127.0.0.1:$langPort" -ForegroundColor Green
+    } else {
+        Write-Host "[NO-GO] MGC Languages: $langHealth" -ForegroundColor Red
+        $rc = 1
+    }
+}
+
+Write-Host ''
+if ($rc -eq 0) {
+    Write-Host '[GO] Both VM services are ready.' -ForegroundColor Green
+} else {
+    Write-Host '[NO-GO] At least one VM service needs attention.' -ForegroundColor Red
+}
+exit $rc
