@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 import type { FormEvent } from "react";
 import { MaintenanceBanner } from "@/components/maintenance-banner";
+import { ExecutiveTheme } from "@/components/executive-theme";
 import {
   BarChart3,
   BriefcaseBusiness,
@@ -49,6 +50,7 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="corporate-app min-h-screen bg-[#f4f8fc] text-[#0b1d4b]">
+      <ExecutiveTheme />
       <header className="corporate-topbar sticky top-0 z-50 border-b border-[#dbe7f3] bg-white/95 backdrop-blur-xl">
         <div className="flex h-[68px] items-center gap-3 px-4 md:gap-4 md:px-6">
           <Link href="/" className="flex min-w-0 shrink-0 items-center gap-3 lg:hidden" aria-label="Окно в Китай — главная">
