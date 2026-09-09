@@ -6,23 +6,29 @@ on:
     paths:
       - '.github/workflows/security-hardening.yml'
       - '.github/dependabot.yml'
+      - '.gitignore'
       - 'next.config.ts'
       - 'public/sw.js'
       - 'deploy/nginx/**'
+      - 'deploy/tls/**'
       - 'compose.corporate.yaml'
       - 'lib/**'
       - 'app/api/**'
+      - 'scripts/secret-preflight.mjs'
       - 'tests/server-mobile-security.test.mjs'
       - 'package.json'
       - 'package-lock.json'
   pull_request:
     paths:
+      - '.gitignore'
       - 'next.config.ts'
       - 'public/sw.js'
       - 'deploy/nginx/**'
+      - 'deploy/tls/**'
       - 'compose.corporate.yaml'
       - 'lib/**'
       - 'app/api/**'
+      - 'scripts/secret-preflight.mjs'
       - 'tests/server-mobile-security.test.mjs'
       - 'package.json'
       - 'package-lock.json'
@@ -45,6 +51,8 @@ jobs:
           cache: npm
       - name: Install locked dependencies
         run: npm ci
+      - name: Reject tracked secrets and private keys
+        run: node scripts/secret-preflight.mjs
       - name: Verify server and mobile security contracts
         run: node --test tests/server-mobile-security.test.mjs
       - name: Verify existing security preflight
