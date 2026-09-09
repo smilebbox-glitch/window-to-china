@@ -7,8 +7,9 @@ This directory contains the automated verification suite for **Окно в Ки�
 - `npm test` — builds the application and runs the Node.js test suite in `tests/*.test.mjs`.
 - `npm run test:runtime` — checks a running deployment over HTTP instead of relying on manual link clicking.
 - GitHub Actions runs the tests automatically for changes to `main` and for pull requests targeting `main`.
-- `tests/news-received-time-v179.test.mjs` protects exact live-news receipt timestamps.
-- `tests/web-notifications.test.mjs` protects configurable web notifications: master enable/disable, company/brand and auto-industry segment filters, browser Notification API integration, Service Worker notification click behavior, and user preference persistence.
+- `tests/news-received-time-v179.test.mjs` protects exact live-news receipt timestamps in both the main news feed and **Коммерческий транспорт**, including Moscow time formatting and the separation between **Получено** and **Опубликовано**.
+- `tests/web-notifications.test.mjs` protects configurable web notifications: master enable/disable, company/brand and auto-industry segment filters, browser Notification API integration, Service Worker notification click behavior, user preference persistence, and the compact bell layout that stays separated from the corporate pilot profile.
+- `tests/pilot-ui-functionality-v180.test.mjs` protects the approved pilot navigation and current UI regressions: retired home-market CTA buttons stay removed, event flight/hotel text remains readable in the light corporate theme, and the **Телефон до вылета / Оплата в Китае / Багаж и граница / Культурный код** labels keep safe horizontal padding so their first letters are not clipped.
 
 ## Runtime smoke coverage
 
@@ -43,4 +44,4 @@ Set `BASE_URL` when testing a non-local deployment:
 BASE_URL=http://127.0.0.1:3000 npm run test:runtime
 ```
 
-A failed request, unexpected HTTP status, invalid response contract, failed preference persistence, or wrong content type makes the test fail and therefore makes the GitHub Actions check fail.
+A failed request, unexpected HTTP status, invalid response contract, failed preference persistence, wrong content type, missing receipt-time metadata, or a protected UI regression makes the test fail and therefore makes the GitHub Actions check fail.
