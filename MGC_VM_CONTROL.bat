@@ -8,25 +8,37 @@ echo ======================================================
 echo        MGC VM CONTROL - two services / no AI
 echo ======================================================
 echo.
-echo   1. START        Start/rebuild both services
-echo   2. STATUS       Check both services and readiness
-echo   3. BACKUP       Create verified backup of both DBs
-echo   4. DIAGNOSTICS  Create secret-safe diagnostics bundle
-echo   5. UPDATE       Backup + safe fast-forward update
-echo   6. RESTORE      Controlled restore of both DBs
-echo   7. STOP         Stop both services, preserve data
+echo   1. FIREWALL SETUP  Configure restricted host ingress
+echo   2. FIREWALL CHECK  Verify host firewall boundary
+echo   3. START           Start/rebuild both services
+echo   4. STATUS          Check both services and readiness
+echo   5. BACKUP          Create verified backup of both DBs
+echo   6. DIAGNOSTICS     Create secret-safe diagnostics bundle
+echo   7. UPDATE          Backup + safe fast-forward update
+echo   8. RESTORE         Controlled restore of both DBs
+echo   9. STOP            Stop both services, preserve data
 echo   Q. EXIT
 echo.
-choice /C 1234567Q /N /M "Select: "
+choice /C 123456789Q /N /M "Select: "
 
-if errorlevel 8 goto END
-if errorlevel 7 goto STOP
-if errorlevel 6 goto RESTORE
-if errorlevel 5 goto UPDATE
-if errorlevel 4 goto DIAGNOSTICS
-if errorlevel 3 goto BACKUP
-if errorlevel 2 goto STATUS
-if errorlevel 1 goto START
+if errorlevel 10 goto END
+if errorlevel 9 goto STOP
+if errorlevel 8 goto RESTORE
+if errorlevel 7 goto UPDATE
+if errorlevel 6 goto DIAGNOSTICS
+if errorlevel 5 goto BACKUP
+if errorlevel 4 goto STATUS
+if errorlevel 3 goto START
+if errorlevel 2 goto FIREWALL_CHECK
+if errorlevel 1 goto FIREWALL_SETUP
+
+:FIREWALL_SETUP
+call "%~dp0CONFIGURE_VM_FIREWALL.bat"
+goto MENU
+
+:FIREWALL_CHECK
+call "%~dp0CHECK_VM_FIREWALL.bat"
+goto MENU
 
 :START
 call "%~dp0START_BOTH_VM.bat"
