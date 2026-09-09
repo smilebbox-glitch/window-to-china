@@ -64,6 +64,7 @@ if (-not (Test-Path -LiteralPath (Join-Path $Root 'compose.yaml')) -or -not (Tes
         $oknoArgs = @('compose','--env-file','.env.vm','-f','compose.yaml','-f','compose.vm.yaml')
         & docker @oknoArgs ps
         $oknoCid = ([string](& docker @oknoArgs ps -q china-auto-radar 2>$null)).Trim()
+        $oknoSchedulerCid = ([string](& docker @oknoArgs ps -q china-auto-radar-scheduler 2>$null)).Trim()
     } finally { Pop-Location }
     $oknoHealth = Get-ContainerHealth $oknoCid
     $oknoUrl = "http://127.0.0.1:$oknoPort/api/ready"
@@ -72,6 +73,36 @@ if (-not (Test-Path -LiteralPath (Join-Path $Root 'compose.yaml')) -or -not (Tes
     } else {
         Write-Host "[NO-GO] Okno v Kitai: $oknoHealth" -ForegroundColor Red
         $rc = 1
+    }
+
+    if ([string]::IsNullOrWhiteSpace($oknoCid) -or [string]::IsNullOrWhiteSpace($oknoSchedulerCid)) {
+        Write-Host '[NO-GO] Okno VM ingress isolation: app/scheduler container set is incomplete.' -ForegroundColor Red
+        $rc = 1
+    } else {
+        $oknoReadonly = Get-InspectValue $oknoCid '{{.HostConfig.ReadonlyRootfs}}'
+        $oknoSecurity = Get-InspectValue $oknoCid '{{json .HostConfig.SecurityOpt}}'
+        $oknoDrop = Get-InspectValue $oknoCid '{{json .HostConfig.CapDrop}}'
+        $oknoAdd = Get-InspectValue $oknoCid '{{json .HostConfig.CapAdd}}'
+        $oknoPortMap = [string](& docker port $oknoCid '3000/tcp' 2>$null)
+        $oknoAllPorts = [string](& docker port $oknoCid 2>$null)
+        $unexpectedOknoPorts = @($oknoAllPorts -split "`r?`n" | Where-Object { $_ -and $_ -notmatch '^3000/tcp -> ' })
+
+        $oknoGatewayOk = $true
+        if ($oknoReadonly -ne 'true') { $oknoGatewayOk = $false }
+        if ($oknoSecurity -notmatch 'no-new-privileges') { $oknoGatewayOk = $false }
+        if ($oknoDrop -notmatch 'ALL') { $oknoGatewayOk = $false }
+        if ($oknoAdd -ne 'null' -and $oknoAdd -ne '[]') { $oknoGatewayOk = $false }
+        if ($oknoPortMap -notmatch ":$([regex]::Escape($oknoPort))(?:\s|$)") { $oknoGatewayOk = $false }
+        if ([string]::IsNullOrWhiteSpace($oknoAllPorts)) { $oknoGatewayOk = $false }
+        if ($unexpectedOknoPorts.Count -gt 0) { $oknoGatewayOk = $false }
+        if (-not (Test-NoPublishedPorts $oknoSchedulerCid)) { $oknoGatewayOk = $false }
+
+        if ($oknoGatewayOk) {
+            Write-Host "[GO] Okno v Kitai ingress isolation: only hardened app port $oknoPort is published; scheduler is internal." -ForegroundColor Green
+        } else {
+            Write-Host '[NO-GO] Okno v Kitai ingress isolation does not match the temporary VM contract.' -ForegroundColor Red
+            $rc = 1
+        }
     }
 }
 
