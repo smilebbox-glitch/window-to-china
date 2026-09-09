@@ -12,8 +12,18 @@ on:
       - 'scripts/start-vm.sh'
       - 'scripts/start-both-vm.sh'
       - 'scripts/start-both-vm.ps1'
+      - 'scripts/status-both-vm.sh'
+      - 'scripts/status-both-vm.ps1'
+      - 'scripts/backup-both-vm.sh'
+      - 'scripts/backup-both-vm.ps1'
+      - 'scripts/stop-both-vm.sh'
+      - 'scripts/stop-both-vm.ps1'
       - 'START_BOTH_VM.bat'
+      - 'STATUS_BOTH_VM.bat'
+      - 'BACKUP_BOTH_VM.bat'
+      - 'STOP_BOTH_VM.bat'
       - 'tests/dual-vm-launcher.test.mjs'
+      - 'tests/dual-vm-operations.test.mjs'
       - 'Dockerfile'
 
 permissions:
@@ -22,7 +32,7 @@ permissions:
 jobs:
   dual-vm-smoke:
     runs-on: ubuntu-latest
-    timeout-minutes: 50
+    timeout-minutes: 55
     steps:
       - name: Checkout Okno v Kitai
         uses: actions/checkout@v4
@@ -40,27 +50,25 @@ jobs:
         with:
           node-version: '22.13.0'
 
-      - name: Verify dual one-click launcher contract
+      - name: Verify dual VM operations contracts
         working-directory: window-to-china
-        run: node --test tests/dual-vm-launcher.test.mjs
+        run: node --test tests/dual-vm-launcher.test.mjs tests/dual-vm-operations.test.mjs
 
       - name: Start both CPU-only profiles through shared launcher
         working-directory: window-to-china
         run: |
-          chmod +x scripts/start-vm.sh scripts/start-both-vm.sh scripts/build-verified.sh
+          chmod +x scripts/start-vm.sh scripts/start-both-vm.sh scripts/status-both-vm.sh scripts/backup-both-vm.sh scripts/stop-both-vm.sh scripts/build-verified.sh
           chmod +x ../mgc-languages/scripts/start-vm.sh ../mgc-languages/scripts/entrypoint.sh
           ./scripts/start-both-vm.sh
 
-      - name: Verify both services are healthy together
+      - name: Verify shared status command and no-AI environment
+        working-directory: window-to-china
         shell: bash
         run: |
-          curl -fsS http://127.0.0.1:3000/api/health
-          curl -fsS http://127.0.0.1:3000/api/ready
-          curl -fsS http://127.0.0.1:8080/health/live
-          curl -fsS http://127.0.0.1:8080/health/ready
+          ./scripts/status-both-vm.sh
 
-          OKNO_CID="$(cd window-to-china && docker compose --env-file .env.vm -f compose.yaml -f compose.vm.yaml ps -q china-auto-radar)"
-          LANG_CID="$(cd mgc-languages && docker compose --env-file .env.vm -f docker-compose.lan.yml -f docker-compose.vm.yml ps -q app)"
+          OKNO_CID="$(docker compose --env-file .env.vm -f compose.yaml -f compose.vm.yaml ps -q china-auto-radar)"
+          LANG_CID="$(cd ../mgc-languages && docker compose --env-file .env.vm -f docker-compose.lan.yml -f docker-compose.vm.yml ps -q app)"
           test -n "$OKNO_CID"
           test -n "$LANG_CID"
 
@@ -70,8 +78,30 @@ jobs:
           test -z "$(printf '%s\n' "$OKNO_ENV" | sed -n 's/^RAG_MODEL=//p')"
           test "$(printf '%s\n' "$LANG_ENV" | sed -n 's/^TTS_ENABLED=//p')" = "false"
 
-          echo 'Both services are healthy concurrently on ports 3000 and 8080.'
-          docker ps --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'
+      - name: Create and verify dual-service backup
+        working-directory: window-to-china
+        shell: bash
+        env:
+          MGC_VM_BACKUP_ROOT: ${{ runner.temp }}/mgc-vm-backups
+          MGC_VM_BACKUP_RETENTION_DAYS: '14'
+        run: |
+          ./scripts/backup-both-vm.sh
+          BACKUP_DIR="$(find "$MGC_VM_BACKUP_ROOT" -mindepth 1 -maxdepth 1 -type d -name '20??????T??????Z' | sort | tail -n1)"
+          test -n "$BACKUP_DIR"
+          test -s "$BACKUP_DIR/okno.sqlite"
+          test -s "$BACKUP_DIR/mgc_languages.dump"
+          test -s "$BACKUP_DIR/manifest.json"
+          test -s "$BACKUP_DIR/checksums.sha256"
+          (cd "$BACKUP_DIR" && sha256sum -c checksums.sha256)
+          test ! -d "$BACKUP_DIR/secrets"
+
+      - name: Stop both through shared stop command
+        working-directory: window-to-china
+        shell: bash
+        run: |
+          ./scripts/stop-both-vm.sh
+          test -z "$(docker compose --env-file .env.vm -f compose.yaml -f compose.vm.yaml ps -q)"
+          test -z "$(cd ../mgc-languages && docker compose --env-file .env.vm -f docker-compose.lan.yml -f docker-compose.vm.yml ps -q)"
 
       - name: Diagnostics
         if: failure()
@@ -81,12 +111,12 @@ jobs:
           (cd mgc-languages && docker compose --env-file .env.vm -f docker-compose.lan.yml -f docker-compose.vm.yml logs --no-color --tail=180) || true
           docker ps -a || true
 
-      - name: Stop MGC Languages
+      - name: Cleanup MGC Languages test resources
         if: always()
         working-directory: mgc-languages
         run: docker compose --env-file .env.vm -f docker-compose.lan.yml -f docker-compose.vm.yml down -v --remove-orphans || true
 
-      - name: Stop Okno v Kitai
+      - name: Cleanup Okno v Kitai test resources
         if: always()
         working-directory: window-to-china
         run: docker compose --env-file .env.vm -f compose.yaml -f compose.vm.yaml down -v --remove-orphans || true
