@@ -4,9 +4,11 @@ This directory contains the automated verification suite for **Окно в Ки�
 
 ## Test layers
 
-- `npm test` — builds the application and runs the Node.js test suite in `tests/*.test.mjs`.
+- `npm test` — builds the application and runs the full Node.js test suite in `tests/*.test.mjs`.
+- `npm run test:latest` — runs the current pilot regression gate without changing the application version. It covers the latest approved UI and news behavior.
 - `npm run test:runtime` — checks a running deployment over HTTP instead of relying on manual link clicking.
-- GitHub Actions runs the tests automatically for changes to `main` and for pull requests targeting `main`.
+- GitHub Actions runs the full suite automatically for changes to `main` and for pull requests targeting `main`, then runs `test:latest` as a separate visible gate before Docker/runtime smoke checks.
+- `tests/current-pilot-regressions.test.mjs` is the version-neutral regression suite for the latest pilot state: simplified home hero, notification-bell placement, commercial-transport receipt timestamps, event travel readability, and travel-section heading clipping.
 - `tests/news-received-time-v179.test.mjs` protects exact live-news receipt timestamps in both the main news feed and **Коммерческий транспорт**, including Moscow time formatting and the separation between **Получено** and **Опубликовано**.
 - `tests/web-notifications.test.mjs` protects configurable web notifications: master enable/disable, company/brand and auto-industry segment filters, browser Notification API integration, Service Worker notification click behavior, user preference persistence, and the compact bell layout that stays separated from the corporate pilot profile.
 - `tests/pilot-ui-functionality-v180.test.mjs` protects the approved pilot navigation and current UI regressions: retired home-market CTA buttons stay removed, event flight/hotel text remains readable in the light corporate theme, and the **Телефон до вылета / Оплата в Китае / Багаж и граница / Культурный код** labels keep safe horizontal padding so their first letters are not clipped.
