@@ -16,11 +16,14 @@ on:
       - 'scripts/status-both-vm.ps1'
       - 'scripts/backup-both-vm.sh'
       - 'scripts/backup-both-vm.ps1'
+      - 'scripts/restore-both-vm.sh'
+      - 'scripts/restore-both-vm.ps1'
       - 'scripts/stop-both-vm.sh'
       - 'scripts/stop-both-vm.ps1'
       - 'START_BOTH_VM.bat'
       - 'STATUS_BOTH_VM.bat'
       - 'BACKUP_BOTH_VM.bat'
+      - 'RESTORE_BOTH_VM.bat'
       - 'STOP_BOTH_VM.bat'
       - 'tests/dual-vm-launcher.test.mjs'
       - 'tests/dual-vm-operations.test.mjs'
@@ -32,7 +35,7 @@ permissions:
 jobs:
   dual-vm-smoke:
     runs-on: ubuntu-latest
-    timeout-minutes: 55
+    timeout-minutes: 65
     steps:
       - name: Checkout Okno v Kitai
         uses: actions/checkout@v4
@@ -57,7 +60,7 @@ jobs:
       - name: Start both CPU-only profiles through shared launcher
         working-directory: window-to-china
         run: |
-          chmod +x scripts/start-vm.sh scripts/start-both-vm.sh scripts/status-both-vm.sh scripts/backup-both-vm.sh scripts/stop-both-vm.sh scripts/build-verified.sh
+          chmod +x scripts/start-vm.sh scripts/start-both-vm.sh scripts/status-both-vm.sh scripts/backup-both-vm.sh scripts/restore-both-vm.sh scripts/stop-both-vm.sh scripts/build-verified.sh
           chmod +x ../mgc-languages/scripts/start-vm.sh ../mgc-languages/scripts/entrypoint.sh
           ./scripts/start-both-vm.sh
 
@@ -78,6 +81,30 @@ jobs:
           test -z "$(printf '%s\n' "$OKNO_ENV" | sed -n 's/^RAG_MODEL=//p')"
           test "$(printf '%s\n' "$LANG_ENV" | sed -n 's/^TTS_ENABLED=//p')" = "false"
 
+      - name: Seed restore probes before backup
+        working-directory: window-to-china
+        shell: bash
+        run: |
+          OKNO_CID="$(docker compose --env-file .env.vm -f compose.yaml -f compose.vm.yaml ps -q china-auto-radar)"
+          DB_CID="$(cd ../mgc-languages && docker compose --env-file .env.vm -f docker-compose.lan.yml -f docker-compose.vm.yml ps -q db)"
+          test -n "$OKNO_CID"
+          test -n "$DB_CID"
+
+          docker exec "$OKNO_CID" node --input-type=module -e '
+            import { DatabaseSync } from "node:sqlite";
+            const db = new DatabaseSync("/data/okno.sqlite");
+            try {
+              db.exec("CREATE TABLE IF NOT EXISTS vm_restore_probe (id INTEGER PRIMARY KEY, value TEXT NOT NULL); DELETE FROM vm_restore_probe;");
+              db.prepare("INSERT INTO vm_restore_probe(id,value) VALUES(?,?)").run(1, process.argv[1]);
+            } finally { db.close(); }
+          ' before-backup
+
+          printf '%s\n' \
+            'CREATE TABLE IF NOT EXISTS vm_restore_probe (id integer PRIMARY KEY, value text NOT NULL);' \
+            'TRUNCATE vm_restore_probe;' \
+            "INSERT INTO vm_restore_probe(id,value) VALUES (1, 'before-backup');" |
+            docker exec -i "$DB_CID" sh -lc 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -v ON_ERROR_STOP=1'
+
       - name: Create and verify dual-service backup
         working-directory: window-to-china
         shell: bash
@@ -94,6 +121,61 @@ jobs:
           test -s "$BACKUP_DIR/checksums.sha256"
           (cd "$BACKUP_DIR" && sha256sum -c checksums.sha256)
           test ! -d "$BACKUP_DIR/secrets"
+          echo "RESTORE_SOURCE=$BACKUP_DIR" >> "$GITHUB_ENV"
+          echo "MGC_VM_BACKUP_ROOT=$MGC_VM_BACKUP_ROOT" >> "$GITHUB_ENV"
+
+      - name: Mutate both databases after backup
+        working-directory: window-to-china
+        shell: bash
+        run: |
+          OKNO_CID="$(docker compose --env-file .env.vm -f compose.yaml -f compose.vm.yaml ps -q china-auto-radar)"
+          DB_CID="$(cd ../mgc-languages && docker compose --env-file .env.vm -f docker-compose.lan.yml -f docker-compose.vm.yml ps -q db)"
+
+          docker exec "$OKNO_CID" node --input-type=module -e '
+            import { DatabaseSync } from "node:sqlite";
+            const db = new DatabaseSync("/data/okno.sqlite");
+            try { db.prepare("UPDATE vm_restore_probe SET value=? WHERE id=1").run(process.argv[1]); }
+            finally { db.close(); }
+          ' after-backup
+
+          printf '%s\n' "UPDATE vm_restore_probe SET value='after-backup' WHERE id=1;" |
+            docker exec -i "$DB_CID" sh -lc 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -v ON_ERROR_STOP=1'
+
+          test "$(docker exec "$OKNO_CID" node --input-type=module -e 'import { DatabaseSync } from "node:sqlite"; const db=new DatabaseSync("/data/okno.sqlite",{readOnly:true}); try { process.stdout.write(db.prepare("SELECT value FROM vm_restore_probe WHERE id=1").get().value); } finally { db.close(); }')" = 'after-backup'
+          test "$(docker exec "$DB_CID" sh -lc 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atc "SELECT value FROM vm_restore_probe WHERE id=1"')" = 'after-backup'
+
+      - name: Restore both databases from verified backup
+        working-directory: window-to-china
+        shell: bash
+        env:
+          MGC_VM_RESTORE_CONFIRM: RESTORE
+        run: |
+          ./scripts/restore-both-vm.sh "$RESTORE_SOURCE"
+          ./scripts/status-both-vm.sh
+
+      - name: Verify restore returned both probes to backup state
+        working-directory: window-to-china
+        shell: bash
+        run: |
+          OKNO_CID="$(docker compose --env-file .env.vm -f compose.yaml -f compose.vm.yaml ps -q china-auto-radar)"
+          DB_CID="$(cd ../mgc-languages && docker compose --env-file .env.vm -f docker-compose.lan.yml -f docker-compose.vm.yml ps -q db)"
+          test -n "$OKNO_CID"
+          test -n "$DB_CID"
+
+          OKNO_VALUE="$(docker exec "$OKNO_CID" node --input-type=module -e 'import { DatabaseSync } from "node:sqlite"; const db=new DatabaseSync("/data/okno.sqlite",{readOnly:true}); try { process.stdout.write(db.prepare("SELECT value FROM vm_restore_probe WHERE id=1").get().value); } finally { db.close(); }')"
+          PG_VALUE="$(docker exec "$DB_CID" sh -lc 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atc "SELECT value FROM vm_restore_probe WHERE id=1"')"
+          test "$OKNO_VALUE" = 'before-backup'
+          test "$PG_VALUE" = 'before-backup'
+
+          SAFETY_DIR="$(find "$MGC_VM_BACKUP_ROOT/pre-restore" -mindepth 1 -maxdepth 1 -type d -name '20??????T??????Z' | sort | tail -n1)"
+          test -n "$SAFETY_DIR"
+          test -s "$SAFETY_DIR/okno.sqlite"
+          test -s "$SAFETY_DIR/mgc_languages.dump"
+          test -s "$SAFETY_DIR/checksums.sha256"
+          (cd "$SAFETY_DIR" && sha256sum -c checksums.sha256)
+
+          curl -fsS http://127.0.0.1:3000/api/ready
+          curl -fsS http://127.0.0.1:8080/health/ready
 
       - name: Stop both through shared stop command
         working-directory: window-to-china
@@ -107,8 +189,8 @@ jobs:
         if: failure()
         shell: bash
         run: |
-          (cd window-to-china && docker compose --env-file .env.vm -f compose.yaml -f compose.vm.yaml logs --no-color --tail=180) || true
-          (cd mgc-languages && docker compose --env-file .env.vm -f docker-compose.lan.yml -f docker-compose.vm.yml logs --no-color --tail=180) || true
+          (cd window-to-china && docker compose --env-file .env.vm -f compose.yaml -f compose.vm.yaml logs --no-color --tail=220) || true
+          (cd mgc-languages && docker compose --env-file .env.vm -f docker-compose.lan.yml -f docker-compose.vm.yml logs --no-color --tail=220) || true
           docker ps -a || true
 
       - name: Cleanup MGC Languages test resources
