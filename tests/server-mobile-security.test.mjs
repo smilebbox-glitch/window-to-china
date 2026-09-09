@@ -26,7 +26,13 @@ test('service worker never caches API or cross-origin application data', () => {
   assert.match(sw, /url\.pathname\.startsWith\("\/api\/"\)/u);
   assert.match(sw, /request\.mode === "navigate"/u);
   assert.match(sw, /caches\.match\("\/offline\.html"\)/u);
-  assert.doesNotMatch(sw, /PRECACHE[\s\S]*\/api\//u);
+
+  const precacheStart = sw.indexOf('const PRECACHE = [');
+  const precacheEnd = sw.indexOf('];', precacheStart);
+  assert.notEqual(precacheStart, -1);
+  assert.notEqual(precacheEnd, -1);
+  const precacheBlock = sw.slice(precacheStart, precacheEnd + 2);
+  assert.doesNotMatch(precacheBlock, /\/api\//u);
 });
 
 test('corporate ingress requires modern TLS, SSO and layered abuse controls', () => {
