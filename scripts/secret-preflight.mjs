@@ -38,7 +38,9 @@ const safeValue = (raw) => {
   const upper = value.toUpperCase();
   return (
     value.startsWith('${') ||
+    (value.startsWith('<') && value.endsWith('>')) ||
     upper.includes('CHANGE_ME') ||
+    upper.includes('CHANGE-ME') ||
     upper.includes('GENERATE_') ||
     upper.includes('EXAMPLE') ||
     upper.includes('PLACEHOLDER') ||
