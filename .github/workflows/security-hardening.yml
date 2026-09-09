@@ -32,3 +32,12 @@ jobs:
         run: npm run pilot:security
       - name: Audit production dependencies for high severity vulnerabilities
         run: npm audit --omit=dev --audit-level=high
+
+  corporate-https-runtime:
+    name: phone HTTPS -> nginx -> SSO boundary -> app -> SQLite
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run real corporate HTTPS runtime smoke
+        run: bash scripts/corporate-https-runtime-smoke.sh
