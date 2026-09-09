@@ -1,0 +1,106 @@
+name: Full demo package
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - demo/full-showcase-package
+      - main
+    paths:
+      - '.github/workflows/full-demo-package.yml'
+      - 'DEMO_FULL_SHOWCASE.md'
+      - 'START_DEMO.bat'
+      - 'STOP_DEMO.bat'
+      - 'STATUS_DEMO.bat'
+      - 'scripts/start-demo.ps1'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/full-demo-package.yml'
+      - 'DEMO_FULL_SHOWCASE.md'
+      - 'START_DEMO.bat'
+      - 'STOP_DEMO.bat'
+      - 'STATUS_DEMO.bat'
+      - 'scripts/start-demo.ps1'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: full-demo-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify-and-package:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.13.0'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Production build
+        run: npm run build
+
+      - name: Security preflight
+        run: npm run pilot:security
+
+      - name: Current pilot regression tests
+        run: npm run test:latest
+
+      - name: Build full demo directory
+        shell: bash
+        run: |
+          set -euo pipefail
+          ROOT="$PWD"
+          OUT="$ROOT/demo-artifact"
+          DEMO="$OUT/okno-v-kitai-full-demo"
+          rm -rf "$OUT"
+          mkdir -p "$DEMO"
+
+          git archive --format=tar HEAD | tar -xf - -C "$DEMO"
+
+          cat > "$DEMO/DEMO_BUILD_INFO.txt" <<EOF
+          Product: Okno v Kitai
+          Product version: $(node -p "require('./package.json').version")
+          Source commit: ${GITHUB_SHA}
+          Git ref: ${GITHUB_REF}
+          GitHub run: ${GITHUB_RUN_ID}
+          Package mode: full source + Docker demo launchers
+          Demo runtime: CPU-only / generative RAG disabled through compose.vm.yaml
+          Built UTC: $(date -u +%Y-%m-%dT%H:%M:%SZ)
+          EOF
+
+          (
+            cd "$DEMO"
+            find . -type f ! -name 'DEMO_SHA256SUMS.txt' -print0 \
+              | sort -z \
+              | xargs -0 sha256sum > DEMO_SHA256SUMS.txt
+          )
+
+          test -s "$DEMO/START_DEMO.bat"
+          test -s "$DEMO/STOP_DEMO.bat"
+          test -s "$DEMO/STATUS_DEMO.bat"
+          test -s "$DEMO/DEMO_FULL_SHOWCASE.md"
+          test -s "$DEMO/compose.yaml"
+          test -s "$DEMO/compose.vm.yaml"
+          test -s "$DEMO/Dockerfile"
+          test -s "$DEMO/package-lock.json"
+
+      - name: Upload full demo artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: okno-v-kitai-full-demo
+          path: demo-artifact/okno-v-kitai-full-demo/
+          if-no-files-found: error
+          retention-days: 14
