@@ -1,10 +1,12 @@
 # Current VM Pilot Handoff — two MGC services
 
+> **Важно для текущей передачи IT:** если разворачивается только **«Окно в Китай» / `window-to-china`**, начинайте с `IT_VM_HANDOFF.md` и `IT_VM_ACCEPTANCE_CHECKLIST.md`. Документ ниже относится только к отдельному сценарию, когда на одной VM одновременно запускаются **два сервиса**: `window-to-china` + `mgc-languages`.
+
 **Status:** ready for controlled real-VM pilot validation.  
 **Deployment profile:** one internal CPU-only VM, no GPU, generative AI disabled.  
 **Services:** `window-to-china` + `mgc-languages`.
 
-This document is the current operational decision for the temporary pilot. Detailed installation, firewall, backup, restore and update procedures remain in `IT_DUAL_VM_QUICKSTART.md`, `VM_PILOT_ACCEPTANCE.md` and `VM_DAILY_OPERATIONS.md`.
+This document is the current operational decision for the temporary **dual-service** pilot. Detailed installation, firewall, backup, restore and update procedures remain in `IT_DUAL_VM_QUICKSTART.md`, `VM_PILOT_ACCEPTANCE.md` and `VM_DAILY_OPERATIONS.md`.
 
 ## Current operating decision
 
