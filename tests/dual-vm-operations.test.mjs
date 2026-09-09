@@ -10,9 +10,12 @@ const stopSh = read('scripts/stop-both-vm.sh');
 const stopPs = read('scripts/stop-both-vm.ps1');
 const backupSh = read('scripts/backup-both-vm.sh');
 const backupPs = read('scripts/backup-both-vm.ps1');
+const restoreSh = read('scripts/restore-both-vm.sh');
+const restorePs = read('scripts/restore-both-vm.ps1');
 const statusBat = read('STATUS_BOTH_VM.bat');
 const stopBat = read('STOP_BOTH_VM.bat');
 const backupBat = read('BACKUP_BOTH_VM.bat');
+const restoreBat = read('RESTORE_BOTH_VM.bat');
 
 test('dual VM status checks both readiness endpoints and both compose profiles', () => {
   for (const source of [statusSh, statusPs]) {
@@ -56,4 +59,29 @@ test('Linux backup treats optional runtime artifacts as optional', () => {
   assert.match(backupSh, /if \[\[ -d "\$DEST\/okno-audit" \]\]; then/u);
   assert.match(backupSh, /if \[\[ -f "\$DEST\/runtime-config\.json" \]\]; then/u);
   assert.match(backupSh, /exit 0\s*$/u);
+});
+
+test('dual VM restore verifies the bundle, creates a safety backup and requires explicit confirmation', () => {
+  for (const source of [restoreSh, restorePs]) {
+    assert.match(source, /MGC_VM_RESTORE_CONFIRM/u);
+    assert.match(source, /RESTORE/u);
+    assert.match(source, /checksums\.sha256/u);
+    assert.match(source, /dual-vm-cpu-only-no-ai/u);
+    assert.match(source, /backup-both-vm/u);
+    assert.match(source, /pre-restore/u);
+    assert.match(source, /PRAGMA integrity_check/u);
+    assert.match(source, /pg_restore/u);
+    assert.match(source, /api\/ready/u);
+    assert.match(source, /health\/ready/u);
+  }
+  assert.match(restoreBat, /restore-both-vm\.ps1/u);
+  assert.match(restoreBat, /replaces BOTH pilot databases/u);
+});
+
+test('restore replaces databases only and preserves runtime configuration, audit logs and VM secrets', () => {
+  for (const source of [restoreSh, restorePs]) {
+    assert.match(source, /intentionally preserved/u);
+    assert.doesNotMatch(source, /runtime-config\.json[^\n\r]*(?:cp|Copy-Item)/u);
+    assert.doesNotMatch(source, /okno-audit[^\n\r]*(?:cp|Copy-Item)/u);
+  }
 });
