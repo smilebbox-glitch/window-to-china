@@ -1,0 +1,66 @@
+name: VM no-AI verification
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/vm-no-ai-verification.yml'
+      - '.env.vm.example'
+      - 'compose.yaml'
+      - 'compose.vm.yaml'
+      - 'Dockerfile'
+      - 'scripts/start-vm.sh'
+      - 'scripts/start-vm.ps1'
+      - 'START_VM.bat'
+      - 'tests/vm-no-ai-deployment.test.mjs'
+      - 'app/**'
+      - 'lib/**'
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/vm-no-ai-verification.yml'
+      - '.env.vm.example'
+      - 'compose.yaml'
+      - 'compose.vm.yaml'
+      - 'Dockerfile'
+      - 'scripts/start-vm.sh'
+      - 'scripts/start-vm.ps1'
+      - 'START_VM.bat'
+      - 'tests/vm-no-ai-deployment.test.mjs'
+      - 'app/**'
+      - 'lib/**'
+
+permissions:
+  contents: read
+
+jobs:
+  vm-no-ai-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.13.0'
+      - name: Verify VM deployment contract
+        run: node --test tests/vm-no-ai-deployment.test.mjs
+      - name: Start CPU-only VM profile
+        run: |
+          chmod +x scripts/start-vm.sh scripts/build-verified.sh
+          ./scripts/start-vm.sh
+      - name: Verify no-AI environment and readiness
+        shell: bash
+        run: |
+          curl -fsS http://127.0.0.1:3000/api/health
+          curl -fsS http://127.0.0.1:3000/api/ready
+          CID="$(docker compose --env-file .env.vm -f compose.yaml -f compose.vm.yaml ps -q china-auto-radar)"
+          test -n "$CID"
+          test -z "$(docker inspect --format '{{range .Config.Env}}{{println .}}{{end}}' "$CID" | sed -n 's/^RAG_API_URL=//p')"
+          test -z "$(docker inspect --format '{{range .Config.Env}}{{println .}}{{end}}' "$CID" | sed -n 's/^RAG_MODEL=//p')"
+      - name: Diagnostics
+        if: failure()
+        run: docker compose --env-file .env.vm -f compose.yaml -f compose.vm.yaml logs --no-color --tail=200 || true
+      - name: Stop VM stack
+        if: always()
+        run: docker compose --env-file .env.vm -f compose.yaml -f compose.vm.yaml down -v --remove-orphans || true
