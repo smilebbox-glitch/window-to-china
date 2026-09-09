@@ -38,6 +38,7 @@ while true; do
   4. STATUS          Check both services and readiness
   A. ACCEPTANCE      Full pilot GO/NO-GO gate
   R. READINESS       Current status + acceptance drift + backup
+  O. OPS REPORT      Read-only IT health/capacity/backup report
   5. BACKUP          Create verified backup of both DBs
   6. DIAGNOSTICS     Create secret-safe diagnostics bundle
   7. UPDATE          Backup + safe fast-forward update
@@ -54,6 +55,7 @@ EOF
     4) run status-both-vm.sh ;;
     a|A) run_sudo accept-both-vm.sh ;;
     r|R) run readiness-both-vm.sh ;;
+    o|O) run ops-report-both-vm.sh ;;
     5) run backup-both-vm.sh ;;
     6) run diagnostics-both-vm.sh ;;
     7) run update-both-vm.sh ;;
