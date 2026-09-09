@@ -41,11 +41,13 @@ chmod +x \
   2>/dev/null || true
 
 echo "=== Host firewall preflight ==="
-# GitHub-hosted runners cannot safely mutate their host firewall. Contract-only
-# mode is accepted only inside an actual GitHub Actions run with an explicit
-# test CIDR; normal VM starts always inspect the real host firewall.
-if [ "${GITHUB_ACTIONS:-}" = "true" ] && [ "${MGC_VM_FIREWALL_CONTRACT_ONLY:-}" = "1" ] && [ -n "${GITHUB_RUN_ID:-}" ]; then
-  "$ROOT/scripts/host-firewall-preflight.sh" --contract-only
+# GitHub-hosted runners cannot safely mutate their host firewall. An actual
+# GitHub Actions run receives a private test CIDR and validates only the
+# firewall contract. Normal VM starts always inspect the real host firewall.
+if [ "${GITHUB_ACTIONS:-}" = "true" ] && [ -n "${GITHUB_RUN_ID:-}" ]; then
+  MGC_VM_ALLOWED_CIDR="${MGC_VM_ALLOWED_CIDR:-10.250.0.0/24}" \
+  MGC_VM_FIREWALL_CONTRACT_ONLY=1 \
+    "$ROOT/scripts/host-firewall-preflight.sh" --contract-only
 else
   "$ROOT/scripts/host-firewall-preflight.sh"
 fi
