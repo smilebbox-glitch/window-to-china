@@ -17,12 +17,21 @@ if (-not (Test-Path $FirewallPreflight)) { throw "Host firewall preflight not fo
 
 Write-Host '=== Host firewall preflight ===' -ForegroundColor Cyan
 $firewallArgs = @('-NoProfile','-ExecutionPolicy','Bypass','-File',$FirewallPreflight)
-if ($env:GITHUB_ACTIONS -eq 'true' -and $env:MGC_VM_FIREWALL_CONTRACT_ONLY -eq '1' -and $env:GITHUB_RUN_ID) {
-    $firewallArgs += '-ContractOnly'
-}
-& powershell.exe @firewallArgs
-if ($LASTEXITCODE -ne 0) {
-    throw "Host firewall preflight failed with exit code $LASTEXITCODE. Run CONFIGURE_VM_FIREWALL.bat as Administrator before starting the pilot."
+$oldCidr = $env:MGC_VM_ALLOWED_CIDR
+$oldContract = $env:MGC_VM_FIREWALL_CONTRACT_ONLY
+try {
+    if ($env:GITHUB_ACTIONS -eq 'true' -and $env:GITHUB_RUN_ID) {
+        if (-not $env:MGC_VM_ALLOWED_CIDR) { $env:MGC_VM_ALLOWED_CIDR = '10.250.0.0/24' }
+        $env:MGC_VM_FIREWALL_CONTRACT_ONLY = '1'
+        $firewallArgs += '-ContractOnly'
+    }
+    & powershell.exe @firewallArgs
+    if ($LASTEXITCODE -ne 0) {
+        throw "Host firewall preflight failed with exit code $LASTEXITCODE. Run CONFIGURE_VM_FIREWALL.bat as Administrator before starting the pilot."
+    }
+} finally {
+    if ($null -eq $oldCidr) { Remove-Item Env:MGC_VM_ALLOWED_CIDR -ErrorAction SilentlyContinue } else { $env:MGC_VM_ALLOWED_CIDR = $oldCidr }
+    if ($null -eq $oldContract) { Remove-Item Env:MGC_VM_FIREWALL_CONTRACT_ONLY -ErrorAction SilentlyContinue } else { $env:MGC_VM_FIREWALL_CONTRACT_ONLY = $oldContract }
 }
 
 Write-Host ''
