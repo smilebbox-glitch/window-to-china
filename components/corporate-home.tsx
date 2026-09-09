@@ -5,7 +5,6 @@ import { useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle,
   ArrowRight,
-  BarChart3,
   CalendarDays,
   CheckCircle2,
   Clock3,
@@ -27,6 +26,7 @@ type NewsResponse = { news?: NewsItem[]; errors?: string[] };
 
 const number = new Intl.NumberFormat("ru-RU");
 const compact = new Intl.NumberFormat("ru-RU", { notation: "compact", maximumFractionDigits: 1 });
+const strategicFocus = ["VOYAH", "EVOLUTE", "Моторинвест", "ЭВИА", "GWM", "SHACMAN"] as const;
 
 function levelTone(item: RankedNewsItem) {
   if (item.intelligence.level === "Критично") return "critical";
@@ -65,7 +65,6 @@ export function CorporateHome() {
       setVisitReady(true);
       return;
     }
-
     const lastVisit = localStorage.getItem("window-to-china:last-visit");
     setPreviousVisit(lastVisit);
     sessionStorage.setItem(sessionKey, lastVisit ?? "FIRST");
@@ -93,15 +92,19 @@ export function CorporateHome() {
   return (
     <main className="px-4 py-5 sm:px-6 lg:px-7 lg:py-6">
       <div className="mx-auto max-w-[1540px] space-y-4">
-        <section className="corp-hero corp-hero-home min-h-[220px]">
-          <div className="corp-hero-content max-w-[820px] py-8">
+        <section className="corp-hero corp-hero-home min-h-[240px]">
+          <div className="corp-hero-content max-w-[900px] py-8">
             <p className="corp-kicker">MGC · China Automotive Intelligence</p>
             <h1 className="corp-title">Окно в Китай</h1>
             <p className="mt-2 text-xl font-semibold tracking-[-0.02em] text-white/90 sm:text-2xl">Автопром. Рынки. Реальные возможности.</p>
-            <p className="corp-subtitle max-w-[720px]">От новостей к управленческому сигналу: рынок, локализация, коммерческий транспорт, технологии и события Китая в одном корпоративном контуре.</p>
+            <p className="corp-subtitle max-w-[760px]">От новостей к управленческому сигналу: рынок, локализация, коммерческий транспорт, технологии и события Китая в одном корпоративном контуре.</p>
             <div className="mt-5 flex flex-wrap gap-2">
               <Link href="/analysis" className="inline-flex items-center gap-2 rounded-xl bg-[#167df6] px-4 py-2.5 text-sm font-black text-white shadow-[0_8px_24px_rgba(22,125,246,.25)] transition hover:bg-[#0f70e6]">Ключевые сигналы <ArrowRight className="size-4" /></Link>
               <Link href="/executive" className="inline-flex items-center gap-2 rounded-xl border border-white/30 bg-white/10 px-4 py-2.5 text-sm font-bold text-white backdrop-blur-sm transition hover:bg-white/15">Executive Brief</Link>
+            </div>
+            <div className="mt-4 flex flex-wrap items-center gap-1.5">
+              <span className="mr-1 text-[9px] font-black uppercase tracking-[.14em] text-white/55">Стратегический фокус</span>
+              {strategicFocus.map((entity) => <span key={entity} className="rounded-full border border-white/20 bg-white/10 px-2.5 py-1 text-[9px] font-black text-white/85 backdrop-blur-sm">{entity}</span>)}
             </div>
           </div>
           <div className="corp-tagline">Точные данные.<br />Быстрые решения.</div>
@@ -134,6 +137,7 @@ export function CorporateHome() {
                     <div className="min-w-0">
                       <div className="mb-1.5 flex flex-wrap items-center gap-1.5">
                         <span className={`executive-priority executive-priority-${tone}`}>{item.intelligence.level}</span>
+                        <SourceTrustBadge sourceType={item.sourceType} compact />
                         {focus.slice(0, 2).map((entity) => <span key={entity} className="corp-pill !min-h-5 !px-2 !text-[10px]">{entity}</span>)}
                         <span className="text-[10px] text-[#8a9bb0]">{dateTime(item.publishedAt)}</span>
                       </div>
@@ -144,7 +148,6 @@ export function CorporateHome() {
                   </article>
                 );
               })}
-
               {attention.length === 0 && status === "loading" && <div className="h-[260px] animate-pulse bg-[#f3f7fb]" />}
               {attention.length === 0 && status !== "loading" && <div className="px-5 py-10 text-center text-sm text-[#7186a2]">Приоритетные сигналы появятся после обновления новостной ленты.</div>}
             </div>
@@ -173,7 +176,7 @@ export function CorporateHome() {
                 <>
                   <p className="mt-4 text-sm font-bold leading-6 text-[#244568]">Главный сигнал сейчас: {executiveLead.title}</p>
                   <p className="mt-2 text-xs leading-5 text-[#6d83a0]">{executiveLead.intelligence.recommendedAction}</p>
-                  <div className="mt-4 flex flex-wrap gap-1.5">{executiveLead.intelligence.signals.slice(0, 3).map((signal) => <span key={signal} className="corp-pill">{signal}</span>)}</div>
+                  <div className="mt-4 flex flex-wrap items-center gap-1.5"><SourceTrustBadge sourceType={executiveLead.sourceType} compact />{executiveLead.intelligence.signals.slice(0, 3).map((signal) => <span key={signal} className="corp-pill">{signal}</span>)}</div>
                 </>
               ) : <p className="mt-4 text-sm leading-6 text-[#6d83a0]">После загрузки ленты здесь появится краткий управленческий вывод по наиболее важному сигналу.</p>}
               <Link href="/executive" className="mt-5 inline-flex w-full items-center justify-between rounded-xl border border-[#cfe1f2] bg-[#f7fbff] px-4 py-3 text-sm font-black text-[#10417a]">Полный brief <ArrowRight className="size-4" /></Link>
@@ -209,7 +212,7 @@ export function CorporateHome() {
             <section className="corp-card p-4 sm:p-5">
               <div className="flex items-center justify-between gap-3"><div className="flex items-center gap-2"><Truck className="size-5 text-[#147efb]" /><h2 className="text-lg font-black text-[#102a58]">Truck Radar</h2></div><Link href="/trucks" className="corp-section-link">Открыть →</Link></div>
               <div className="mt-4 space-y-3">
-                {truckSignals.map((item) => <a key={item.id} href={item.url} target="_blank" rel="noreferrer" className="block rounded-xl border border-[#e1ebf4] bg-[#f9fcff] p-3 transition hover:border-[#bfd9f0] hover:bg-white"><div className="flex items-center gap-2"><span className="executive-score executive-score-watch !size-8 !text-xs">{item.commercialVehicle.score}</span><span className="text-[10px] font-black uppercase tracking-[.08em] text-[#7186a2]">{item.commercialVehicle.segment}</span></div><p className="mt-2 line-clamp-2 text-sm font-black leading-5 text-[#17345f]">{item.title}</p></a>)}
+                {truckSignals.map((item) => <a key={item.id} href={item.url} target="_blank" rel="noreferrer" className="block rounded-xl border border-[#e1ebf4] bg-[#f9fcff] p-3 transition hover:border-[#bfd9f0] hover:bg-white"><div className="flex items-center gap-2"><span className="executive-score executive-score-watch !size-8 !text-xs">{item.commercialVehicle.score}</span><SourceTrustBadge sourceType={item.sourceType} compact /><span className="text-[10px] font-black uppercase tracking-[.08em] text-[#7186a2]">{item.commercialVehicle.segment}</span></div><p className="mt-2 line-clamp-2 text-sm font-black leading-5 text-[#17345f]">{item.title}</p></a>)}
                 {truckSignals.length === 0 && <p className="text-xs leading-5 text-[#7186a2]">Грузовые сигналы появятся после загрузки ленты.</p>}
               </div>
             </section>
