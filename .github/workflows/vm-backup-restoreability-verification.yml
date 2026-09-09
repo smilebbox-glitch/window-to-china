@@ -132,7 +132,9 @@ jobs:
           if (report.postgres_restore !== 'passed') process.exit(5);
           if (!(report.postgres_public_tables > 0)) process.exit(6);
           if (report.postgres_image !== 'postgres:16.4-alpine') process.exit(7);
+          if (report.compatibility_role_app !== 'NOLOGIN') process.exit(8);
           NODE
+          grep -q 'Compatibility role app: NOLOGIN' backup-restoreability.txt
           grep -q 'BACKUP RESTOREABILITY: VERIFIED WITHOUT MODIFYING PILOT DATABASES' backup-restoreability.txt
           test -z "$(grep -REi 'RAG_API_KEY|ADMIN_API_TOKEN|SCHEDULER_TOKEN|POSTGRES_PASSWORD|OIDC_CLIENT_SECRET' "$VERIFY_DIR" || true)"
           if docker ps -a --format '{{.Names}}' | grep -q '^mgc-backup-verify-'; then
