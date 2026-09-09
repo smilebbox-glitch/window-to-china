@@ -1,0 +1,53 @@
+name: Server and mobile security gate
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/security-hardening.yml'
+      - '.github/dependabot.yml'
+      - 'next.config.ts'
+      - 'public/sw.js'
+      - 'deploy/nginx/**'
+      - 'compose.corporate.yaml'
+      - 'lib/**'
+      - 'app/api/**'
+      - 'tests/server-mobile-security.test.mjs'
+      - 'package.json'
+      - 'package-lock.json'
+  pull_request:
+    paths:
+      - 'next.config.ts'
+      - 'public/sw.js'
+      - 'deploy/nginx/**'
+      - 'compose.corporate.yaml'
+      - 'lib/**'
+      - 'app/api/**'
+      - 'tests/server-mobile-security.test.mjs'
+      - 'package.json'
+      - 'package-lock.json'
+  schedule:
+    - cron: '17 3 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  security-contracts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.13.0'
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Verify server and mobile security contracts
+        run: node --test tests/server-mobile-security.test.mjs
+      - name: Verify existing security preflight
+        run: npm run pilot:security
+      - name: Audit production dependencies for high severity vulnerabilities
+        run: npm audit --omit=dev --audit-level=high
