@@ -22,6 +22,8 @@ chmod +x \
   "$ROOT/scripts/status-both-vm.sh" \
   "$ROOT/scripts/backup-both-vm.sh" \
   "$ROOT/scripts/restore-both-vm.sh" \
+  "$ROOT/scripts/diagnostics-both-vm.sh" \
+  "$ROOT/scripts/update-both-vm.sh" \
   "$ROOT/scripts/stop-both-vm.sh" \
   "$LANG_ROOT/scripts/start-vm.sh" \
   2>/dev/null || true
