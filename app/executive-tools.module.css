@@ -1,0 +1,265 @@
+.travelPage,
+.searchPage {
+  --exec-navy: #07152d;
+  --exec-blue: #147efb;
+  --exec-blue-soft: #edf6ff;
+  --exec-green: #0b9b78;
+  --exec-border: #dce7f0;
+  --exec-muted: #6f86a4;
+  --exec-surface: #ffffff;
+  --exec-canvas: #f4f7fb;
+}
+
+.travelPage :global(.radar-grid) {
+  min-height: 0 !important;
+  background: transparent !important;
+}
+
+.travelPage :global(main > div) {
+  padding-top: 8px !important;
+}
+
+.travelPage :global(main > div > section:first-of-type) {
+  border: 1px solid #f1d7a9 !important;
+  background: linear-gradient(135deg, #fffaf1 0%, #fff 72%) !important;
+  box-shadow: 0 14px 38px rgba(28, 52, 84, 0.07) !important;
+}
+
+.travelPage :global(main > div > section:first-of-type > div) {
+  grid-template-columns: minmax(0, 1fr) !important;
+}
+
+.travelPage :global(main > div > section:first-of-type > div > div:first-child) {
+  display: none !important;
+}
+
+.travelPage :global(main > div > section:first-of-type > div > div:last-child) {
+  border: 0 !important;
+  background: transparent !important;
+  padding: 24px !important;
+}
+
+.travelPage :global(main section),
+.travelPage :global(main article),
+.travelPage :global(main aside) {
+  border-color: var(--exec-border) !important;
+  box-shadow: 0 10px 30px rgba(21, 54, 91, 0.055);
+}
+
+.travelPage :global([class*="bg-[#0a1516]"]),
+.travelPage :global([class*="bg-[#071011]"]) {
+  background: #fff !important;
+}
+
+.travelPage :global([class*="bg-violet-400"]),
+.travelPage :global([class*="bg-orange-300"]),
+.travelPage :global([class*="bg-amber-300"]) {
+  background: #f8fbff !important;
+}
+
+.travelPage :global([class*="border-white"]),
+.travelPage :global([class*="border-violet"]),
+.travelPage :global([class*="border-orange"]),
+.travelPage :global([class*="border-amber"]) {
+  border-color: var(--exec-border) !important;
+}
+
+.travelPage :global(.text-white),
+.travelPage :global([class*="text-slate-200"]),
+.travelPage :global([class*="text-slate-300"]) {
+  color: #173368 !important;
+}
+
+.travelPage :global([class*="text-slate-400"]),
+.travelPage :global([class*="text-slate-500"]),
+.travelPage :global([class*="text-slate-600"]) {
+  color: #5f7897 !important;
+}
+
+.travelPage :global([class*="text-cyan-"]) {
+  color: var(--exec-blue) !important;
+}
+
+.travelPage :global([class*="text-violet-"]) {
+  color: #6956c8 !important;
+}
+
+.travelPage :global([class*="text-orange-"]),
+.travelPage :global([class*="text-amber-"]) {
+  color: #b06a09 !important;
+}
+
+.travelPage :global([class*="bg-cyan-"]) {
+  background: var(--exec-blue-soft) !important;
+}
+
+.travelPage :global([class*="rounded-2xl"]) {
+  border-radius: 22px !important;
+}
+
+.travelPage :global(main > div > section:not(:first-of-type)) {
+  background: #fff;
+}
+
+.travelPage :global(main a[target="_blank"]) {
+  transition: transform 160ms ease, border-color 160ms ease, background 160ms ease;
+}
+
+.travelPage :global(main a[target="_blank"]:hover) {
+  transform: translateY(-1px);
+}
+
+.searchSurface {
+  overflow: hidden;
+  border: 1px solid var(--exec-border);
+  border-radius: 24px;
+  background: #fff;
+  box-shadow: 0 18px 48px rgba(21, 54, 91, 0.075);
+}
+
+.searchCommand {
+  position: relative;
+  padding: 22px;
+  border-bottom: 1px solid #e5edf4;
+  background:
+    radial-gradient(circle at 88% 10%, rgba(36, 107, 253, 0.09), transparent 34%),
+    linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+}
+
+.searchMetaGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.searchMetaCard {
+  border: 1px solid #e0e9f2;
+  border-radius: 14px;
+  background: rgba(255,255,255,.84);
+  padding: 10px 12px;
+}
+
+.searchMetaLabel {
+  display: block;
+  color: #8193aa;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.searchMetaValue {
+  display: block;
+  margin-top: 3px;
+  color: #173368;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.quickQueries {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.quickQuery {
+  border: 1px solid #dbe7f1;
+  border-radius: 999px;
+  background: #fff;
+  padding: 7px 10px;
+  color: #486885;
+  font-size: 12px;
+  font-weight: 750;
+  transition: all 150ms ease;
+}
+
+.quickQuery:hover {
+  border-color: #96c3f4;
+  color: #147efb;
+  transform: translateY(-1px);
+}
+
+.notificationTrigger {
+  backdrop-filter: blur(12px);
+}
+
+.notificationPanel {
+  overflow: hidden;
+  border: 1px solid #d8e5f0;
+  border-radius: 24px;
+  background: rgba(255,255,255,.98);
+  box-shadow: 0 28px 80px rgba(9, 37, 73, 0.22);
+  backdrop-filter: blur(20px);
+}
+
+.notificationHeader {
+  position: relative;
+  overflow: hidden;
+  border-bottom: 1px solid #e4edf5;
+  background:
+    radial-gradient(circle at 88% 10%, rgba(36, 107, 253, 0.13), transparent 38%),
+    linear-gradient(135deg, #07152d 0%, #12386f 100%);
+  padding: 18px;
+}
+
+.notificationEyebrow {
+  color: #9cc7ff;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+}
+
+.notificationTitle {
+  margin-top: 5px;
+  color: #fff;
+  font-size: 17px;
+  font-weight: 900;
+  letter-spacing: -.02em;
+}
+
+.notificationSubtitle {
+  margin-top: 4px;
+  max-width: 330px;
+  color: #c1d3ea;
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.notificationStatusGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.notificationStatusCard {
+  border: 1px solid #dfe9f2;
+  border-radius: 14px;
+  background: #f8fbfe;
+  padding: 10px 12px;
+}
+
+.notificationSection {
+  margin-top: 16px;
+  border-top: 1px solid #e7eef5;
+  padding-top: 15px;
+}
+
+.notificationSection:first-of-type {
+  margin-top: 14px;
+  border-top: 0;
+  padding-top: 0;
+}
+
+@media (max-width: 640px) {
+  .searchMetaGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .notificationPanel {
+    border-radius: 20px;
+  }
+}
