@@ -91,10 +91,11 @@ cp "$LOG_FILE" "$LOG_ROOT/latest.log"
 chmod 600 "$LOG_FILE" "$LOG_ROOT/latest.log" 2>/dev/null || true
 
 # Bound operational evidence growth. Backups have their own retention policy.
-if [[ "$LOG_RETENTION_DAYS" =~ ^[0-9]+$ ]]; then
+# A retention value of 0 explicitly disables pruning.
+if (( LOG_RETENTION_DAYS > 0 )); then
   find "$LOG_ROOT" -maxdepth 1 -type f -name '20??????T??????Z.log' -mtime "+$LOG_RETENTION_DAYS" -delete 2>/dev/null || true
 fi
-if [[ "$REPORT_RETENTION_DAYS" =~ ^[0-9]+$ && -d "$REPORT_ROOT" ]]; then
+if (( REPORT_RETENTION_DAYS > 0 )) && [[ -d "$REPORT_ROOT" ]]; then
   find "$REPORT_ROOT" -mindepth 1 -maxdepth 1 -type d -name '20??????T??????Z' -mtime "+$REPORT_RETENTION_DAYS" -exec rm -rf {} + 2>/dev/null || true
 fi
 
