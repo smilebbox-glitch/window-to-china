@@ -14,7 +14,17 @@ if [ ! -f "$LANG_ROOT/scripts/start-vm.sh" ]; then
   exit 1
 fi
 
-chmod +x "$ROOT/scripts/start-vm.sh" "$LANG_ROOT/scripts/start-vm.sh" 2>/dev/null || true
+# GitHub Contents API and Windows-originated archives may not preserve Unix
+# executable bits. The first shared start repairs all Linux VM operator commands.
+chmod +x \
+  "$ROOT/scripts/start-vm.sh" \
+  "$ROOT/scripts/start-both-vm.sh" \
+  "$ROOT/scripts/status-both-vm.sh" \
+  "$ROOT/scripts/backup-both-vm.sh" \
+  "$ROOT/scripts/restore-both-vm.sh" \
+  "$ROOT/scripts/stop-both-vm.sh" \
+  "$LANG_ROOT/scripts/start-vm.sh" \
+  2>/dev/null || true
 
 echo "=== Starting Okno v Kitai ==="
 "$ROOT/scripts/start-vm.sh"
