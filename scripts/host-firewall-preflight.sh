@@ -75,8 +75,13 @@ if [[ ${EUID:-$(id -u)} -eq 0 ]]; then
   IPT=(iptables)
 else
   command -v sudo >/dev/null 2>&1 || fail "sudo is required to inspect the Linux Docker firewall. Run as root or configure sudo."
-  sudo -n true >/dev/null 2>&1 || fail "Firewall preflight needs root access. Run 'sudo ./scripts/host-firewall-preflight.sh' or configure passwordless sudo for the check."
-  IPT=(sudo -n iptables)
+  if [[ -t 0 && -t 1 ]]; then
+    sudo -v || fail "Unable to obtain root access for firewall preflight."
+    IPT=(sudo iptables)
+  else
+    sudo -n true >/dev/null 2>&1 || fail "Non-interactive firewall preflight needs passwordless sudo. Run the start command interactively or configure sudo for the check."
+    IPT=(sudo -n iptables)
+  fi
 fi
 
 "${IPT[@]}" -nL DOCKER-USER >/dev/null 2>&1 || fail "Docker DOCKER-USER chain is missing. Run CONFIGURE_VM_FIREWALL before START_BOTH_VM."
