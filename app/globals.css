@@ -121,6 +121,13 @@ body { margin:0; background:#f5f9fd; color:#10244f; font-family:var(--font-sans)
 .corporate-page-analysis > section .text-white { color:#10244f !important; }
 .corporate-page-analysis > section [class*="border-white/"] { border-color:#dce7f1 !important; }
 
+/* Keep travel/event helper content readable in the corporate light theme. */
+.corporate-page-calendar details > summary { color:#173368 !important; }
+.corporate-page-calendar details .text-violet-200,.corporate-page-calendar details .text-violet-300 { color:#3658a8 !important; }
+.corporate-page-calendar details .text-slate-200,.corporate-page-calendar details .text-slate-300 { color:#173368 !important; }
+.corporate-page-calendar details .text-slate-400,.corporate-page-calendar details .text-slate-500,.corporate-page-calendar details .text-slate-600 { color:#405f82 !important; }
+.corporate-page-travel > main > div > section > div:first-child > p[class*="uppercase"] { padding-left:8px; padding-right:8px; }
+
 .pilot-content input,.pilot-content select,.pilot-content button,.pilot-content [role="combobox"] { border-radius:10px !important; }
 .pilot-content input,.pilot-content select,.pilot-content [role="combobox"] { border-color:#d8e5ef !important; background:#fff !important; color:#173368 !important; }
 .pilot-content button[class*="bg-[#285fff]"],.pilot-content [class*="bg-blue-700"] { background:#147efb !important; }
