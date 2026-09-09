@@ -9,6 +9,8 @@ const shell = read("components/site-shell.tsx");
 const searchPage = read("app/search/page.tsx");
 const globalSearch = read("components/global-search.tsx");
 const corporateHome = read("components/corporate-home.tsx");
+const marketDashboard = read("components/market-dashboard.tsx");
+const brandLogo = read("components/brand-logo.tsx");
 const eventCalendar = read("components/event-calendar.tsx");
 const travelGuide = read("components/travel-guide.tsx");
 const globalCss = read("app/globals.css");
@@ -90,11 +92,23 @@ test("pilot test-mode warning remains readable and explicit", () => {
   assert.match(shell, /text-\[#18345f\]/u);
 });
 
-test("home hero keeps the simplified design without retired market CTA buttons", () => {
+test("home uses the approved executive intelligence design", () => {
   assert.equal(corporateHome.includes("Исследовать рынок"), false);
   assert.equal(corporateHome.includes("Рынок и аналитика"), false);
-  assert.match(corporateHome, /Китай\. Автопром\./u);
-  assert.match(corporateHome, /Главные новости/u);
+  assert.match(corporateHome, /Окно в Китай/u);
+  assert.match(corporateHome, /Требует внимания/u);
+  assert.match(corporateHome, /Executive Brief/u);
+  assert.match(corporateHome, /Что изменилось с вашего визита/u);
+});
+
+test("market sales use local brand visuals and keep GWM focus", () => {
+  assert.match(marketDashboard, /BrandLogo/u);
+  assert.match(marketDashboard, /Фокус группы/u);
+  assert.match(marketDashboard, /GWM в России/u);
+  assert.match(brandLogo, /HAVAL/u);
+  assert.match(brandLogo, /TANK/u);
+  assert.match(brandLogo, /WEY/u);
+  assert.equal(brandLogo.includes("https://"), false);
 });
 
 test("event travel details remain readable in the corporate light theme", () => {
