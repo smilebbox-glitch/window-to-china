@@ -24,6 +24,19 @@ For a more comfortable build/update cycle, 8 vCPU and 16 GB RAM are preferable b
 
 The two Docker stacks use separate projects/networks/volumes and can run concurrently on the same VM.
 
+## Temporary VM network boundary
+
+This profile is deliberately limited to the internal pilot network. The expected host exposure is exactly:
+
+- **Okno v Kitai:** TCP `3000` from the hardened application container; its scheduler has no published host port.
+- **MGC Languages:** TCP `8080` from the hardened nginx gateway only; the application container and PostgreSQL have no published host ports.
+
+`STATUS_BOTH_VM` validates these conditions at runtime in addition to checking service readiness. It also verifies the relevant container hardening controls such as read-only root filesystems, `no-new-privileges` and reduced Linux capabilities.
+
+Do not open Docker database/application ports manually to make troubleshooting easier. If a service cannot be reached through the expected ingress above, diagnose the stack instead of bypassing the isolation boundary.
+
+This CPU-only VM profile uses internal **HTTP** for the temporary pilot. The production/corporate perimeter is a separate deployment profile: use the existing corporate HTTPS + SSO profile when wider corporate access is required. Do not treat the temporary HTTP profile as the final corporate security boundary.
+
 ## Folder layout
 
 Keep the repositories as sibling folders:
@@ -109,7 +122,12 @@ Linux equivalents:
 ./scripts/stop-both-vm.sh
 ```
 
-`STATUS_BOTH_VM` checks both Docker stacks, container health and the real readiness endpoints. It returns non-zero if either service needs attention.
+`STATUS_BOTH_VM` checks both Docker stacks, container health, the real readiness endpoints and the expected ingress isolation. It returns non-zero if either service is unhealthy **or** if an unexpected host port/security configuration is detected.
+
+Expected status result:
+
+- Okno: only hardened app port `3000` is published; scheduler stays internal.
+- MGC Languages: only hardened nginx port `8080` is published; app and PostgreSQL stay internal.
 
 `STOP_BOTH_VM` performs `docker compose down` for both VM profiles without `-v`, so the Okno runtime volume and the MGC Languages PostgreSQL volume are preserved.
 
@@ -198,7 +216,7 @@ The updater is deliberately conservative:
 4. creates and verifies a full dual-service backup **before** changing either working tree;
 5. uses only `git pull --ff-only origin main` — never `reset --hard` or `git clean`;
 6. rebuilds/recreates both CPU-only VM profiles;
-7. runs the shared readiness check;
+7. runs the shared readiness **and ingress-isolation** check;
 8. records old/new commit SHAs and the result in `update-result.txt` inside the pre-update backup folder.
 
 If the new build/readiness fails, the updater leaves the verified pre-update backup intact and does not attempt an automatic destructive rollback. IT can diagnose first and use the controlled restore procedure if required.
@@ -254,7 +272,7 @@ If no path is supplied, the launcher selects the newest timestamped backup from 
 
 If a restore step fails, the launcher prints the location of the automatically created pre-restore safety backup and attempts to bring both services back up for diagnostics.
 
-After every restore, run `STATUS_BOTH_VM` and confirm both readiness endpoints before users reconnect.
+After every restore, run `STATUS_BOTH_VM` and confirm both readiness endpoints **and ingress-isolation checks** before users reconnect.
 
 ## URLs
 
@@ -262,7 +280,7 @@ From the VM itself:
 
 ```text
 http://127.0.0.1:3000   Okno v Kitai
-http://127.0.0.1:8080   MGC Languages
+http://127.0.0.1:8080   MGC Languages (nginx ingress)
 ```
 
 From another PC on the approved corporate subnet:
@@ -272,7 +290,7 @@ http://<VM-IP>:3000
 http://<VM-IP>:8080
 ```
 
-Allow inbound TCP 3000 and 8080 only from the required internal subnet. Do not expose this temporary test profile directly to the public Internet.
+Allow inbound TCP 3000 and 8080 only from the required internal subnet. Do not expose this temporary test profile directly to the public Internet. Do not publish the MGC application/PostgreSQL ports or the Okno scheduler port on the host.
 
 ## Data and credentials
 
@@ -292,7 +310,7 @@ curl -fsS http://127.0.0.1:8080/health/live
 curl -fsS http://127.0.0.1:8080/health/ready
 ```
 
-All four commands must return successfully before users are invited to the pilot.
+All four commands must return successfully before users are invited to the pilot. Then run `STATUS_BOTH_VM` once more; successful HTTP checks alone do not prove that no unexpected Docker port was published.
 
 ## Manual update fallback
 
