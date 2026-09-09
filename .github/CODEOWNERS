@@ -1,0 +1,26 @@
+# Default ownership
+* @smilebbox-glitch
+
+# Repository and CI policy
+/.github/workflows/ @smilebbox-glitch
+/.github/CODEOWNERS @smilebbox-glitch
+/.github/pull_request_template.md @smilebbox-glitch
+/SECURITY.md @smilebbox-glitch
+/GITHUB_GOVERNANCE.md @smilebbox-glitch
+
+# Security-sensitive deployment boundary
+/deploy/ @smilebbox-glitch
+/compose.yaml @smilebbox-glitch
+/compose.corporate.yaml @smilebbox-glitch
+/compose.vm.yaml @smilebbox-glitch
+/Dockerfile @smilebbox-glitch
+
+# Authentication, security and secret controls
+/lib/auth.ts @smilebbox-glitch
+/scripts/secret-preflight.mjs @smilebbox-glitch
+/scripts/pilot-security-preflight.mjs @smilebbox-glitch
+/scripts/corporate-https-sso-preflight.mjs @smilebbox-glitch
+
+# PWA / web security boundary
+/public/manifest.webmanifest @smilebbox-glitch
+/public/sw.js @smilebbox-glitch
