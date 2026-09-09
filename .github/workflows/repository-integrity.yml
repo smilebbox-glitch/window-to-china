@@ -1,0 +1,91 @@
+name: repository-integrity
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: repository-integrity-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  repository-policy:
+    name: repository-policy
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.13.0'
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Require governance files
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s .github/CODEOWNERS
+          test -s .github/pull_request_template.md
+          test -s SECURITY.md
+          test -s GITHUB_GOVERNANCE.md
+          grep -q '^\* @smilebbox-glitch$' .github/CODEOWNERS
+
+      - name: Reject tracked secrets and private keys
+        run: node scripts/secret-preflight.mjs
+
+      - name: Verify security contracts
+        run: |
+          node --test tests/server-mobile-security.test.mjs
+          node scripts/pwa-webapp-preflight.mjs
+
+      - name: Reject dangerous workflow privileges
+        shell: bash
+        run: |
+          set -euo pipefail
+          if grep -R -nE --include='*.yml' --include='*.yaml' '^[[:space:]]*pull_request_target:' .github/workflows; then
+            echo 'pull_request_target is prohibited for this repository.'
+            exit 1
+          fi
+          if grep -R -nE --include='*.yml' --include='*.yaml' '^[[:space:]]*permissions:[[:space:]]*write-all[[:space:]]*$' .github/workflows; then
+            echo 'permissions: write-all is prohibited for this repository.'
+            exit 1
+          fi
+
+  main-pr-association:
+    name: main-pr-association
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Verify main commit came through a merged pull request
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const { data: pulls } = await github.rest.repos.listPullRequestsAssociatedWithCommit({
+              owner,
+              repo,
+              commit_sha: context.sha,
+            });
+            const mergedToMain = pulls.filter((pr) => pr.merged_at && pr.base && pr.base.ref === 'main');
+            if (mergedToMain.length === 0) {
+              core.setFailed(
+                'Integrity alarm: this main commit is not associated with a merged pull request. ' +
+                'True prevention requires the GitHub main ruleset documented in GITHUB_GOVERNANCE.md.'
+              );
+            } else {
+              core.info(`main commit is associated with merged PR #${mergedToMain[0].number}`);
+            }
