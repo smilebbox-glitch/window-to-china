@@ -1,0 +1,53 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import test from 'node:test';
+
+const read = (path) => fs.readFileSync(path, 'utf8');
+
+const statusSh = read('scripts/status-both-vm.sh');
+const statusPs = read('scripts/status-both-vm.ps1');
+const stopSh = read('scripts/stop-both-vm.sh');
+const stopPs = read('scripts/stop-both-vm.ps1');
+const backupSh = read('scripts/backup-both-vm.sh');
+const backupPs = read('scripts/backup-both-vm.ps1');
+const statusBat = read('STATUS_BOTH_VM.bat');
+const stopBat = read('STOP_BOTH_VM.bat');
+const backupBat = read('BACKUP_BOTH_VM.bat');
+
+test('dual VM status checks both readiness endpoints and both compose profiles', () => {
+  for (const source of [statusSh, statusPs]) {
+    assert.match(source, /compose\.vm\.yaml/u);
+    assert.match(source, /docker-compose\.vm\.yml/u);
+    assert.match(source, /api\/ready/u);
+    assert.match(source, /health\/ready/u);
+    assert.match(source, /3000/u);
+    assert.match(source, /8080/u);
+    assert.match(source, /MGC_LANGUAGES_PATH/u);
+  }
+  assert.match(statusBat, /status-both-vm\.ps1/u);
+});
+
+test('dual VM stop preserves Docker volumes', () => {
+  for (const source of [stopSh, stopPs]) {
+    assert.match(source, /down --remove-orphans/u);
+    assert.doesNotMatch(source, /down\s+(?:[^\n\r]*\s)?-v(?:\s|$)/u);
+    assert.doesNotMatch(source, /--volumes/u);
+    assert.match(source, /volume was preserved/u);
+  }
+  assert.match(stopBat, /stop-both-vm\.ps1/u);
+});
+
+test('dual VM backup is database-consistent and integrity-verified', () => {
+  for (const source of [backupSh, backupPs]) {
+    assert.match(source, /sqlite-backup\.mjs/u);
+    assert.match(source, /PRAGMA integrity_check/u);
+    assert.match(source, /pg_dump/u);
+    assert.match(source, /pg_restore --list/u);
+    assert.match(source, /docker cp/u);
+    assert.match(source, /checksums\.sha256/u);
+    assert.match(source, /manifest\.json/u);
+    assert.match(source, /MGC_VM_BACKUP_RETENTION_DAYS/u);
+    assert.match(source, /MGC_VM_BACKUP_INCLUDE_SECRETS/u);
+  }
+  assert.match(backupBat, /backup-both-vm\.ps1/u);
+});
