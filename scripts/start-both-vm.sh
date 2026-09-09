@@ -29,6 +29,8 @@ chmod +x \
   "$ROOT/scripts/start-both-vm.sh" \
   "$ROOT/scripts/status-both-vm.sh" \
   "$ROOT/scripts/accept-both-vm.sh" \
+  "$ROOT/scripts/readiness-both-vm.sh" \
+  "$ROOT/scripts/write-vm-acceptance-receipt.sh" \
   "$ROOT/scripts/host-firewall-preflight.sh" \
   "$ROOT/scripts/configure-vm-firewall.sh" \
   "$ROOT/scripts/apply-vm-firewall.sh" \
