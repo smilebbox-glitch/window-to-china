@@ -12,7 +12,7 @@ if (-not (Test-Path -LiteralPath $ExamplePath -PathType Leaf)) {
 if (-not (Test-Path -LiteralPath $EnvPath)) {
     Copy-Item -LiteralPath $ExamplePath -Destination $EnvPath
     Write-Host 'Created .env from .env.example.' -ForegroundColor Green
-    exit 0
+    return
 }
 
 if (-not (Test-Path -LiteralPath $EnvPath -PathType Leaf)) {
@@ -21,7 +21,7 @@ if (-not (Test-Path -LiteralPath $EnvPath -PathType Leaf)) {
 
 $envFile = Get-Item -LiteralPath $EnvPath -ErrorAction Stop
 if ($envFile.Length -le $MaxEnvBytes) {
-    exit 0
+    return
 }
 
 $stamp = Get-Date -Format 'yyyyMMdd-HHmmss'
