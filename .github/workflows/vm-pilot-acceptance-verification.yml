@@ -18,9 +18,14 @@ on:
       - 'scripts/ops-report-both-vm.ps1'
       - 'scripts/backup-both-vm.sh'
       - 'scripts/backup-both-vm.ps1'
+      - 'scripts/daily-vm-health.sh'
+      - 'scripts/daily-vm-health.ps1'
+      - 'scripts/manage-daily-vm-health.sh'
+      - 'scripts/manage-daily-vm-health.ps1'
       - 'ACCEPT_BOTH_VM.bat'
       - 'READINESS_BOTH_VM.bat'
       - 'OPS_REPORT_BOTH_VM.bat'
+      - 'DAILY_VM_HEALTH.bat'
       - 'MGC_VM_CONTROL.bat'
       - 'scripts/vm-control.sh'
       - 'scripts/start-both-vm.sh'
@@ -32,6 +37,7 @@ on:
       - 'tests/vm-pilot-acceptance.test.mjs'
       - 'tests/vm-pilot-readiness.test.mjs'
       - 'tests/dual-vm-operations.test.mjs'
+      - 'tests/daily-vm-health.test.mjs'
       - '.env.vm.example'
       - 'compose.yaml'
       - 'compose.vm.yaml'
@@ -62,12 +68,12 @@ jobs:
 
       - name: Verify acceptance, readiness and operations contracts
         working-directory: window-to-china
-        run: node --test tests/vm-pilot-acceptance.test.mjs tests/vm-pilot-readiness.test.mjs tests/dual-vm-operations.test.mjs
+        run: node --test tests/vm-pilot-acceptance.test.mjs tests/vm-pilot-readiness.test.mjs tests/dual-vm-operations.test.mjs tests/daily-vm-health.test.mjs
 
       - name: Parse Linux operator launchers
         working-directory: window-to-china
         shell: bash
-        run: bash -n scripts/accept-both-vm.sh scripts/write-vm-acceptance-receipt.sh scripts/readiness-both-vm.sh scripts/ops-report-both-vm.sh scripts/backup-both-vm.sh scripts/start-both-vm.sh scripts/status-both-vm.sh scripts/host-firewall-preflight.sh scripts/vm-control.sh
+        run: bash -n scripts/accept-both-vm.sh scripts/write-vm-acceptance-receipt.sh scripts/readiness-both-vm.sh scripts/ops-report-both-vm.sh scripts/backup-both-vm.sh scripts/daily-vm-health.sh scripts/manage-daily-vm-health.sh scripts/start-both-vm.sh scripts/status-both-vm.sh scripts/host-firewall-preflight.sh scripts/vm-control.sh
 
       - name: Parse Windows operator launchers
         working-directory: window-to-china
@@ -79,6 +85,8 @@ jobs:
             'scripts/readiness-both-vm.ps1',
             'scripts/ops-report-both-vm.ps1',
             'scripts/backup-both-vm.ps1',
+            'scripts/daily-vm-health.ps1',
+            'scripts/manage-daily-vm-health.ps1',
             'scripts/start-both-vm.ps1',
             'scripts/status-both-vm.ps1',
             'scripts/host-firewall-preflight.ps1'
@@ -191,6 +199,26 @@ jobs:
           test "$(node -p "JSON.parse(require('fs').readFileSync('$REPORT_DIR/operations.json','utf8')).mgc_languages_commit")" = "$(git -C ../mgc-languages rev-parse HEAD)"
           test -z "$(grep -REi 'RAG_API_KEY|ADMIN_API_TOKEN|SCHEDULER_TOKEN|POSTGRES_PASSWORD|OIDC_CLIENT_SECRET' "$REPORT_DIR" || true)"
           grep -q 'OPERATIONS REPORT: HEALTHY' operations-report.txt
+
+      - name: Exercise daily health runner with fresh backup
+        working-directory: window-to-china
+        shell: bash
+        env:
+          MGC_VM_ALLOWED_CIDR: 10.250.0.0/24
+          MGC_VM_ACCEPTANCE_ROOT: ${{ runner.temp }}/mgc-vm-acceptance
+          MGC_VM_BACKUP_ROOT: ${{ runner.temp }}/mgc-vm-backups
+          MGC_VM_REPORT_ROOT: ${{ runner.temp }}/mgc-vm-reports
+          MGC_VM_DAILY_LOG_ROOT: ${{ runner.temp }}/mgc-vm-daily-logs
+          MGC_VM_DAILY_BACKUP_AFTER_HOURS: '9999'
+          MGC_VM_DISK_WARN_GB: '1'
+          MGC_VM_DISK_NO_GO_GB: '0.25'
+          MGC_VM_BACKUP_MAX_AGE_HOURS: '24'
+        run: |
+          bash scripts/daily-vm-health.sh | tee daily-health.txt
+          test -s "$MGC_VM_DAILY_LOG_ROOT/latest.log"
+          grep -q 'no duplicate backup needed' daily-health.txt
+          grep -q 'DAILY VM HEALTH: COMPLETED' daily-health.txt
+          grep -q 'OPERATIONS REPORT: HEALTHY' "$MGC_VM_DAILY_LOG_ROOT/latest.log"
 
       - name: Verify current pilot readiness report
         working-directory: window-to-china
