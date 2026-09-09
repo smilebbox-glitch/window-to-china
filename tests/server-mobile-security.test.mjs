@@ -8,6 +8,7 @@ const nextConfig = read('next.config.ts');
 const sw = read('public/sw.js');
 const nginx = read('deploy/nginx/corporate.conf.template');
 const compose = read('compose.corporate.yaml');
+const corporateEnv = read('.env.corporate.example');
 
 test('browser and PWA responses carry hardened security controls', () => {
   assert.match(nextConfig, /Content-Security-Policy/u);
@@ -50,7 +51,7 @@ test('corporate ingress requires modern TLS, SSO and layered abuse controls', ()
   assert.match(nginx, /X-Permitted-Cross-Domain-Policies/u);
 });
 
-test('corporate application remains isolated behind the reverse proxy', () => {
+test('corporate application remains isolated and SSO is limited to the approved IdP group', () => {
   const appBlock = compose.split(/\n  china-auto-radar-scheduler:/u)[0];
   assert.doesNotMatch(appBlock, /\n    ports:/u);
   assert.match(appBlock, /AUTH_MODE: proxy/u);
@@ -61,6 +62,10 @@ test('corporate application remains isolated behind the reverse proxy', () => {
   assert.match(compose, /--cookie-secure=true/u);
   assert.match(compose, /--cookie-samesite=lax/u);
   assert.match(compose, /OIDC_ISSUER_URL/u);
+  assert.match(compose, /--scope=\$\{OIDC_SCOPE:-openid profile email groups\}/u);
+  assert.match(compose, /--allowed-group=\$\{SSO_ALLOWED_GROUP:\?SSO_ALLOWED_GROUP is required\}/u);
+  assert.match(corporateEnv, /OIDC_SCOPE=openid profile email groups/u);
+  assert.match(corporateEnv, /SSO_ALLOWED_GROUP=okno-china-users/u);
   assert.match(compose, /OAUTH2_PROXY_COOKIE_SECRET/u);
   assert.match(compose, /AUDIT_HMAC_KEY/u);
   assert.match(compose, /USER_DATA_HMAC_KEY/u);
