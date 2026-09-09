@@ -12,6 +12,7 @@ echo   1. FIREWALL SETUP  Configure restricted host ingress
 echo   2. FIREWALL CHECK  Verify host firewall boundary
 echo   3. START           Start/rebuild both services
 echo   4. STATUS          Check both services and readiness
+echo   A. ACCEPTANCE      Full pilot GO/NO-GO gate
 echo   5. BACKUP          Create verified backup of both DBs
 echo   6. DIAGNOSTICS     Create secret-safe diagnostics bundle
 echo   7. UPDATE          Backup + safe fast-forward update
@@ -19,9 +20,10 @@ echo   8. RESTORE         Controlled restore of both DBs
 echo   9. STOP            Stop both services, preserve data
 echo   Q. EXIT
 echo.
-choice /C 123456789Q /N /M "Select: "
+choice /C 123456789AQ /N /M "Select: "
 
-if errorlevel 10 goto END
+if errorlevel 11 goto END
+if errorlevel 10 goto ACCEPTANCE
 if errorlevel 9 goto STOP
 if errorlevel 8 goto RESTORE
 if errorlevel 7 goto UPDATE
@@ -46,6 +48,10 @@ goto MENU
 
 :STATUS
 call "%~dp0STATUS_BOTH_VM.bat"
+goto MENU
+
+:ACCEPTANCE
+call "%~dp0ACCEPT_BOTH_VM.bat"
 goto MENU
 
 :BACKUP
