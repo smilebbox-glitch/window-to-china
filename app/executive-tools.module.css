@@ -10,95 +10,8 @@
   --exec-canvas: #f4f7fb;
 }
 
-.travelPage :global(.radar-grid) {
-  min-height: 0 !important;
-  background: transparent !important;
-}
-
 .travelPage :global(main > div) {
   padding-top: 8px !important;
-}
-
-.travelPage :global(main > div > section:first-of-type) {
-  border: 1px solid #f1d7a9 !important;
-  background: linear-gradient(135deg, #fffaf1 0%, #fff 72%) !important;
-  box-shadow: 0 14px 38px rgba(28, 52, 84, 0.07) !important;
-}
-
-.travelPage :global(main > div > section:first-of-type > div) {
-  grid-template-columns: minmax(0, 1fr) !important;
-}
-
-.travelPage :global(main > div > section:first-of-type > div > div:first-child) {
-  display: none !important;
-}
-
-.travelPage :global(main > div > section:first-of-type > div > div:last-child) {
-  border: 0 !important;
-  background: transparent !important;
-  padding: 24px !important;
-}
-
-.travelPage :global(main section),
-.travelPage :global(main article),
-.travelPage :global(main aside) {
-  border-color: var(--exec-border) !important;
-  box-shadow: 0 10px 30px rgba(21, 54, 91, 0.055);
-}
-
-.travelPage :global([class*="bg-[#0a1516]"]),
-.travelPage :global([class*="bg-[#071011]"]) {
-  background: #fff !important;
-}
-
-.travelPage :global([class*="bg-violet-400"]),
-.travelPage :global([class*="bg-orange-300"]),
-.travelPage :global([class*="bg-amber-300"]) {
-  background: #f8fbff !important;
-}
-
-.travelPage :global([class*="border-white"]),
-.travelPage :global([class*="border-violet"]),
-.travelPage :global([class*="border-orange"]),
-.travelPage :global([class*="border-amber"]) {
-  border-color: var(--exec-border) !important;
-}
-
-.travelPage :global(.text-white),
-.travelPage :global([class*="text-slate-200"]),
-.travelPage :global([class*="text-slate-300"]) {
-  color: #173368 !important;
-}
-
-.travelPage :global([class*="text-slate-400"]),
-.travelPage :global([class*="text-slate-500"]),
-.travelPage :global([class*="text-slate-600"]) {
-  color: #5f7897 !important;
-}
-
-.travelPage :global([class*="text-cyan-"]) {
-  color: var(--exec-blue) !important;
-}
-
-.travelPage :global([class*="text-violet-"]) {
-  color: #6956c8 !important;
-}
-
-.travelPage :global([class*="text-orange-"]),
-.travelPage :global([class*="text-amber-"]) {
-  color: #b06a09 !important;
-}
-
-.travelPage :global([class*="bg-cyan-"]) {
-  background: var(--exec-blue-soft) !important;
-}
-
-.travelPage :global([class*="rounded-2xl"]) {
-  border-radius: 22px !important;
-}
-
-.travelPage :global(main > div > section:not(:first-of-type)) {
-  background: #fff;
 }
 
 .travelPage :global(main a[target="_blank"]) {
@@ -246,12 +159,6 @@
   margin-top: 16px;
   border-top: 1px solid #e7eef5;
   padding-top: 15px;
-}
-
-.notificationSection:first-of-type {
-  margin-top: 14px;
-  border-top: 0;
-  padding-top: 0;
 }
 
 @media (max-width: 640px) {
