@@ -20,14 +20,26 @@ test('dual VM launchers orchestrate both existing VM profiles', () => {
   assert.match(bat, /port 8080/u);
 });
 
-test('shared start reports GO only after the readiness and ingress-isolation status gate', () => {
+test('shared start is fail-closed behind the host firewall before either service starts', () => {
+  for (const source of [linux, windows]) {
+    assert.match(source, /host-firewall-preflight/u);
+    assert.match(source, /GITHUB_ACTIONS/u);
+    assert.match(source, /GITHUB_RUN_ID/u);
+    assert.match(source, /MGC_VM_FIREWALL_CONTRACT_ONLY/u);
+    assert.ok(source.indexOf('Host firewall preflight') < source.indexOf('Starting Okno v Kitai'));
+  }
+  assert.match(bat, /CONFIGURE_VM_FIREWALL\.bat/u);
+  assert.match(bat, /approved corporate subnet/u);
+});
+
+test('shared start reports GO only after firewall, readiness and ingress-isolation gates', () => {
   assert.match(linux, /status-both-vm\.sh/u);
   assert.match(linux, /Final readiness \+ ingress isolation gate/u);
-  assert.match(linux, /passed readiness and ingress isolation checks/u);
+  assert.match(linux, /passed host firewall, readiness and ingress isolation checks/u);
 
   assert.match(windows, /status-both-vm\.ps1/u);
   assert.match(windows, /powershell\.exe/u);
   assert.match(windows, /LASTEXITCODE/u);
   assert.match(windows, /Final readiness \+ ingress isolation gate/u);
-  assert.match(windows, /passed readiness and ingress isolation checks/u);
+  assert.match(windows, /passed host firewall, readiness and ingress isolation checks/u);
 });
