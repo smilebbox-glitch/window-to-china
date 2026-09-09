@@ -144,6 +144,7 @@ export function TruckRadar() {
             {filtered.length === 0 && <div className="border border-dashed border-zinc-300 bg-white p-8 text-sm text-zinc-500">{status === "offline" ? "Лента недоступна. Проверьте соединение или состояние источников." : "По выбранным фильтрам грузовых сигналов нет."}</div>}
             {filtered.slice(0, 24).map((item) => {
               const truck = item.commercialVehicle;
+              const receivedAt = (item as NewsWithReceipt).receivedAt;
               return <article key={item.id} className="border border-zinc-300 bg-white p-5 shadow-sm transition hover:border-zinc-400 hover:shadow-md">
                 <div className="flex flex-wrap items-center gap-2 text-[11px] font-bold uppercase tracking-[0.08em]">
                   <span className={`px-2 py-1 ${levelClass(truck.level)}`}>{truck.level} · {truck.score}</span>
@@ -162,7 +163,7 @@ export function TruckRadar() {
                   <span className="font-semibold text-zinc-700">{item.source}</span>
                   <SourceTrustBadge sourceType={item.sourceType} compact />
                   <span>·</span>
-                  <span className="inline-flex items-center gap-1 font-medium text-zinc-600" title="Время первого получения новости сервисом «Окно в Китай»"><Clock3 className="size-3" /> Получено: {item.receivedAt ? formatDateTime(item.receivedAt) : "нет данных"}</span>
+                  <span className="inline-flex items-center gap-1 font-medium text-zinc-600" title="Время первого получения новости сервисом «Окно в Китай»"><Clock3 className="size-3" /> Получено: {receivedAt ? formatDateTime(receivedAt) : "нет данных"}</span>
                   <span>·</span>
                   <span>Опубликовано: {formatDateTime(item.publishedAt)}</span>
                   <span>·</span>
