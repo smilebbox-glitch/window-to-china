@@ -13,6 +13,16 @@ if "%ERRORLEVEL%"=="0" if exist ".git" (
   if not "%ERRORLEVEL%"=="0" echo WARNING: Git update was skipped. Starting current local copy.
 )
 
+echo Checking local configuration...
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\repair-env.ps1"
+set REPAIR_RC=%ERRORLEVEL%
+if not "%REPAIR_RC%"=="0" (
+  echo.
+  echo Local configuration repair failed. See the message above.
+  pause
+  exit /b %REPAIR_RC%
+)
+
 echo Starting Okno v Kitai for this PC and other PCs on the same LAN...
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\start-lan.ps1"
 set RC=%ERRORLEVEL%
