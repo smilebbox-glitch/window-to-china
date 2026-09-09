@@ -34,7 +34,7 @@ MGC/
   mgc-languages/
 ```
 
-The shared launcher looks for `mgc-languages` next to `window-to-china`. A custom location can be supplied through `MGC_LANGUAGES_PATH`.
+The shared launchers look for `mgc-languages` next to `window-to-china`. A custom location can be supplied through `MGC_LANGUAGES_PATH`.
 
 ## Linux VM — first installation and one-command start
 
@@ -71,6 +71,73 @@ C:\MGC\window-to-china\START_BOTH_VM.bat
 
 This calls the existing VM launcher in each repository. Each service creates its own `.env.vm`, generates local secrets, builds its Docker stack and waits for readiness.
 
+## Daily IT operations
+
+Windows operators can use four files in `window-to-china`:
+
+```text
+START_BOTH_VM.bat
+STATUS_BOTH_VM.bat
+BACKUP_BOTH_VM.bat
+STOP_BOTH_VM.bat
+```
+
+Linux equivalents:
+
+```bash
+./scripts/start-both-vm.sh
+./scripts/status-both-vm.sh
+./scripts/backup-both-vm.sh
+./scripts/stop-both-vm.sh
+```
+
+`STATUS_BOTH_VM` checks both Docker stacks, container health and the real readiness endpoints. It returns non-zero if either service needs attention.
+
+`STOP_BOTH_VM` performs `docker compose down` for both VM profiles without `-v`, so the Okno runtime volume and the MGC Languages PostgreSQL volume are preserved.
+
+## Verified backup
+
+`BACKUP_BOTH_VM` creates a timestamped folder under the sibling `vm-backups` directory by default:
+
+```text
+MGC/
+  vm-backups/
+    20260909T120000Z/
+      okno.sqlite
+      mgc_languages.dump
+      runtime-config.json        # when present
+      okno-audit/                # when present
+      manifest.json
+      checksums.sha256
+```
+
+The backup is created while the services remain online:
+
+- Okno SQLite uses the application's `VACUUM INTO` backup path and then runs `PRAGMA integrity_check` before the file is copied to the host.
+- MGC Languages PostgreSQL uses `pg_dump -Fc` and validates the dump with `pg_restore --list` before copying it to the host.
+- SHA-256 checksums are generated and immediately re-verified.
+- `manifest.json` records UTC timestamp, repository commits, profile and retention settings.
+
+Default retention is 14 days. Override it when required:
+
+```text
+MGC_VM_BACKUP_RETENTION_DAYS=30
+```
+
+A different backup destination can be supplied with:
+
+```text
+MGC_VM_BACKUP_ROOT=<path>
+```
+
+VM `.env.vm` files contain credentials and signing secrets and are **not included by default**. For a controlled disaster-recovery export only, explicitly set:
+
+```text
+MGC_VM_BACKUP_INCLUDE_SECRETS=YES
+```
+
+If secrets are included, the resulting backup must be treated as confidential infrastructure material and stored only in an approved protected location.
+
 ## URLs
 
 From the VM itself:
@@ -95,9 +162,9 @@ Allow inbound TCP 3000 and 8080 only from the required internal subnet. Do not e
 - `.env.vm` must not be committed to Git.
 - Okno v Kitai keeps runtime data in its Docker volume.
 - MGC Languages keeps PostgreSQL data in its Docker volume.
-- Restarting containers does not delete the named volumes.
+- Restarting or normally stopping containers does not delete the named volumes.
 
-## Health checks
+## Manual health checks
 
 ```bash
 curl -fsS http://127.0.0.1:3000/api/health
@@ -121,23 +188,23 @@ cd ../window-to-china
 ./scripts/start-both-vm.sh
 ```
 
+Recommended update sequence for a pilot VM:
+
+1. Run `BACKUP_BOTH_VM`.
+2. Pull both repositories.
+3. Run `START_BOTH_VM`.
+4. Run `STATUS_BOTH_VM`.
+
 ## Stop without deleting pilot data
 
-Okno v Kitai:
+Preferred:
 
 ```bash
 cd /opt/mgc/window-to-china
-docker compose --env-file .env.vm -f compose.yaml -f compose.vm.yaml down
+./scripts/stop-both-vm.sh
 ```
 
-MGC Languages:
-
-```bash
-cd /opt/mgc/mgc-languages
-docker compose --env-file .env.vm -f docker-compose.lan.yml -f docker-compose.vm.yml down
-```
-
-Do not add `-v` when normal pilot data must be retained.
+The script stops MGC Languages first and Okno v Kitai second and does not delete Docker volumes.
 
 ## Later GPU migration
 
