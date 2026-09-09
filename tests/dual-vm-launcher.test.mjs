@@ -19,3 +19,15 @@ test('dual VM launchers orchestrate both existing VM profiles', () => {
   assert.match(bat, /port 3000/u);
   assert.match(bat, /port 8080/u);
 });
+
+test('shared start reports GO only after the readiness and ingress-isolation status gate', () => {
+  assert.match(linux, /status-both-vm\.sh/u);
+  assert.match(linux, /Final readiness \+ ingress isolation gate/u);
+  assert.match(linux, /passed readiness and ingress isolation checks/u);
+
+  assert.match(windows, /status-both-vm\.ps1/u);
+  assert.match(windows, /powershell\.exe/u);
+  assert.match(windows, /LASTEXITCODE/u);
+  assert.match(windows, /Final readiness \+ ingress isolation gate/u);
+  assert.match(windows, /passed readiness and ingress isolation checks/u);
+});
