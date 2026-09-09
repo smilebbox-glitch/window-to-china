@@ -24,6 +24,11 @@ container_health() {
   docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' "$cid" 2>/dev/null || true
 }
 
+no_published_ports() {
+  local cid="$1"
+  [[ -n "$cid" ]] && [[ -z "$(docker port "$cid" 2>/dev/null || true)" ]]
+}
+
 need_docker
 
 echo "=== Okno v Kitai VM ==="
@@ -61,6 +66,8 @@ elif [[ ! -f "$LANG_ROOT/.env.vm" ]]; then
 else
   lang_port="$(env_value "$LANG_ROOT/.env.vm" MGC_PORT 8080)"
   lang_cid="$(cd "$LANG_ROOT" && docker compose --env-file .env.vm -f docker-compose.lan.yml -f docker-compose.vm.yml ps -q app 2>/dev/null || true)"
+  lang_db_cid="$(cd "$LANG_ROOT" && docker compose --env-file .env.vm -f docker-compose.lan.yml -f docker-compose.vm.yml ps -q db 2>/dev/null || true)"
+  lang_nginx_cid="$(cd "$LANG_ROOT" && docker compose --env-file .env.vm -f docker-compose.lan.yml -f docker-compose.vm.yml ps -q nginx 2>/dev/null || true)"
   (cd "$LANG_ROOT" && docker compose --env-file .env.vm -f docker-compose.lan.yml -f docker-compose.vm.yml ps) || true
   if [[ -n "$lang_cid" ]]; then
     lang_health="$(container_health "$lang_cid")"
@@ -73,11 +80,43 @@ else
     echo "[NO-GO] MGC Languages: ${lang_health:-unknown}"
     rc=1
   fi
+
+  # The temporary LAN profile must expose only the hardened nginx edge.
+  # The application and PostgreSQL remain reachable only on Docker networks.
+  if [[ -z "$lang_db_cid" || -z "$lang_nginx_cid" ]]; then
+    echo "[NO-GO] MGC Languages ingress isolation: app/db/nginx container set is incomplete."
+    rc=1
+  else
+    nginx_readonly="$(docker inspect --format '{{.HostConfig.ReadonlyRootfs}}' "$lang_nginx_cid" 2>/dev/null || true)"
+    nginx_security="$(docker inspect --format '{{json .HostConfig.SecurityOpt}}' "$lang_nginx_cid" 2>/dev/null || true)"
+    nginx_drop="$(docker inspect --format '{{json .HostConfig.CapDrop}}' "$lang_nginx_cid" 2>/dev/null || true)"
+    nginx_add="$(docker inspect --format '{{json .HostConfig.CapAdd}}' "$lang_nginx_cid" 2>/dev/null || true)"
+    nginx_ports="$(docker port "$lang_nginx_cid" 8080/tcp 2>/dev/null || true)"
+
+    gateway_ok=1
+    no_published_ports "$lang_cid" || gateway_ok=0
+    no_published_ports "$lang_db_cid" || gateway_ok=0
+    [[ "$nginx_readonly" == "true" ]] || gateway_ok=0
+    [[ "$nginx_security" == *"no-new-privileges"* ]] || gateway_ok=0
+    [[ "$nginx_drop" == *"ALL"* ]] || gateway_ok=0
+    for capability in CHOWN SETGID SETUID; do
+      [[ "$nginx_add" == *"$capability"* ]] || gateway_ok=0
+    done
+    if [[ "$nginx_add" =~ SYS_ADMIN|NET_ADMIN|SYS_PTRACE|DAC_OVERRIDE ]]; then gateway_ok=0; fi
+    [[ "$nginx_ports" == *":${lang_port}"* ]] || gateway_ok=0
+
+    if [[ "$gateway_ok" -eq 1 ]]; then
+      echo "[GO] MGC Languages ingress isolation: only hardened nginx publishes LAN port ${lang_port}."
+    else
+      echo "[NO-GO] MGC Languages ingress isolation does not match the hardened VM contract."
+      rc=1
+    fi
+  fi
 fi
 
 echo ""
 if [[ "$rc" -eq 0 ]]; then
-  echo "[GO] Both VM services are ready."
+  echo "[GO] Both VM services are ready and ingress isolation is valid."
 else
   echo "[NO-GO] At least one VM service needs attention."
 fi
