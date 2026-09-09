@@ -41,6 +41,7 @@ elif [[ ! -f "$ROOT/.env.vm" ]]; then
 else
   okno_port="$(env_value "$ROOT/.env.vm" APP_PORT 3000)"
   okno_cid="$(cd "$ROOT" && docker compose --env-file .env.vm -f compose.yaml -f compose.vm.yaml ps -q china-auto-radar 2>/dev/null || true)"
+  okno_scheduler_cid="$(cd "$ROOT" && docker compose --env-file .env.vm -f compose.yaml -f compose.vm.yaml ps -q china-auto-radar-scheduler 2>/dev/null || true)"
   (cd "$ROOT" && docker compose --env-file .env.vm -f compose.yaml -f compose.vm.yaml ps) || true
   if [[ -n "$okno_cid" ]]; then
     okno_health="$(container_health "$okno_cid")"
@@ -52,6 +53,38 @@ else
   else
     echo "[NO-GO] Okno v Kitai: ${okno_health:-unknown}"
     rc=1
+  fi
+
+  # The temporary no-AI VM intentionally exposes the hardened application
+  # directly on one HTTP port. No scheduler or additional application port may
+  # be published; corporate HTTPS/SSO uses the separate corporate profile.
+  if [[ -z "$okno_cid" || -z "$okno_scheduler_cid" ]]; then
+    echo "[NO-GO] Okno VM ingress isolation: app/scheduler container set is incomplete."
+    rc=1
+  else
+    okno_readonly="$(docker inspect --format '{{.HostConfig.ReadonlyRootfs}}' "$okno_cid" 2>/dev/null || true)"
+    okno_security="$(docker inspect --format '{{json .HostConfig.SecurityOpt}}' "$okno_cid" 2>/dev/null || true)"
+    okno_drop="$(docker inspect --format '{{json .HostConfig.CapDrop}}' "$okno_cid" 2>/dev/null || true)"
+    okno_add="$(docker inspect --format '{{json .HostConfig.CapAdd}}' "$okno_cid" 2>/dev/null || true)"
+    okno_port_map="$(docker port "$okno_cid" 3000/tcp 2>/dev/null || true)"
+    okno_all_ports="$(docker port "$okno_cid" 2>/dev/null || true)"
+
+    okno_gateway_ok=1
+    [[ "$okno_readonly" == "true" ]] || okno_gateway_ok=0
+    [[ "$okno_security" == *"no-new-privileges"* ]] || okno_gateway_ok=0
+    [[ "$okno_drop" == *"ALL"* ]] || okno_gateway_ok=0
+    [[ "$okno_add" == "null" || "$okno_add" == "[]" ]] || okno_gateway_ok=0
+    [[ "$okno_port_map" == *":${okno_port}"* ]] || okno_gateway_ok=0
+    [[ -n "$okno_all_ports" ]] || okno_gateway_ok=0
+    if printf '%s\n' "$okno_all_ports" | grep -Ev '^3000/tcp -> ' | grep -q .; then okno_gateway_ok=0; fi
+    no_published_ports "$okno_scheduler_cid" || okno_gateway_ok=0
+
+    if [[ "$okno_gateway_ok" -eq 1 ]]; then
+      echo "[GO] Okno v Kitai ingress isolation: only hardened app port ${okno_port} is published; scheduler is internal."
+    else
+      echo "[NO-GO] Okno v Kitai ingress isolation does not match the temporary VM contract."
+      rc=1
+    fi
   fi
 fi
 
