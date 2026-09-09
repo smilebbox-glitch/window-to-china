@@ -112,12 +112,20 @@ done
 [[ $ready -eq 1 ]] || { echo "[NO-GO] Disposable PostgreSQL verification container did not become ready." >&2; exit 1; }
 
 docker cp "$latest_backup/mgc_languages.dump" "$PG_NAME:/tmp/mgc_languages.dump"
+# The application schema contains RLS/policy references to the production role name "app".
+# Create only a NOLOGIN compatibility role inside this disposable, network-isolated database.
+# No production password, membership or privilege is copied into the drill.
+docker exec "$PG_NAME" psql -v ON_ERROR_STOP=1 -U "$PG_USER" -d "$PG_DB" -c \
+  "DO \$\$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname='app') THEN CREATE ROLE app NOLOGIN; END IF; END \$\$;" >/dev/null
 docker exec "$PG_NAME" pg_restore --no-owner --no-privileges -U "$PG_USER" -d "$PG_DB" /tmp/mgc_languages.dump
 TABLE_COUNT="$(docker exec "$PG_NAME" psql -U "$PG_USER" -d "$PG_DB" -Atc "SELECT count(*) FROM pg_catalog.pg_tables WHERE schemaname='public';")"
 [[ "$TABLE_COUNT" =~ ^[0-9]+$ ]] && [[ "$TABLE_COUNT" -gt 0 ]] || { echo "[NO-GO] Restored PostgreSQL database contains no public tables." >&2; exit 1; }
 ALEMBIC_HEAD="$(docker exec "$PG_NAME" psql -U "$PG_USER" -d "$PG_DB" -Atc "SELECT version_num FROM alembic_version LIMIT 1;" 2>/dev/null || true)"
+ROLE_LOGIN="$(docker exec "$PG_NAME" psql -U "$PG_USER" -d "$PG_DB" -Atc "SELECT rolcanlogin FROM pg_roles WHERE rolname='app';")"
+[[ "$ROLE_LOGIN" == "f" ]] || { echo "[NO-GO] Disposable compatibility role app unexpectedly has LOGIN capability." >&2; exit 1; }
 echo "Restored public tables: $TABLE_COUNT"
 echo "Alembic head: ${ALEMBIC_HEAD:-unknown}"
+echo "Compatibility role app: NOLOGIN"
 echo "[GO] MGC Languages PostgreSQL dump restored successfully into an isolated disposable database."
 
 docker rm -f "$PG_NAME" >/dev/null
@@ -132,6 +140,7 @@ cat > "$DEST/verification.json" <<EOF
   "sqlite_integrity": "passed",
   "postgres_restore": "passed",
   "postgres_public_tables": $TABLE_COUNT,
+  "compatibility_role_app": "NOLOGIN",
   "alembic_head": "${ALEMBIC_HEAD:-unknown}",
   "postgres_image": "$POSTGRES_IMAGE",
   "okno_image": "$OKNO_IMAGE"
