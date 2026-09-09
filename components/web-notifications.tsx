@@ -1,7 +1,8 @@
 "use client";
 
-import { Bell, BellOff, Check, ExternalLink, Save, Settings2, X } from "lucide-react";
+import { Bell, BellOff, Check, ExternalLink, Save, Settings2, ShieldCheck, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import styles from "@/app/executive-tools.module.css";
 
 const POLL_MS = 60_000;
 const SEEN_KEY = "okno-web-notifications-seen-v179";
@@ -248,7 +249,7 @@ export function WebNotifications() {
       <button
         type="button"
         onClick={() => setOpen((value) => !value)}
-        className={`fixed right-4 top-[14px] z-[80] grid size-10 place-items-center rounded-full border ring-4 ring-white/90 transition-all hover:-translate-y-0.5 lg:right-[248px] ${
+        className={`${styles.notificationTrigger} fixed right-4 top-[14px] z-[80] grid size-10 place-items-center rounded-full border ring-4 ring-white/90 transition-all hover:-translate-y-0.5 lg:right-[248px] ${
           preferences.notificationsEnabled
             ? "border-[#9fc9ff] bg-[#edf6ff] text-[#147efb] shadow-[0_8px_22px_rgba(20,126,251,0.18)] hover:border-[#2587ff] hover:bg-white"
             : "border-[#d8e6f2] bg-white text-[#24446d] shadow-[0_6px_18px_rgba(15,57,100,0.10)] hover:border-[#2587ff] hover:text-[#147efb]"
@@ -268,90 +269,113 @@ export function WebNotifications() {
       </button>
 
       {open && (
-        <aside className="fixed right-3 top-[62px] z-[90] w-[calc(100vw-24px)] max-w-[440px] overflow-hidden rounded-2xl border border-[#d7e5f1] bg-white shadow-[0_22px_60px_rgba(16,45,82,0.2)] sm:right-4">
-          <div className="flex items-start justify-between border-b border-[#e4edf5] px-4 py-4">
-            <div>
-              <p className="text-sm font-black text-[#11285e]">Уведомления о новостях</p>
-              <p className="mt-1 text-xs leading-5 text-[#6f86a4]">Выберите компании и сегменты автопрома, которые вам важны.</p>
+        <aside className={`${styles.notificationPanel} fixed right-3 top-[62px] z-[90] w-[calc(100vw-24px)] max-w-[460px] sm:right-4`}>
+          <div className={styles.notificationHeader}>
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className={styles.notificationEyebrow}>Intelligence alerts</p>
+                <p className={styles.notificationTitle}>Персональный радар сигналов</p>
+                <p className={styles.notificationSubtitle}>Получайте только те изменения, которые совпадают с выбранными компаниями и сегментами автопрома.</p>
+              </div>
+              <button type="button" onClick={() => setOpen(false)} className="grid size-8 shrink-0 place-items-center rounded-xl border border-white/15 bg-white/10 text-white transition hover:bg-white/20" aria-label="Закрыть">
+                <X className="size-4" />
+              </button>
             </div>
-            <button type="button" onClick={() => setOpen(false)} className="grid size-8 place-items-center rounded-lg text-[#6f86a4] hover:bg-[#f1f6fb]" aria-label="Закрыть">
-              <X className="size-4" />
-            </button>
           </div>
 
-          <div className="max-h-[calc(100vh-90px)] overflow-y-auto p-4">
-            <div className="flex items-center justify-between gap-3 rounded-xl border border-[#dce8f3] bg-[#f7fbff] p-3">
+          <div className="max-h-[calc(100vh-90px)] overflow-y-auto p-4 sm:p-5">
+            <div className="flex items-center justify-between gap-3 rounded-2xl border border-[#dce8f3] bg-[#f8fbff] p-3.5">
               <div className="flex min-w-0 items-center gap-3">
-                <span className={`grid size-9 shrink-0 place-items-center rounded-lg ${draft.notificationsEnabled ? "bg-[#e8f7f2] text-[#0a9d78]" : "bg-[#eef3f8] text-[#72869f]"}`}>
+                <span className={`grid size-10 shrink-0 place-items-center rounded-xl ${draft.notificationsEnabled ? "bg-[#e8f7f2] text-[#0a9d78]" : "bg-[#eef3f8] text-[#72869f]"}`}>
                   {draft.notificationsEnabled ? <Bell className="size-4" /> : <BellOff className="size-4" />}
                 </span>
                 <div>
-                  <p className="text-sm font-bold text-[#173368]">Получать уведомления</p>
-                  <p className="text-[11px] text-[#7a90aa]">{draft.notificationsEnabled ? "Включены" : "Выключены"}</p>
+                  <p className="text-sm font-black text-[#173368]">Intelligence Alerts</p>
+                  <p className="mt-0.5 text-[11px] font-semibold text-[#7a90aa]">{draft.notificationsEnabled ? "Активны · новые сигналы будут проверяться автоматически" : "Выключены · внутренний радар не отправляет сигналы"}</p>
                 </div>
               </div>
               <button
                 type="button"
                 disabled={saving}
                 onClick={() => void toggleNotifications()}
-                className={`relative h-7 w-12 rounded-full transition ${draft.notificationsEnabled ? "bg-[#147efb]" : "bg-[#c9d6e2]"}`}
+                className={`relative h-7 w-12 shrink-0 rounded-full transition ${draft.notificationsEnabled ? "bg-[#147efb]" : "bg-[#c9d6e2]"}`}
                 aria-label={draft.notificationsEnabled ? "Выключить уведомления" : "Включить уведомления"}
               >
                 <span className={`absolute top-1 size-5 rounded-full bg-white shadow transition ${draft.notificationsEnabled ? "left-6" : "left-1"}`} />
               </button>
             </div>
 
-            <div className="mt-4">
-              <div className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.08em] text-[#5f7897]"><Settings2 className="size-4" />Компании и бренды</div>
-              <div className="mt-2 flex flex-wrap gap-2">
+            <div className={styles.notificationStatusGrid}>
+              <div className={styles.notificationStatusCard}>
+                <p className="text-[10px] font-black uppercase tracking-[0.1em] text-[#8397ae]">Непрочитано</p>
+                <p className="mt-1 text-lg font-black text-[#173368]">{unread}</p>
+              </div>
+              <div className={styles.notificationStatusCard}>
+                <p className="text-[10px] font-black uppercase tracking-[0.1em] text-[#8397ae]">Интересы</p>
+                <p className="mt-1 text-lg font-black text-[#173368]">{selectedCount || "Все"}</p>
+              </div>
+            </div>
+
+            <div className={styles.notificationSection}>
+              <div className="flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.1em] text-[#5f7897]"><Settings2 className="size-4 text-[#147efb]" /> Компании и бренды</div>
+              <p className="mt-1 text-xs leading-5 text-[#8496aa]">Выберите компании, по которым сигнал должен попасть в ваш персональный поток.</p>
+              <div className="mt-3 flex flex-wrap gap-2">
                 {COMPANY_OPTIONS.map((company) => (
-                  <button key={company} type="button" onClick={() => setDraft((value) => ({ ...value, brands: toggle(value.brands, company) }))} className={`rounded-lg border px-2.5 py-1.5 text-xs font-bold transition ${draft.brands.includes(company) ? "border-[#2587ff] bg-[#eaf4ff] text-[#147efb]" : "border-[#dce7f0] text-[#587391] hover:border-[#a9c9e8]"}`}>
+                  <button key={company} type="button" onClick={() => setDraft((value) => ({ ...value, brands: toggle(value.brands, company) }))} className={`rounded-full border px-3 py-1.5 text-xs font-bold transition ${draft.brands.includes(company) ? "border-[#2587ff] bg-[#eaf4ff] text-[#147efb] shadow-sm" : "border-[#dce7f0] bg-white text-[#587391] hover:border-[#a9c9e8] hover:text-[#173368]"}`}>
                     {company}
                   </button>
                 ))}
               </div>
             </div>
 
-            <div className="mt-4">
-              <div className="text-xs font-black uppercase tracking-[0.08em] text-[#5f7897]">Сегменты автопрома</div>
-              <div className="mt-2 flex flex-wrap gap-2">
+            <div className={styles.notificationSection}>
+              <div className="text-[11px] font-black uppercase tracking-[0.1em] text-[#5f7897]">Сегменты автопрома</div>
+              <p className="mt-1 text-xs leading-5 text-[#8496aa]">Сегменты работают вместе с выбранными брендами и позволяют не превращать уведомления в ещё одну новостную ленту.</p>
+              <div className="mt-3 flex flex-wrap gap-2">
                 {SEGMENT_OPTIONS.map((segment) => (
-                  <button key={segment} type="button" onClick={() => setDraft((value) => ({ ...value, segments: toggle(value.segments, segment) }))} className={`rounded-lg border px-2.5 py-1.5 text-xs font-bold transition ${draft.segments.includes(segment) ? "border-[#1ca98c] bg-[#e8f8f3] text-[#07846b]" : "border-[#dce7f0] text-[#587391] hover:border-[#a9c9e8]"}`}>
+                  <button key={segment} type="button" onClick={() => setDraft((value) => ({ ...value, segments: toggle(value.segments, segment) }))} className={`rounded-full border px-3 py-1.5 text-xs font-bold transition ${draft.segments.includes(segment) ? "border-[#1ca98c] bg-[#e8f8f3] text-[#07846b] shadow-sm" : "border-[#dce7f0] bg-white text-[#587391] hover:border-[#a9c9e8] hover:text-[#173368]"}`}>
                     {segment}
                   </button>
                 ))}
               </div>
             </div>
 
-            <button type="button" disabled={saving} onClick={() => void saveFilters()} className="mt-4 flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-[#0d2b5c] text-xs font-black text-white transition hover:bg-[#17437f] disabled:opacity-50">
+            <button type="button" disabled={saving} onClick={() => void saveFilters()} className="mt-4 flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#0d2b5c] text-xs font-black text-white shadow-[0_8px_22px_rgba(13,43,92,.18)] transition hover:bg-[#17437f] disabled:opacity-50">
               <Save className="size-4" />
               Сохранить интересы {selectedCount ? `(${selectedCount})` : ""}
             </button>
 
-            {status && <div className="mt-3 rounded-lg border border-[#dce8f3] bg-[#f7fbff] px-3 py-2 text-xs leading-5 text-[#4f6c8d]">{status}</div>}
+            {status && <div className="mt-3 flex gap-2 rounded-xl border border-[#dce8f3] bg-[#f7fbff] px-3 py-2.5 text-xs leading-5 text-[#4f6c8d]"><ShieldCheck className="mt-0.5 size-4 shrink-0 text-[#0b9b78]" />{status}</div>}
             <p className="mt-2 text-[10px] leading-4 text-[#8397ae]">
               Внутренний колокольчик работает в web-версии. Системные уведомления требуют HTTPS/localhost и разрешения браузера. Текущий статус браузера: <b>{permission}</b>.
             </p>
 
-            <div className="mt-5 border-t border-[#e5edf4] pt-4">
+            <div className={styles.notificationSection}>
               <div className="flex items-center justify-between gap-3">
-                <p className="text-sm font-black text-[#173368]">Последние уведомления</p>
-                {unread > 0 && <button type="button" onClick={() => void markAllRead()} className="flex items-center gap-1 text-xs font-bold text-[#147efb]"><Check className="size-3.5" />Прочитано</button>}
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.1em] text-[#8397ae]">Signal stream</p>
+                  <p className="mt-1 text-sm font-black text-[#173368]">Последние уведомления</p>
+                </div>
+                {unread > 0 && <button type="button" onClick={() => void markAllRead()} className="flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-bold text-[#147efb] hover:bg-[#edf6ff]"><Check className="size-3.5" />Прочитано</button>}
               </div>
-              <div className="mt-2 space-y-2">
+              <div className="mt-3 space-y-2">
                 {recentNotifications.map((note) => (
-                  <article key={note.id} className={`rounded-xl border p-3 ${note.readAt ? "border-[#e5edf4] bg-white" : "border-[#b9d8f4] bg-[#f4faff]"}`}>
+                  <article key={note.id} className={`rounded-2xl border p-3.5 transition ${note.readAt ? "border-[#e5edf4] bg-white" : "border-[#b9d8f4] bg-[#f4faff] shadow-[0_6px_18px_rgba(20,126,251,.06)]"}`}>
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
+                        <div className="mb-1 flex items-center gap-2">
+                          {!note.readAt && <span className="size-1.5 rounded-full bg-[#147efb]" aria-hidden="true" />}
+                          <span className="text-[9px] font-black uppercase tracking-[0.1em] text-[#8598ae]">{note.kind || "signal"}</span>
+                        </div>
                         <p className="line-clamp-2 text-xs font-black leading-5 text-[#173368]">{note.title}</p>
                         <p className="mt-1 line-clamp-2 text-[11px] leading-4 text-[#6f86a4]">{note.body}</p>
-                        <p className="mt-1 text-[10px] text-[#93a3b5]">{formatTime(note.createdAt)}</p>
+                        <p className="mt-1.5 text-[10px] font-semibold text-[#93a3b5]">{formatTime(note.createdAt)}</p>
                       </div>
-                      {note.url && <a href={note.url} target="_blank" rel="noreferrer" className="grid size-7 shrink-0 place-items-center rounded-lg text-[#147efb] hover:bg-[#eaf4ff]" aria-label="Открыть новость"><ExternalLink className="size-3.5" /></a>}
+                      {note.url && <a href={note.url} target="_blank" rel="noreferrer" className="grid size-8 shrink-0 place-items-center rounded-xl border border-[#dce8f3] bg-white text-[#147efb] transition hover:border-[#b8d6f2] hover:bg-[#eaf4ff]" aria-label="Открыть новость"><ExternalLink className="size-3.5" /></a>}
                     </div>
                   </article>
                 ))}
-                {!recentNotifications.length && <p className="py-5 text-center text-xs text-[#8a9db2]">Пока нет уведомлений. Включите их и выберите интересы.</p>}
+                {!recentNotifications.length && <div className="rounded-2xl border border-dashed border-[#d8e4ee] bg-[#fbfdff] px-4 py-7 text-center"><Bell className="mx-auto size-5 text-[#a4b3c3]" /><p className="mt-2 text-xs font-semibold text-[#8a9db2]">Пока нет сигналов. Включите уведомления и выберите интересы.</p></div>}
               </div>
             </div>
           </div>
