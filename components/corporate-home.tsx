@@ -83,10 +83,6 @@ export function CorporateHome() {
             <p className="corp-kicker">Окно в Китай</p>
             <h1 className="corp-title">Китай. Автопром.<br />Реальные возможности.</h1>
             <p className="corp-subtitle">Актуальные новости, аналитика и проверенные отраслевые сигналы для стратегических решений в автомобильной индустрии.</p>
-            <div className="mt-6 flex flex-wrap gap-2">
-              <Link href="/market" className="inline-flex h-10 items-center gap-2 rounded-xl bg-[#147efb] px-4 text-sm font-bold text-white shadow-[0_8px_20px_rgba(20,126,251,.24)] hover:bg-[#096fe3]">Исследовать рынок <ArrowRight className="size-4" /></Link>
-              <Link href="/analysis" className="inline-flex h-10 items-center gap-2 rounded-xl border border-white/40 bg-white/90 px-4 text-sm font-bold text-[#12305f] hover:bg-white">Рынок и аналитика</Link>
-            </div>
           </div>
           <div className="corp-tagline">Ближе к рынку.<br />Дальше вместе.</div>
         </section>
