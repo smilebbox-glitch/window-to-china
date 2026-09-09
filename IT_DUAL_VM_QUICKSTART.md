@@ -52,7 +52,7 @@ chmod +x ../mgc-languages/scripts/start-vm.sh
 ./scripts/start-both-vm.sh
 ```
 
-The shared launcher starts Okno v Kitai first, waits for its health check, then starts MGC Languages and waits for its readiness check.
+The shared launcher starts Okno v Kitai first, waits for its health check, then starts MGC Languages and waits for its readiness check. The first shared start also repairs executable bits for the Linux operator commands.
 
 ## Windows VM — first installation and one-click start
 
@@ -79,6 +79,8 @@ Windows operators use the following files in `window-to-china`:
 START_BOTH_VM.bat
 STATUS_BOTH_VM.bat
 BACKUP_BOTH_VM.bat
+DIAGNOSTICS_BOTH_VM.bat
+UPDATE_BOTH_VM.bat
 RESTORE_BOTH_VM.bat
 STOP_BOTH_VM.bat
 ```
@@ -89,6 +91,8 @@ Linux equivalents:
 ./scripts/start-both-vm.sh
 ./scripts/status-both-vm.sh
 ./scripts/backup-both-vm.sh
+./scripts/diagnostics-both-vm.sh
+./scripts/update-both-vm.sh
 ./scripts/restore-both-vm.sh
 ./scripts/stop-both-vm.sh
 ```
@@ -96,6 +100,26 @@ Linux equivalents:
 `STATUS_BOTH_VM` checks both Docker stacks, container health and the real readiness endpoints. It returns non-zero if either service needs attention.
 
 `STOP_BOTH_VM` performs `docker compose down` for both VM profiles without `-v`, so the Okno runtime volume and the MGC Languages PostgreSQL volume are preserved.
+
+## Secret-safe diagnostics
+
+`DIAGNOSTICS_BOTH_VM` creates a timestamped bundle under the sibling `vm-diagnostics` directory. By default it contains host/Docker status, container status, resource usage, Git revisions and health/readiness responses.
+
+It deliberately does **not** copy `.env.vm` files or dump container environment variables. Application logs are also excluded by default because they may contain operational or user-derived data.
+
+Only when IT explicitly needs recent application logs, set:
+
+```text
+MGC_VM_DIAGNOSTICS_INCLUDE_LOGS=YES
+```
+
+A custom diagnostics destination can be supplied through:
+
+```text
+MGC_VM_DIAGNOSTICS_ROOT=<path>
+```
+
+Treat a diagnostics bundle containing logs as internal operational data.
 
 ## Verified backup
 
@@ -139,6 +163,33 @@ MGC_VM_BACKUP_INCLUDE_SECRETS=YES
 ```
 
 If secrets are included, the resulting backup must be treated as confidential infrastructure material and stored only in an approved protected location.
+
+## Safe update
+
+Preferred update method on Windows:
+
+```text
+UPDATE_BOTH_VM.bat
+```
+
+On Linux:
+
+```bash
+./scripts/update-both-vm.sh
+```
+
+The updater is deliberately conservative:
+
+1. verifies that both repositories are on `main`;
+2. refuses to overwrite local/untracked work;
+3. fetches `origin/main` and verifies that both repositories can fast-forward;
+4. creates and verifies a full dual-service backup **before** changing either working tree;
+5. uses only `git pull --ff-only origin main` — never `reset --hard` or `git clean`;
+6. rebuilds/recreates both CPU-only VM profiles;
+7. runs the shared readiness check;
+8. records old/new commit SHAs and the result in `update-result.txt` inside the pre-update backup folder.
+
+If the new build/readiness fails, the updater leaves the verified pre-update backup intact and does not attempt an automatic destructive rollback. IT can diagnose first and use the controlled restore procedure if required.
 
 ## Verified restore / disaster recovery
 
@@ -189,12 +240,6 @@ cd /opt/mgc/window-to-china
 
 If no path is supplied, the launcher selects the newest timestamped backup from the configured backup root and still requires confirmation.
 
-A custom backup root is supported through:
-
-```text
-MGC_VM_BACKUP_ROOT=<path>
-```
-
 If a restore step fails, the launcher prints the location of the automatically created pre-restore safety backup and attempts to bring both services back up for diagnostics.
 
 After every restore, run `STATUS_BOTH_VM` and confirm both readiness endpoints before users reconnect.
@@ -236,9 +281,9 @@ curl -fsS http://127.0.0.1:8080/health/ready
 
 All four commands must return successfully before users are invited to the pilot.
 
-## Updating
+## Manual update fallback
 
-Update both repositories, then run the shared launcher again:
+Use this only when the shared updater is unavailable and only after running `BACKUP_BOTH_VM`:
 
 ```bash
 cd /opt/mgc/window-to-china
@@ -247,14 +292,10 @@ cd ../mgc-languages
 git pull --ff-only origin main
 cd ../window-to-china
 ./scripts/start-both-vm.sh
+./scripts/status-both-vm.sh
 ```
 
-Recommended update sequence for a pilot VM:
-
-1. Run `BACKUP_BOTH_VM`.
-2. Pull both repositories.
-3. Run `START_BOTH_VM`.
-4. Run `STATUS_BOTH_VM`.
+Do not use a forced reset as a routine update procedure.
 
 ## Stop without deleting pilot data
 
