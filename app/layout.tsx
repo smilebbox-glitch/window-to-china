@@ -4,6 +4,7 @@ import { UsageBeacon } from "@/components/usage-beacon";
 import { PwaInstallButton } from "@/components/pwa-install-button";
 import { WebNotifications } from "@/components/web-notifications";
 import "./globals.css";
+import "./mobile-pwa.css";
 
 export const metadata: Metadata = {
   title: "Окно в Китай — автопром России и Китая",
@@ -38,6 +39,7 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: "#0a1d54",
+  viewportFit: "cover",
 };
 
 export default function RootLayout({
