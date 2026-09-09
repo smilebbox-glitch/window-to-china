@@ -13,6 +13,10 @@ if [ ! -f "$LANG_ROOT/scripts/start-vm.sh" ]; then
   echo "Clone smilebbox-glitch/mgc-languages next to window-to-china or set MGC_LANGUAGES_PATH." >&2
   exit 1
 fi
+if [ ! -f "$ROOT/scripts/status-both-vm.sh" ]; then
+  echo "[NO-GO] Shared VM status/security gate not found." >&2
+  exit 1
+fi
 
 # GitHub Contents API and Windows-originated archives may not preserve Unix
 # executable bits. The first shared start repairs all Linux VM operator commands.
@@ -40,7 +44,11 @@ echo "=== Starting MGC Languages ==="
 )
 
 echo ""
-echo "[GO] Both MGC test services are running on this VM."
+echo "=== Final readiness + ingress isolation gate ==="
+MGC_LANGUAGES_PATH="$LANG_ROOT" "$ROOT/scripts/status-both-vm.sh"
+
+echo ""
+echo "[GO] Both MGC test services passed readiness and ingress isolation checks."
 echo "Okno v Kitai:  http://127.0.0.1:3000"
 echo "MGC Languages:  http://127.0.0.1:8080"
 echo "Use the VM IP instead of 127.0.0.1 from other approved LAN PCs."
