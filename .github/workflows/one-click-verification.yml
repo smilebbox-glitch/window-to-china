@@ -127,6 +127,8 @@ jobs:
           OIDC_ISSUER_URL=https://issuer.example.invalid \
           OIDC_CLIENT_ID=ci-client \
           OIDC_CLIENT_SECRET=ci-client-secret \
+          OIDC_SCOPE='openid profile email groups' \
+          SSO_ALLOWED_GROUP=okno-china-users \
           OAUTH2_PROXY_COOKIE_SECRET=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA= \
           AUTH_PROXY_SECRET=ci-proxy-secret \
           AUDIT_HMAC_KEY=ci-audit-key \
@@ -138,6 +140,7 @@ jobs:
           docker compose --env-file /dev/null -f compose.corporate.yaml config > /tmp/okno-corporate-compose.yaml
           grep -q 'oauth2-proxy' /tmp/okno-corporate-compose.yaml
           grep -q 'AUTH_MODE: proxy' /tmp/okno-corporate-compose.yaml
+          grep -q 'allowed-group=okno-china-users' /tmp/okno-corporate-compose.yaml
       - name: Start pilot
         run: |
           chmod +x start.sh stop.sh status.sh scripts/*.sh
