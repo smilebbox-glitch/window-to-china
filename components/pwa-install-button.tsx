@@ -100,7 +100,7 @@ export function PwaInstallButton() {
   if (showIosGuide) {
     return (
       <aside
-        className="fixed bottom-4 left-4 right-4 z-[70] mx-auto max-w-[430px] rounded-2xl border border-[#cfe0ef] bg-white p-4 shadow-[0_16px_36px_rgba(15,39,66,0.18)] sm:left-auto sm:right-4 sm:mx-0"
+        className="pwa-install-banner fixed bottom-4 left-4 right-4 z-[70] mx-auto max-w-[430px] rounded-2xl border border-[#cfe0ef] bg-white p-4 shadow-[0_16px_36px_rgba(15,39,66,0.18)] sm:left-auto sm:right-4 sm:mx-0"
         aria-label="Как установить Окно в Китай на iPhone или iPad"
       >
         <button
@@ -132,7 +132,7 @@ export function PwaInstallButton() {
     <button
       type="button"
       onClick={install}
-      className="fixed bottom-4 right-4 z-[70] flex h-11 items-center gap-2 rounded-xl border border-[#cfe0ef] bg-white px-4 text-xs font-black text-[#123266] shadow-[0_12px_30px_rgba(15,39,66,0.16)] transition hover:-translate-y-0.5 hover:border-[#2587ff] hover:text-[#147efb] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#2587ff]/20"
+      className="pwa-install-button fixed bottom-4 right-4 z-[70] flex h-11 items-center gap-2 rounded-xl border border-[#cfe0ef] bg-white px-4 text-xs font-black text-[#123266] shadow-[0_12px_30px_rgba(15,39,66,0.16)] transition hover:-translate-y-0.5 hover:border-[#2587ff] hover:text-[#147efb] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#2587ff]/20"
       aria-label="Установить Окно в Китай как приложение"
       title="Установить Окно в Китай"
     >
