@@ -24,6 +24,30 @@ test('daily health runner is backup-aware, report-driven and duplicate-safe', ()
   }
 });
 
+test('daily health validates the full backup checksum bundle before trusting freshness', () => {
+  assert.match(dailySh, /sha256sum -c checksums\.sha256/u);
+  assert.match(dailySh, /failed SHA-256 verification/u);
+  assert.match(dailyPs, /Test-ChecksumBundle/u);
+  assert.match(dailyPs, /Get-FileHash/u);
+  assert.match(dailyPs, /failed SHA-256 verification/u);
+  for (const source of [dailySh, dailyPs]) {
+    assert.match(source, /fresh verified backup will be created/u);
+  }
+});
+
+test('daily operational evidence has bounded retention on Linux and Windows', () => {
+  for (const source of [dailySh, dailyPs]) {
+    assert.match(source, /MGC_VM_DAILY_LOG_RETENTION_DAYS/u);
+    assert.match(source, /MGC_VM_REPORT_RETENTION_DAYS/u);
+    assert.match(source, /Log retention/u);
+    assert.match(source, /Report retention/u);
+  }
+  assert.match(dailySh, /-mtime/u);
+  assert.match(dailySh, /-delete/u);
+  assert.match(dailyPs, /AddDays/u);
+  assert.match(dailyPs, /Remove-Item/u);
+});
+
 test('Linux daily scheduler is persistent, user-scoped for Docker access and reversible', () => {
   assert.match(manageSh, /systemd/u);
   assert.match(manageSh, /OnCalendar/u);
