@@ -16,18 +16,17 @@ import {
   Info,
   Newspaper,
   Search,
-  Sparkles,
   Truck,
 } from "lucide-react";
 
 const navigation = [
-  { href: "/", label: "Главная", icon: Home },
-  { href: "/news", label: "Новости и сигналы", icon: Newspaper },
-  { href: "/trucks", label: "Коммерческий транспорт", icon: Truck },
-  { href: "/market", label: "Рынок и продажи", icon: ChartNoAxesCombined },
-  { href: "/analysis", label: "Аналитика", icon: BarChart3 },
-  { href: "/calendar", label: "Выставки и события", icon: CalendarDays },
-  { href: "/travel-guide", label: "Перед поездкой", icon: BriefcaseBusiness },
+  { href: "/", label: "Главная", displayLabel: "Главная", icon: Home },
+  { href: "/news", label: "Новости", displayLabel: "Новости и сигналы", icon: Newspaper },
+  { href: "/trucks", label: "Коммерческий транспорт", displayLabel: "Коммерческий транспорт", icon: Truck },
+  { href: "/market", label: "Рынок", displayLabel: "Рынок и продажи", icon: ChartNoAxesCombined },
+  { href: "/analysis", label: "Аналитика", displayLabel: "Аналитика", icon: BarChart3 },
+  { href: "/calendar", label: "Выставки и события", displayLabel: "Выставки и события", icon: CalendarDays },
+  { href: "/travel-guide", label: "Перед поездкой", displayLabel: "Перед поездкой", icon: BriefcaseBusiness },
 ] as const;
 
 const mobileNavigation = navigation;
@@ -61,14 +60,13 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
           <form onSubmit={submitSearch} className="hidden w-full max-w-[760px] md:block lg:ml-1">
             <label className="relative block">
               <Search className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-[#6480a4]" />
-              <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Поиск по новостям, компаниям, моделям, рынкам..." className="h-10 w-full rounded-xl border border-[#d9e6f2] bg-[#f4f8fc] pl-11 pr-16 text-sm text-[#142a56] outline-none transition placeholder:text-[#8ea0b8] focus:border-[#2483ff] focus:bg-white focus:ring-4 focus:ring-[#2483ff]/10" />
+              <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Поиск по новостям, компаниям, моделям, выставкам..." className="h-10 w-full rounded-xl border border-[#d9e6f2] bg-[#f4f8fc] pl-11 pr-16 text-sm text-[#142a56] outline-none transition placeholder:text-[#8ea0b8] focus:border-[#2483ff] focus:bg-white focus:ring-4 focus:ring-[#2483ff]/10" />
               <span className="pointer-events-none absolute right-3 top-1/2 hidden -translate-y-1/2 rounded-md border border-[#d9e6f2] bg-white px-1.5 py-0.5 text-[10px] font-bold text-[#7d90a8] sm:inline-flex">⌘ K</span>
             </label>
           </form>
 
           <div className="ml-auto flex shrink-0 items-center gap-2.5">
             <div className="hidden items-center gap-2 rounded-full bg-[#eefaf6] px-3 py-1.5 text-[11px] font-black text-[#087458] lg:flex"><span className="signal-dot !size-1.5" /> Live</div>
-            <Link href="/executive" className="hidden items-center gap-2 rounded-xl border border-[#dce8f3] bg-white px-3 py-2 text-xs font-black text-[#17345f] transition hover:bg-[#f7fbff] xl:flex"><Sparkles className="size-4 text-[#147efb]" /> Executive Brief</Link>
             <div className="flex items-center gap-2 rounded-xl border border-[#e2ebf3] bg-white px-2.5 py-1.5">
               <span className="grid size-8 place-items-center rounded-full bg-[#0d2b5c] text-[11px] font-black text-white">M</span>
               <span className="hidden pr-1 sm:block"><span className="block text-xs font-black text-[#122657]">MGC</span><span className="block text-[9px] text-[#7c90aa]">Корпоративный пилот</span></span>
@@ -95,11 +93,9 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
             {navigation.map((item) => {
               const Icon = item.icon;
               const active = isActive(pathname, item.href);
-              return <Link key={item.href} href={item.href} className={`corporate-nav-item ${active ? "is-active" : ""}`}><Icon className="size-[18px]" /><span>{item.label}</span>{item.href === "/news" && <span className="ml-auto rounded-full bg-[#f1464f] px-2 py-0.5 text-[9px] font-black text-white">LIVE</span>}</Link>;
+              return <Link key={item.href} href={item.href} className={`corporate-nav-item ${active ? "is-active" : ""}`}><Icon className="size-[18px]" /><span>{item.displayLabel}</span>{item.href === "/news" && <span className="ml-auto rounded-full bg-[#f1464f] px-2 py-0.5 text-[9px] font-black text-white">LIVE</span>}</Link>;
             })}
           </nav>
-
-          <div className="mx-4 mt-3 border-t border-white/10 pt-4"><Link href="/executive" className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/[.05] px-3 py-3 text-xs font-black text-[#cfe2f6] transition hover:bg-white/[.08]"><Sparkles className="size-4 text-[#57a9ff]" /> Executive Brief</Link></div>
 
           <div className="mt-auto p-4">
             <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-[linear-gradient(160deg,#12375e,#0a223e)] p-4 shadow-[0_16px_40px_rgba(0,0,0,.18)]">
@@ -113,10 +109,10 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
         </aside>
 
         <div className="min-w-0">
-          <div className="border-b border-[#dce8f3] bg-[#f8fbfe] px-4 py-2.5 sm:px-6">
-            <div className="mx-auto flex max-w-[1540px] items-center gap-2 text-xs font-semibold leading-5 text-[#536f8e]">
-              <Info className="size-4 shrink-0 text-[#147efb]" aria-hidden="true" />
-              <span>Корпоративный пилот. Часть данных зависит от доступности внешних источников.</span>
+          <div className="border-b border-[#dce8f3] bg-[#f8fbfe] px-4 py-3 sm:px-6">
+            <div className="mx-auto flex max-w-[1540px] items-center gap-2 text-[15px] font-bold leading-5 text-[#18345f]">
+              <Info className="size-5 shrink-0 text-[#285fff]" aria-hidden="true" />
+              <span>В тестовом режиме. Данные могут быть неполны.</span>
             </div>
           </div>
           <MaintenanceBanner />
