@@ -5,17 +5,32 @@ import test from "node:test";
 const read = (path) => fs.readFileSync(path, "utf8");
 
 const home = read("components/corporate-home.tsx");
+const market = read("components/market-dashboard.tsx");
+const brandLogo = read("components/brand-logo.tsx");
 const notifications = read("components/web-notifications.tsx");
 const trucks = read("components/truck-radar.tsx");
 const calendar = read("components/event-calendar.tsx");
 const travel = read("components/travel-guide.tsx");
 const styles = read("app/globals.css");
 
-test("current home keeps redundant market hero actions removed", () => {
+test("current home uses executive intelligence layout without retired market hero actions", () => {
   assert.equal(home.includes("Исследовать рынок"), false);
   assert.equal(home.includes("Рынок и аналитика"), false);
-  assert.match(home, /Китай\. Автопром\./u);
-  assert.match(home, /Главные новости/u);
+  assert.match(home, /Окно в Китай/u);
+  assert.match(home, /Требует внимания/u);
+  assert.match(home, /Executive Brief/u);
+  assert.match(home, /Что изменилось с вашего визита/u);
+  assert.match(home, /rankNews\(news\)/u);
+});
+
+test("market dashboard renders local brand visuals without external logo CDN dependency", () => {
+  assert.match(market, /BrandLogo/u);
+  assert.match(market, /Продажи автомобильных марок в России/u);
+  assert.match(brandLogo, /const brandVisuals/u);
+  assert.match(brandLogo, /HAVAL/u);
+  assert.match(brandLogo, /TANK/u);
+  assert.match(brandLogo, /WEY/u);
+  assert.equal(brandLogo.includes("https://"), false);
 });
 
 test("notification bell stays visually separated from the corporate pilot badge", () => {
