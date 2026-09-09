@@ -38,6 +38,20 @@ test('dual VM status checks both readiness endpoints and both compose profiles',
   assert.match(statusBat, /status-both-vm\.ps1/u);
 });
 
+test('dual VM status validates Okno temporary ingress and scheduler isolation', () => {
+  for (const source of [statusSh, statusPs]) {
+    assert.match(source, /china-auto-radar-scheduler/u);
+    assert.match(source, /ReadonlyRootfs/u);
+    assert.match(source, /SecurityOpt/u);
+    assert.match(source, /CapDrop/u);
+    assert.match(source, /CapAdd/u);
+    assert.match(source, /no-new-privileges/u);
+    assert.match(source, /3000\/tcp/u);
+    assert.match(source, /scheduler is internal/u);
+    assert.match(source, /Okno v Kitai ingress isolation/u);
+  }
+});
+
 test('dual VM status validates MGC LAN ingress isolation and hardened nginx runtime', () => {
   for (const source of [statusSh, statusPs]) {
     assert.match(source, /ReadonlyRootfs/u);
