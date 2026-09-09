@@ -6,6 +6,9 @@ echo ======================================================
 echo   MGC - Start BOTH test services on one VM / no AI
 echo ======================================================
 echo.
+echo Prerequisite: CONFIGURE_VM_FIREWALL.bat must have been
+echo run as Administrator for the approved corporate subnet.
+echo.
 
 where powershell.exe >nul 2>nul
 if errorlevel 1 (
@@ -19,12 +22,13 @@ set "RC=%ERRORLEVEL%"
 if not "%RC%"=="0" (
   echo.
   echo [NO-GO] Dual VM startup failed. See the message above.
+  echo If the host firewall check failed, run CONFIGURE_VM_FIREWALL.bat as Administrator.
   pause
   exit /b %RC%
 )
 
 echo.
-echo [GO] Both services are ready:
+echo [GO] Both services are ready behind the approved host firewall boundary:
 echo      Okno v Kitai - port 3000
 echo      MGC Languages - port 8080
 echo.
