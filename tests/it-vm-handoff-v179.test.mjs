@@ -38,8 +38,8 @@ test("IT handoff points to a single-service VM deployment and preserves pilot ve
   assert.match(handoff, /1\.7\.9-pilot/);
   assert.match(handoff, /git rev-parse HEAD/);
   assert.match(handoff, /IT_DUAL_VM_QUICKSTART\.md/);
-  assert.match(handoff, /Corporate HTTPS \+ SSO/u);
-  assert.match(handoff, /Temporary isolated VM pilot/u);
+  assert.match(handoff, /Корпоративный HTTPS \+ SSO/u);
+  assert.match(handoff, /Изолированный CPU-only VM pilot/u);
   assert.match(handoff, /4 vCPU/);
   assert.match(handoff, /8 GB RAM/);
   assert.match(handoff, /GPU не требуется/u);
