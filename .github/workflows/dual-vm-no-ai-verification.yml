@@ -10,6 +10,10 @@ on:
       - 'compose.yaml'
       - 'compose.vm.yaml'
       - 'scripts/start-vm.sh'
+      - 'scripts/start-both-vm.sh'
+      - 'scripts/start-both-vm.ps1'
+      - 'START_BOTH_VM.bat'
+      - 'tests/dual-vm-launcher.test.mjs'
       - 'Dockerfile'
 
 permissions:
@@ -32,17 +36,20 @@ jobs:
           ref: main
           path: mgc-languages
 
-      - name: Start Okno v Kitai CPU-only profile
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.13.0'
+
+      - name: Verify dual one-click launcher contract
+        working-directory: window-to-china
+        run: node --test tests/dual-vm-launcher.test.mjs
+
+      - name: Start both CPU-only profiles through shared launcher
         working-directory: window-to-china
         run: |
-          chmod +x scripts/start-vm.sh scripts/build-verified.sh
-          ./scripts/start-vm.sh
-
-      - name: Start MGC Languages CPU-only profile
-        working-directory: mgc-languages
-        run: |
-          chmod +x scripts/start-vm.sh scripts/entrypoint.sh
-          ./scripts/start-vm.sh
+          chmod +x scripts/start-vm.sh scripts/start-both-vm.sh scripts/build-verified.sh
+          chmod +x ../mgc-languages/scripts/start-vm.sh ../mgc-languages/scripts/entrypoint.sh
+          ./scripts/start-both-vm.sh
 
       - name: Verify both services are healthy together
         shell: bash
