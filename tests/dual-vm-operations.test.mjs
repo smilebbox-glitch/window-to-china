@@ -12,10 +12,16 @@ const backupSh = read('scripts/backup-both-vm.sh');
 const backupPs = read('scripts/backup-both-vm.ps1');
 const restoreSh = read('scripts/restore-both-vm.sh');
 const restorePs = read('scripts/restore-both-vm.ps1');
+const diagnosticsSh = read('scripts/diagnostics-both-vm.sh');
+const diagnosticsPs = read('scripts/diagnostics-both-vm.ps1');
+const updateSh = read('scripts/update-both-vm.sh');
+const updatePs = read('scripts/update-both-vm.ps1');
 const statusBat = read('STATUS_BOTH_VM.bat');
 const stopBat = read('STOP_BOTH_VM.bat');
 const backupBat = read('BACKUP_BOTH_VM.bat');
 const restoreBat = read('RESTORE_BOTH_VM.bat');
+const diagnosticsBat = read('DIAGNOSTICS_BOTH_VM.bat');
+const updateBat = read('UPDATE_BOTH_VM.bat');
 
 test('dual VM status checks both readiness endpoints and both compose profiles', () => {
   for (const source of [statusSh, statusPs]) {
@@ -84,4 +90,35 @@ test('restore replaces databases only and preserves runtime configuration, audit
     assert.doesNotMatch(source, /runtime-config\.json[^\n\r]*(?:cp|Copy-Item)/u);
     assert.doesNotMatch(source, /okno-audit[^\n\r]*(?:cp|Copy-Item)/u);
   }
+});
+
+test('dual diagnostics collect operational state without copying secrets by default', () => {
+  for (const source of [diagnosticsSh, diagnosticsPs]) {
+    assert.match(source, /MGC_VM_DIAGNOSTICS_ROOT/u);
+    assert.match(source, /MGC_VM_DIAGNOSTICS_INCLUDE_LOGS/u);
+    assert.match(source, /docker-stats\.txt/u);
+    assert.match(source, /api\/ready/u);
+    assert.match(source, /health\/ready/u);
+    assert.match(source, /checksums\.sha256/u);
+    assert.doesNotMatch(source, /Config\.Env/u);
+    assert.doesNotMatch(source, /(?:cp|Copy-Item)[^\n\r]*\.env\.vm/u);
+  }
+  assert.match(diagnosticsBat, /diagnostics-both-vm\.ps1/u);
+  assert.match(diagnosticsBat, /No \.env\.vm secrets/u);
+});
+
+test('dual update is backup-first, fast-forward-only and never force-resets local work', () => {
+  for (const source of [updateSh, updatePs]) {
+    assert.match(source, /backup-both-vm/u);
+    assert.match(source, /fetch origin main/u);
+    assert.match(source, /merge-base --is-ancestor/u);
+    assert.match(source, /pull --ff-only origin main/u);
+    assert.match(source, /status-both-vm/u);
+    assert.match(source, /core\.fileMode=false/u);
+    assert.match(source, /No automatic data rollback was attempted/u);
+    assert.doesNotMatch(source, /reset --hard/u);
+    assert.doesNotMatch(source, /clean -f/u);
+  }
+  assert.match(updateBat, /update-both-vm\.ps1/u);
+  assert.match(updateBat, /never force-reset/u);
 });
