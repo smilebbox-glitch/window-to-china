@@ -5,6 +5,8 @@ import test from 'node:test';
 const read = (path) => fs.readFileSync(path, 'utf8');
 const acceptSh = read('scripts/accept-both-vm.sh');
 const acceptPs = read('scripts/accept-both-vm.ps1');
+const receiptSh = read('scripts/write-vm-acceptance-receipt.sh');
+const receiptPs = read('scripts/write-vm-acceptance-receipt.ps1');
 const acceptBat = read('ACCEPT_BOTH_VM.bat');
 const controlSh = read('scripts/vm-control.sh');
 const controlBat = read('MGC_VM_CONTROL.bat');
@@ -31,6 +33,38 @@ test('acceptance gate uses real firewall checks outside GitHub Actions and CI co
     assert.match(source, /GITHUB_RUN_ID/u);
     assert.match(source, /MGC_VM_FIREWALL_CONTRACT_ONLY/u);
     assert.match(source, /10\.250\.0\.0\/24/u);
+  }
+});
+
+test('successful acceptance writes a timestamped checksum-protected evidence receipt', () => {
+  assert.match(acceptSh, /write-vm-acceptance-receipt\.sh/u);
+  assert.match(acceptPs, /write-vm-acceptance-receipt\.ps1/u);
+  for (const source of [receiptSh, receiptPs]) {
+    assert.match(source, /MGC_VM_ACCEPTANCE_ROOT/u);
+    assert.match(source, /acceptance\.json/u);
+    assert.match(source, /checksums\.sha256/u);
+    assert.match(source, /dual-vm-cpu-only-no-ai/u);
+    assert.match(source, /okno_commit/u);
+    assert.match(source, /mgc_languages_commit/u);
+    assert.match(source, /allowed_cidr/u);
+    assert.match(source, /host_firewall/u);
+    assert.match(source, /runtime_readiness/u);
+    assert.match(source, /ingress_isolation/u);
+    assert.match(source, /no_ai_runtime/u);
+    assert.match(source, /3000/u);
+    assert.match(source, /8080/u);
+  }
+  assert.match(receiptSh, /sha256sum -c/u);
+  assert.match(receiptPs, /Get-FileHash/u);
+});
+
+test('acceptance evidence contains no VM secrets or container environment dumps', () => {
+  for (const source of [receiptSh, receiptPs]) {
+    assert.doesNotMatch(source, /RAG_API_KEY/u);
+    assert.doesNotMatch(source, /ADMIN_API_TOKEN/u);
+    assert.doesNotMatch(source, /SCHEDULER_TOKEN/u);
+    assert.doesNotMatch(source, /POSTGRES_PASSWORD/u);
+    assert.doesNotMatch(source, /Config\.Env/u);
   }
 });
 
