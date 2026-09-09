@@ -16,12 +16,14 @@ const diagnosticsSh = read('scripts/diagnostics-both-vm.sh');
 const diagnosticsPs = read('scripts/diagnostics-both-vm.ps1');
 const updateSh = read('scripts/update-both-vm.sh');
 const updatePs = read('scripts/update-both-vm.ps1');
+const controlSh = read('scripts/vm-control.sh');
 const statusBat = read('STATUS_BOTH_VM.bat');
 const stopBat = read('STOP_BOTH_VM.bat');
 const backupBat = read('BACKUP_BOTH_VM.bat');
 const restoreBat = read('RESTORE_BOTH_VM.bat');
 const diagnosticsBat = read('DIAGNOSTICS_BOTH_VM.bat');
 const updateBat = read('UPDATE_BOTH_VM.bat');
+const controlBat = read('MGC_VM_CONTROL.bat');
 
 test('dual VM status checks both readiness endpoints and both compose profiles', () => {
   for (const source of [statusSh, statusPs]) {
@@ -121,4 +123,25 @@ test('dual update is backup-first, fast-forward-only and never force-resets loca
   }
   assert.match(updateBat, /update-both-vm\.ps1/u);
   assert.match(updateBat, /never force-reset/u);
+});
+
+test('single operations consoles expose the same seven safe lifecycle actions', () => {
+  for (const operation of ['START', 'STATUS', 'BACKUP', 'DIAGNOSTICS', 'UPDATE', 'RESTORE', 'STOP']) {
+    assert.match(controlBat, new RegExp(operation, 'u'));
+    assert.match(controlSh, new RegExp(operation, 'u'));
+  }
+  for (const script of [
+    'start-both-vm',
+    'status-both-vm',
+    'backup-both-vm',
+    'diagnostics-both-vm',
+    'update-both-vm',
+    'restore-both-vm',
+    'stop-both-vm',
+  ]) {
+    assert.match(controlSh, new RegExp(`${script}\\.sh`, 'u'));
+  }
+  assert.match(controlBat, /START_BOTH_VM\.bat/u);
+  assert.match(controlBat, /UPDATE_BOTH_VM\.bat/u);
+  assert.match(controlBat, /RESTORE_BOTH_VM\.bat/u);
 });
