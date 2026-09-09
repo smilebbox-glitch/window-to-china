@@ -27,8 +27,8 @@ const navigation = [
   { href: "/trucks", label: "Коммерческий транспорт", displayLabel: "Коммерческий транспорт", icon: Truck },
   { href: "/market", label: "Рынок", displayLabel: "Рынок и продажи", icon: ChartNoAxesCombined },
   { href: "/analysis", label: "Аналитика", displayLabel: "Аналитика", icon: BarChart3 },
-  { href: "/calendar", label: "События", displayLabel: "Выставки и события", icon: CalendarDays },
-  { href: "/travel-guide", label: "Поездка", displayLabel: "Перед поездкой", icon: BriefcaseBusiness },
+  { href: "/calendar", label: "Выставки и события", displayLabel: "Выставки и события", icon: CalendarDays },
+  { href: "/travel-guide", label: "Перед поездкой", displayLabel: "Перед поездкой", icon: BriefcaseBusiness },
 ] as const;
 
 const primaryMobileNavigation = [navigation[0], navigation[1], navigation[3], navigation[5]] as const;
@@ -37,6 +37,11 @@ const mobileMoreNavigation = [navigation[2], navigation[4], navigation[6]] as co
 function isActive(pathname: string, href: string) {
   if (href === "/") return pathname === "/";
   return pathname === href || pathname.startsWith(`${href}/`);
+}
+
+function mobileLabel(href: string, fallback: string) {
+  if (href === "/calendar") return "События";
+  return fallback;
 }
 
 export function SiteShell({ children }: { children: React.ReactNode }) {
@@ -145,7 +150,7 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
         {primaryMobileNavigation.map((item) => {
           const Icon = item.icon;
           const active = isActive(pathname, item.href);
-          return <Link key={item.href} href={item.href} className={`mobile-app-nav-item ${active ? "is-active" : ""}`}><Icon /><span>{item.label}</span></Link>;
+          return <Link key={item.href} href={item.href} className={`mobile-app-nav-item ${active ? "is-active" : ""}`}><Icon /><span>{mobileLabel(item.href, item.label)}</span></Link>;
         })}
         <button type="button" onClick={() => setMobileMoreOpen((value) => !value)} className={`mobile-app-nav-item ${moreActive || mobileMoreOpen ? "is-active" : ""}`} aria-expanded={mobileMoreOpen} aria-label="Ещё разделы"><Menu /><span>Ещё</span></button>
       </nav>
