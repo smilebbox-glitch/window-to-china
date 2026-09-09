@@ -2,7 +2,7 @@
 
 export function ExecutiveTheme() {
   return (
-    <style jsx global>{`
+    <style>{`
       .corporate-sidebar .corporate-nav-item {
         color: #c5d4e5;
         min-height: 44px;
