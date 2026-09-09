@@ -96,16 +96,21 @@ test("runtime readiness endpoint is ready", async () => {
   assert.equal(payload.checks.migrationsCurrent, true);
 });
 
-test("runtime news endpoint is using v1.7.9 reliability source catalog with receipt timestamps", async () => {
+test("runtime news endpoint exposes the v1.7.9 reliability catalog even when external sources degrade", async () => {
   const response = await request("/api/news", "application/json", 35_000);
   assert.equal(response.status, 200);
   assert.match(response.headers.get("content-type") ?? "", /^application\/json\b/i);
   const payload = await response.json();
   assert.ok(Array.isArray(payload.news));
-  assert.ok(Array.isArray(payload.sources));
-  assert.ok(payload.sources.length >= 20, `expected broad source catalog, got ${payload.sources.length}`);
-  assert.equal(typeof payload.dedupe?.duplicatesRemoved, "number");
-  assert.equal(typeof payload.quality?.aggregateState, "string");
+  assert.ok(Array.isArray(payload.sourceBreakdown));
+  assert.equal(typeof payload.totalSources, "number");
+  assert.ok(payload.totalSources >= 20, `expected broad source catalog, got ${payload.totalSources}`);
+  assert.equal(typeof payload.sourceCount, "number");
+  assert.ok(payload.sourceCatalogVersion >= 5, `unexpected source catalog version ${payload.sourceCatalogVersion}`);
+  assert.equal(typeof payload.rawCount, "number");
+  assert.equal(typeof payload.deduplicatedCount, "number");
+  assert.ok(Array.isArray(payload.errors));
+  assert.ok(Array.isArray(payload.disabledSources));
   for (const item of payload.news.slice(0, 5)) {
     assert.equal(typeof item.publishedAt, "string");
     if (item.receivedAt !== undefined) assert.equal(typeof item.receivedAt, "string");
@@ -116,40 +121,51 @@ test("runtime v1.7.4 pilot operations endpoint exposes trust state", async () =>
   const response = await request("/api/pilot/operations", "application/json");
   assert.equal(response.status, 200);
   const payload = await response.json();
-  assert.ok(["GO", "DEGRADED", "STALE"].includes(payload.status));
-  assert.equal(typeof payload.decision, "string");
+  assert.ok(["GO", "DEGRADED", "STALE"].includes(payload.briefStatus));
+  assert.ok(["GO", "NO_GO"].includes(payload.decision));
+  assert.equal(typeof payload.aggregate, "object");
+  assert.equal(typeof payload.sources, "object");
+  assert.ok(Array.isArray(payload.reasons));
 });
 
 test("runtime v1.7.5 accepts pseudonymous controlled-pilot feedback", async () => {
   const response = await request("/api/pilot/feedback", "application/json", timeoutMs, {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ rating: 5, category: "usefulness", comment: "CI runtime smoke" }),
+    body: JSON.stringify({ rating: 5, usefulness: 5, outcome: "decision_support", comment: "CI runtime smoke" }),
   });
-  assert.equal(response.status, 200);
+  assert.equal(response.status, 201);
   const payload = await response.json();
   assert.equal(payload.ok, true);
+  assert.equal(typeof payload.feedback?.id, "string");
+  assert.equal(typeof payload.feedback?.createdAt, "string");
 });
 
-test("runtime v1.7.5 pilot report exposes GO ADJUST STOP KPI contract", async () => {
+test("runtime v1.7.5 pilot report exposes GO ADJUST STOP controlled-pilot outcome", async () => {
   const response = await request("/api/pilot/report", "application/json");
   assert.equal(response.status, 200);
   const payload = await response.json();
-  assert.ok(["GO", "ADJUST", "STOP"].includes(payload.decision));
-  assert.equal(typeof payload.kpis, "object");
+  assert.ok(["GO", "ADJUST", "STOP"].includes(payload.outcome));
+  assert.equal(typeof payload.cohort, "object");
+  assert.equal(typeof payload.feedback, "object");
+  assert.equal(typeof payload.issues, "object");
+  assert.equal(typeof payload.operations, "object");
+  assert.ok(Array.isArray(payload.reasons));
 });
 
 test("runtime user preferences expose configurable web-notification fields", async () => {
   const response = await request("/api/user/preferences", "application/json");
   assert.equal(response.status, 200);
   const payload = await response.json();
-  assert.equal(typeof payload.notificationsEnabled, "boolean");
-  assert.ok(Array.isArray(payload.notificationCompanies));
-  assert.ok(Array.isArray(payload.notificationSegments));
+  assert.equal(typeof payload.subscriptions?.notificationsEnabled, "boolean");
+  assert.ok(Array.isArray(payload.subscriptions?.brands));
+  assert.ok(Array.isArray(payload.subscriptions?.segments));
+  assert.ok(Array.isArray(payload.subscriptions?.markets));
+  assert.ok(Array.isArray(payload.subscriptions?.topics));
 });
 
 test("runtime web-notification preferences persist filters and master switch", async () => {
-  const payload = { notificationsEnabled: true, notificationCompanies: ["GWM"], notificationSegments: ["HCV"] };
+  const payload = { notificationsEnabled: true, brands: ["GWM"], segments: ["Коммерческий транспорт"] };
   const put = await request("/api/user/preferences", "application/json", timeoutMs, {
     method: "PUT",
     headers: { "content-type": "application/json" },
@@ -157,9 +173,9 @@ test("runtime web-notification preferences persist filters and master switch", a
   });
   assert.equal(put.status, 200);
   const saved = await put.json();
-  assert.equal(saved.notificationsEnabled, true);
-  assert.deepEqual(saved.notificationCompanies, ["GWM"]);
-  assert.deepEqual(saved.notificationSegments, ["HCV"]);
+  assert.equal(saved.subscriptions?.notificationsEnabled, true);
+  assert.deepEqual(saved.subscriptions?.brands, ["GWM"]);
+  assert.deepEqual(saved.subscriptions?.segments, ["Коммерческий транспорт"]);
 });
 
 test("runtime notification endpoint remains operational", async () => {
