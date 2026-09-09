@@ -1,0 +1,149 @@
+name: VM daily resilience verification
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/vm-daily-resilience-verification.yml'
+      - 'scripts/daily-vm-health.sh'
+      - 'scripts/daily-vm-health.ps1'
+      - 'scripts/backup-both-vm.sh'
+      - 'scripts/backup-both-vm.ps1'
+      - 'scripts/ops-report-both-vm.sh'
+      - 'scripts/ops-report-both-vm.ps1'
+      - 'tests/daily-vm-health.test.mjs'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/vm-daily-resilience-verification.yml'
+      - 'scripts/daily-vm-health.sh'
+      - 'scripts/daily-vm-health.ps1'
+      - 'scripts/backup-both-vm.sh'
+      - 'scripts/backup-both-vm.ps1'
+      - 'scripts/ops-report-both-vm.sh'
+      - 'scripts/ops-report-both-vm.ps1'
+      - 'tests/daily-vm-health.test.mjs'
+
+permissions:
+  contents: read
+
+jobs:
+  daily-resilience:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout Okno v Kitai
+        uses: actions/checkout@v4
+        with:
+          path: window-to-china
+
+      - name: Checkout MGC Languages main
+        uses: actions/checkout@v4
+        with:
+          repository: smilebbox-glitch/mgc-languages
+          ref: main
+          path: mgc-languages
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.13.0'
+
+      - name: Verify daily resilience contracts
+        working-directory: window-to-china
+        run: node --test tests/daily-vm-health.test.mjs
+
+      - name: Parse Linux and Windows daily scripts
+        working-directory: window-to-china
+        shell: pwsh
+        run: |
+          bash -n scripts/daily-vm-health.sh
+          $tokens = $null
+          $errors = $null
+          [System.Management.Automation.Language.Parser]::ParseFile(
+            (Resolve-Path 'scripts/daily-vm-health.ps1').Path,
+            [ref]$tokens,
+            [ref]$errors
+          ) | Out-Null
+          if ($errors.Count -gt 0) {
+            $errors | ForEach-Object { Write-Error $_.Message }
+            exit 1
+          }
+
+      - name: Start both CPU-only no-AI services
+        working-directory: window-to-china
+        shell: bash
+        env:
+          MGC_VM_ALLOWED_CIDR: 10.250.0.0/24
+        run: |
+          chmod +x scripts/start-both-vm.sh scripts/status-both-vm.sh scripts/backup-both-vm.sh scripts/daily-vm-health.sh scripts/ops-report-both-vm.sh
+          chmod +x ../mgc-languages/scripts/start-vm.sh ../mgc-languages/scripts/entrypoint.sh
+          bash scripts/start-both-vm.sh
+
+      - name: Create initial verified backup
+        working-directory: window-to-china
+        shell: bash
+        env:
+          MGC_VM_BACKUP_ROOT: ${{ runner.temp }}/mgc-vm-backups
+          MGC_VM_BACKUP_RETENTION_DAYS: '14'
+        run: |
+          bash scripts/backup-both-vm.sh
+          FIRST_BACKUP="$(find "$MGC_VM_BACKUP_ROOT" -mindepth 1 -maxdepth 1 -type d -name '20??????T??????Z' | sort | tail -n1)"
+          test -n "$FIRST_BACKUP"
+          (cd "$FIRST_BACKUP" && sha256sum -c checksums.sha256)
+          echo "FIRST_BACKUP=$FIRST_BACKUP" >> "$GITHUB_ENV"
+
+      - name: Corrupt latest backup and seed old operational evidence
+        shell: bash
+        run: |
+          printf 'intentional-corruption\n' >> "$FIRST_BACKUP/okno.sqlite"
+          if (cd "$FIRST_BACKUP" && sha256sum -c checksums.sha256 >/dev/null 2>&1); then
+            echo '[NO-GO] Corruption probe did not invalidate the checksum bundle.' >&2
+            exit 1
+          fi
+          mkdir -p "${{ runner.temp }}/mgc-vm-daily-logs" "${{ runner.temp }}/mgc-vm-reports/20000101T000000Z"
+          printf 'old-log\n' > "${{ runner.temp }}/mgc-vm-daily-logs/20000101T000000Z.log"
+          printf '{}\n' > "${{ runner.temp }}/mgc-vm-reports/20000101T000000Z/operations.json"
+          touch -d '40 days ago' "${{ runner.temp }}/mgc-vm-daily-logs/20000101T000000Z.log"
+          touch -d '40 days ago' "${{ runner.temp }}/mgc-vm-reports/20000101T000000Z"
+          sleep 2
+
+      - name: Prove daily job self-heals corrupt backup and prunes old evidence
+        working-directory: window-to-china
+        shell: bash
+        env:
+          MGC_VM_ALLOWED_CIDR: 10.250.0.0/24
+          MGC_VM_BACKUP_ROOT: ${{ runner.temp }}/mgc-vm-backups
+          MGC_VM_REPORT_ROOT: ${{ runner.temp }}/mgc-vm-reports
+          MGC_VM_DAILY_LOG_ROOT: ${{ runner.temp }}/mgc-vm-daily-logs
+          MGC_VM_DAILY_BACKUP_AFTER_HOURS: '9999'
+          MGC_VM_DAILY_LOG_RETENTION_DAYS: '30'
+          MGC_VM_REPORT_RETENTION_DAYS: '30'
+          MGC_VM_DISK_WARN_GB: '1'
+          MGC_VM_DISK_NO_GO_GB: '0.25'
+          MGC_VM_BACKUP_MAX_AGE_HOURS: '24'
+          MGC_VM_REPORT_CI_SKIP_ACCEPTANCE: 'YES'
+        run: |
+          bash scripts/daily-vm-health.sh | tee daily-resilience.txt
+          grep -q 'Latest backup failed SHA-256 verification' daily-resilience.txt
+          grep -q 'Daily verified backup completed' daily-resilience.txt
+          grep -q 'DAILY VM HEALTH: COMPLETED' daily-resilience.txt
+
+          LATEST_BACKUP="$(find "$MGC_VM_BACKUP_ROOT" -mindepth 1 -maxdepth 1 -type d -name '20??????T??????Z' | sort | tail -n1)"
+          test -n "$LATEST_BACKUP"
+          test "$LATEST_BACKUP" != "$FIRST_BACKUP"
+          (cd "$LATEST_BACKUP" && sha256sum -c checksums.sha256)
+
+          test ! -e "$MGC_VM_DAILY_LOG_ROOT/20000101T000000Z.log"
+          test ! -e "$MGC_VM_REPORT_ROOT/20000101T000000Z"
+          test -s "$MGC_VM_DAILY_LOG_ROOT/latest.log"
+
+      - name: Cleanup MGC Languages
+        if: always()
+        working-directory: mgc-languages
+        run: docker compose --env-file .env.vm -f docker-compose.lan.yml -f docker-compose.vm.yml down -v --remove-orphans || true
+
+      - name: Cleanup Okno v Kitai
+        if: always()
+        working-directory: window-to-china
+        run: docker compose --env-file .env.vm -f compose.yaml -f compose.vm.yaml down -v --remove-orphans || true
