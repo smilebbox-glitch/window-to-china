@@ -47,6 +47,7 @@ next-env.d.ts
 /.sites-runtime/
 /outputs/
 /work/
+/vm-backups/
 
 .env
 .pilot-access.txt
