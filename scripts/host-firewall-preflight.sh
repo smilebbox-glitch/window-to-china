@@ -90,8 +90,8 @@ first_rule="$("${IPT[@]}" -S DOCKER-USER | awk '$1=="-A"{print; exit}')"
 "${IPT[@]}" -C MGC-VM-FILTER -p tcp -m multiport --dports 3000,8080 -j DROP >/dev/null 2>&1 || fail "Default DROP rule for all other TCP 3000,8080 traffic is missing."
 
 rules="$("${IPT[@]}" -S MGC-VM-FILTER)"
-allow_line="$(printf '%s\n' "$rules" | grep -n -- "-s $ALLOWED_CIDR/\|-${ALLOWED_CIDR}" | head -n1 | cut -d: -f1 || true)"
-drop_line="$(printf '%s\n' "$rules" | grep -n -- '-m multiport --dports 3000,8080 -j DROP' | head -n1 | cut -d: -f1 || true)"
+allow_line="$(printf '%s\n' "$rules" | grep -nF -- "-s $ALLOWED_CIDR " | head -n1 | cut -d: -f1 || true)"
+drop_line="$(printf '%s\n' "$rules" | grep -nF -- '-m multiport --dports 3000,8080 -j DROP' | head -n1 | cut -d: -f1 || true)"
 [[ -n "$allow_line" && -n "$drop_line" && "$allow_line" -lt "$drop_line" ]] || fail "Firewall rule order is invalid; allowed corporate traffic must be evaluated before the DROP rule."
 
 # Reject any explicit ACCEPT rule for these pilot ports inside the MGC chain.
