@@ -35,6 +35,10 @@ export function ExecutiveTheme() {
         background: linear-gradient(180deg,#3b79bb,#1b4d80);
       }
 
+      .corporate-page-market > main > div > section:first-child {
+        display: grid !important;
+      }
+
       .executive-kpi {
         border: 1px solid #dce8f3;
         border-radius: 14px;
