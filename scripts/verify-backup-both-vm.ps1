@@ -101,13 +101,29 @@ try {
     if (-not $ready) { throw '[NO-GO] Disposable PostgreSQL verification container did not become ready.' }
 
     Invoke-Checked 'docker' @('cp',(Join-Path $LatestBackup.FullName 'mgc_languages.dump'),"${PgName}:/tmp/mgc_languages.dump")
+
+    # The application schema contains RLS/policy references to the production role name "app".
+    # Create only a NOLOGIN compatibility role inside this disposable, network-isolated database.
+    # No production password, membership or privilege is copied into the drill.
+    $RoleSql = @'
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname='app') THEN
+    CREATE ROLE app NOLOGIN;
+  END IF;
+END $$;
+'@
+    Invoke-Checked 'docker' @('exec',$PgName,'psql','-v','ON_ERROR_STOP=1','-U',$PgUser,'-d',$PgDb,'-c',$RoleSql)
+
     Invoke-Checked 'docker' @('exec',$PgName,'pg_restore','--no-owner','--no-privileges','-U',$PgUser,'-d',$PgDb,'/tmp/mgc_languages.dump')
     $TableCountText = (& docker exec $PgName psql -U $PgUser -d $PgDb -Atc "SELECT count(*) FROM pg_catalog.pg_tables WHERE schemaname='public';").Trim()
     if ($LASTEXITCODE -ne 0 -or -not ($TableCountText -match '^\d+$') -or [int]$TableCountText -lt 1) { throw '[NO-GO] Restored PostgreSQL database contains no public tables.' }
     $AlembicHead = (& docker exec $PgName psql -U $PgUser -d $PgDb -Atc 'SELECT version_num FROM alembic_version LIMIT 1;' 2>$null).Trim()
     if ($LASTEXITCODE -ne 0) { $AlembicHead = 'unknown' }
+    $RoleLogin = (& docker exec $PgName psql -U $PgUser -d $PgDb -Atc "SELECT rolcanlogin FROM pg_roles WHERE rolname='app';").Trim()
+    if ($LASTEXITCODE -ne 0 -or $RoleLogin -ne 'f') { throw '[NO-GO] Disposable compatibility role app unexpectedly has LOGIN capability.' }
     Write-Host "Restored public tables: $TableCountText"
     Write-Host "Alembic head: $AlembicHead"
+    Write-Host 'Compatibility role app: NOLOGIN'
     Write-Host '[GO] MGC Languages PostgreSQL dump restored successfully into an isolated disposable database.'
 
     docker rm -f $PgName *> $null
@@ -121,6 +137,7 @@ try {
         sqlite_integrity       = 'passed'
         postgres_restore       = 'passed'
         postgres_public_tables = [int]$TableCountText
+        compatibility_role_app = 'NOLOGIN'
         alembic_head           = $AlembicHead
         postgres_image         = $PostgresImage
         okno_image             = $OknoImage
