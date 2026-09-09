@@ -41,9 +41,12 @@ test("approved corporate shell uses simplified left navigation and no retired ri
 test("corporate home is live-data driven and keeps strategic focus", () => {
   assert.ok(home.includes('fetch("/api/news"'));
   for (const entity of ["VOYAH", "EVOLUTE", "Моторинвест", "ЭВИА", "GWM", "SHACMAN"]) assert.ok(home.includes(entity), entity);
-  assert.ok(home.includes("Главные новости"));
-  assert.ok(home.includes("Актуальные направления"));
+  assert.ok(home.includes("Требует внимания"));
+  assert.ok(home.includes("Executive Brief"));
+  assert.ok(home.includes("Продажи автомобилей в России"));
   assert.ok(home.includes("Коммерческий транспорт"));
+  assert.ok(home.includes("SourceTrustBadge"));
+  assert.ok(home.includes("sourceType"));
 });
 
 test("retired design blocks stay removed from corporate home", () => {
