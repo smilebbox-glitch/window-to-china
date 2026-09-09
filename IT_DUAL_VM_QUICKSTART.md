@@ -24,7 +24,19 @@ For a more comfortable build/update cycle, 8 vCPU and 16 GB RAM are preferable b
 
 The two Docker stacks use separate projects/networks/volumes and can run concurrently on the same VM.
 
-## Linux VM — first installation
+## Folder layout
+
+Keep the repositories as sibling folders:
+
+```text
+MGC/
+  window-to-china/
+  mgc-languages/
+```
+
+The shared launcher looks for `mgc-languages` next to `window-to-china`. A custom location can be supplied through `MGC_LANGUAGES_PATH`.
+
+## Linux VM — first installation and one-command start
 
 ```bash
 sudo mkdir -p /opt/mgc
@@ -35,15 +47,14 @@ git clone https://github.com/smilebbox-glitch/window-to-china.git
 git clone https://github.com/smilebbox-glitch/mgc-languages.git
 
 cd /opt/mgc/window-to-china
-chmod +x scripts/start-vm.sh
-./scripts/start-vm.sh
-
-cd /opt/mgc/mgc-languages
-chmod +x scripts/start-vm.sh
-./scripts/start-vm.sh
+chmod +x scripts/start-vm.sh scripts/start-both-vm.sh
+chmod +x ../mgc-languages/scripts/start-vm.sh
+./scripts/start-both-vm.sh
 ```
 
-## Windows VM — first installation
+The shared launcher starts Okno v Kitai first, waits for its health check, then starts MGC Languages and waits for its readiness check.
+
+## Windows VM — first installation and one-click start
 
 Clone both repositories into sibling folders, for example:
 
@@ -52,7 +63,13 @@ C:\MGC\window-to-china
 C:\MGC\mgc-languages
 ```
 
-Then run `START_VM.bat` once in each folder. Each launcher creates its own `.env.vm`, generates local secrets, builds its Docker stack and waits for readiness.
+Then double-click:
+
+```text
+C:\MGC\window-to-china\START_BOTH_VM.bat
+```
+
+This calls the existing VM launcher in each repository. Each service creates its own `.env.vm`, generates local secrets, builds its Docker stack and waits for readiness.
 
 ## URLs
 
@@ -93,16 +110,15 @@ All four commands must return successfully before users are invited to the pilot
 
 ## Updating
 
-Update one repository at a time, then rerun its VM launcher:
+Update both repositories, then run the shared launcher again:
 
 ```bash
 cd /opt/mgc/window-to-china
 git pull --ff-only origin main
-./scripts/start-vm.sh
-
-cd /opt/mgc/mgc-languages
+cd ../mgc-languages
 git pull --ff-only origin main
-./scripts/start-vm.sh
+cd ../window-to-china
+./scripts/start-both-vm.sh
 ```
 
 ## Stop without deleting pilot data
