@@ -8,6 +8,10 @@ const exists = (path) => fs.existsSync(path);
 const shell = read("components/site-shell.tsx");
 const searchPage = read("app/search/page.tsx");
 const globalSearch = read("components/global-search.tsx");
+const corporateHome = read("components/corporate-home.tsx");
+const eventCalendar = read("components/event-calendar.tsx");
+const travelGuide = read("components/travel-guide.tsx");
+const globalCss = read("app/globals.css");
 
 const visibleNavigation = [
   ["/", "Главная"],
@@ -84,4 +88,27 @@ test("pilot test-mode warning remains readable and explicit", () => {
   assert.match(shell, /text-\[15px\]/u);
   assert.match(shell, /font-bold/u);
   assert.match(shell, /text-\[#18345f\]/u);
+});
+
+test("home hero keeps the simplified design without retired market CTA buttons", () => {
+  assert.equal(corporateHome.includes("Исследовать рынок"), false);
+  assert.equal(corporateHome.includes("Рынок и аналитика"), false);
+  assert.match(corporateHome, /Китай\. Автопром\./u);
+  assert.match(corporateHome, /Главные новости/u);
+});
+
+test("event travel details remain readable in the corporate light theme", () => {
+  for (const label of ["Перелёт, отели, документы и город", "Перелёт из Москвы", "Рядом с площадкой", "Документы", "Что посмотреть"]) {
+    assert.ok(eventCalendar.includes(label), `${label} missing from event travel details`);
+  }
+  assert.ok(globalCss.includes('.corporate-page-calendar details > summary { color:#173368 !important; }'));
+  assert.ok(globalCss.includes('.corporate-page-calendar details .text-violet-200,.corporate-page-calendar details .text-violet-300 { color:#3658a8 !important; }'));
+  assert.ok(globalCss.includes('.corporate-page-calendar details .text-slate-400,.corporate-page-calendar details .text-slate-500,.corporate-page-calendar details .text-slate-600 { color:#405f82 !important; }'));
+});
+
+test("travel section eyebrow labels are protected from first-letter clipping", () => {
+  for (const eyebrow of ["Телефон до вылета", "Оплата в Китае", "Багаж и граница", "Культурный код"]) {
+    assert.ok(travelGuide.includes(`eyebrow=\"${eyebrow}\"`), `${eyebrow} heading missing`);
+  }
+  assert.ok(globalCss.includes('.corporate-page-travel > main > div > section > div:first-child > p[class*="uppercase"] { padding-left:8px; padding-right:8px; }'));
 });
