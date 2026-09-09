@@ -105,5 +105,12 @@ fi
 echo ""
 echo "[GO] Dual VM backup completed: $DEST"
 echo "Files: okno.sqlite, mgc_languages.dump, manifest.json, checksums.sha256"
-[[ -d "$DEST/okno-audit" ]] && echo "Also included: Okno audit directory"
-[[ -f "$DEST/runtime-config.json" ]] && echo "Also included: Okno runtime configuration"
+if [[ -d "$DEST/okno-audit" ]]; then
+  echo "Also included: Okno audit directory"
+fi
+if [[ -f "$DEST/runtime-config.json" ]]; then
+  echo "Also included: Okno runtime configuration"
+fi
+
+# Optional artifacts must not make a successful backup return a non-zero status.
+exit 0
