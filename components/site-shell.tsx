@@ -146,7 +146,7 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
         </>
       )}
 
-      <nav className="mobile-app-nav lg:hidden" aria-label="Основная мобильная навигация">
+      <nav className="corporate-mobile-nav mobile-app-nav lg:hidden" aria-label="Основная мобильная навигация">
         {primaryMobileNavigation.map((item) => {
           const Icon = item.icon;
           const active = isActive(pathname, item.href);
