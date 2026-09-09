@@ -1,6 +1,7 @@
 .git
 .next
 .sites-runtime
+.ci-runtime
 .wrangler
 dist
 node_modules
