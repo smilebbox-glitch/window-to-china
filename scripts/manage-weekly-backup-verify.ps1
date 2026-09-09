@@ -31,7 +31,7 @@ function Install-Schedule {
   $Settings = New-ScheduledTaskSettingsSet -StartWhenAvailable -MultipleInstances IgnoreNew -ExecutionTimeLimit (New-TimeSpan -Hours 2)
   $Task = New-ScheduledTask -Action $TaskAction -Trigger $Trigger -Principal $Principal -Settings $Settings -Description 'Non-destructive restore drill for the latest dual-service VM backup. No pilot database is modified.'
   Register-ScheduledTask -TaskName $TaskName -InputObject $Task -Force | Out-Null
-  Write-Host "[GO] Weekly backup restoreability task installed for $User: $WeeklyDay at $WeeklyTime local server time."
+  Write-Host "[GO] Weekly backup restoreability task installed for ${User}: $WeeklyDay at $WeeklyTime local server time."
   Write-Host '[GO] StartWhenAvailable is enabled. No account password is stored by this script.'
 }
 
