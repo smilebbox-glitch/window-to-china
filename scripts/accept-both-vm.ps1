@@ -4,6 +4,7 @@ $LanguagesRoot = $env:MGC_LANGUAGES_PATH
 if (-not $LanguagesRoot) { $LanguagesRoot = Join-Path (Split-Path $Root -Parent) 'mgc-languages' }
 $FirewallScript = Join-Path $Root 'scripts\host-firewall-preflight.ps1'
 $StatusScript = Join-Path $Root 'scripts\status-both-vm.ps1'
+$ReceiptScript = Join-Path $Root 'scripts\write-vm-acceptance-receipt.ps1'
 
 function Fail([string]$Message) {
     Write-Host "[NO-GO] $Message" -ForegroundColor Red
@@ -29,6 +30,7 @@ function Get-ContainerEnvValue([string]$ContainerId, [string]$Key) {
 
 if (-not (Test-Path -LiteralPath $FirewallScript -PathType Leaf)) { Fail 'Host firewall preflight is missing.' }
 if (-not (Test-Path -LiteralPath $StatusScript -PathType Leaf)) { Fail 'Shared VM status gate is missing.' }
+if (-not (Test-Path -LiteralPath $ReceiptScript -PathType Leaf)) { Fail 'Acceptance evidence writer is missing.' }
 if (-not (Test-Path -LiteralPath (Join-Path $Root '.env.vm') -PathType Leaf)) { Fail 'Okno .env.vm is missing. Start the VM profile first.' }
 if (-not (Test-Path -LiteralPath (Join-Path $LanguagesRoot '.env.vm') -PathType Leaf)) { Fail 'MGC Languages .env.vm is missing. Start the VM profile first.' }
 if (-not (Get-Command docker -ErrorAction SilentlyContinue)) { Fail 'Docker is not installed or not in PATH.' }
@@ -36,7 +38,7 @@ if (-not (Get-Command docker -ErrorAction SilentlyContinue)) { Fail 'Docker is n
 if ($LASTEXITCODE -ne 0) { Fail 'Docker daemon is not running.' }
 $psHost = Get-PowerShellHost
 
-Write-Host '=== 1/3 Host firewall acceptance ===' -ForegroundColor Cyan
+Write-Host '=== 1/4 Host firewall acceptance ===' -ForegroundColor Cyan
 if ($env:GITHUB_ACTIONS -eq 'true' -and $env:GITHUB_RUN_ID) {
     $oldAllowed = $env:MGC_VM_ALLOWED_CIDR
     $oldContract = $env:MGC_VM_FIREWALL_CONTRACT_ONLY
@@ -55,7 +57,7 @@ if ($env:GITHUB_ACTIONS -eq 'true' -and $env:GITHUB_RUN_ID) {
 }
 
 Write-Host ''
-Write-Host '=== 2/3 Runtime readiness + ingress isolation ===' -ForegroundColor Cyan
+Write-Host '=== 2/4 Runtime readiness + ingress isolation ===' -ForegroundColor Cyan
 $oldLanguagesPath = $env:MGC_LANGUAGES_PATH
 $env:MGC_LANGUAGES_PATH = $LanguagesRoot
 try {
@@ -66,7 +68,7 @@ try {
 }
 
 Write-Host ''
-Write-Host '=== 3/3 CPU-only / no-AI runtime contract ===' -ForegroundColor Cyan
+Write-Host '=== 3/4 CPU-only / no-AI runtime contract ===' -ForegroundColor Cyan
 Push-Location $Root
 try {
     $oknoArgs = @('compose','--env-file','.env.vm','-f','compose.yaml','-f','compose.vm.yaml')
@@ -92,12 +94,24 @@ if (-not [string]::IsNullOrEmpty($ragModel)) { Fail 'Okno RAG_MODEL must be empt
 if (-not [string]::IsNullOrEmpty($ragKey)) { Fail 'Okno RAG_API_KEY must be empty in the temporary CPU-only pilot.' }
 if ($ttsEnabled -ne 'false') { Fail 'MGC Languages TTS_ENABLED must be false in the temporary CPU-only pilot.' }
 if ($ttsCache -ne 'false') { Fail 'MGC Languages TTS_DISK_CACHE_ENABLED must be false in the temporary CPU-only pilot.' }
-
 Write-Host '[GO] No-AI runtime contract is active for both services.' -ForegroundColor Green
+
+Write-Host ''
+Write-Host '=== 4/4 Acceptance evidence ===' -ForegroundColor Cyan
+$previousLanguagesPath = $env:MGC_LANGUAGES_PATH
+$env:MGC_LANGUAGES_PATH = $LanguagesRoot
+try {
+    & $psHost -NoProfile -ExecutionPolicy Bypass -File $ReceiptScript
+    if ($LASTEXITCODE -ne 0) { Fail "Acceptance evidence writer failed with exit code $LASTEXITCODE." }
+} finally {
+    if ($null -eq $previousLanguagesPath) { Remove-Item Env:MGC_LANGUAGES_PATH -ErrorAction SilentlyContinue } else { $env:MGC_LANGUAGES_PATH = $previousLanguagesPath }
+}
+
 Write-Host ''
 Write-Host '[GO] VM PILOT ACCEPTANCE PASSED.' -ForegroundColor Green
 Write-Host '     Host firewall: restricted corporate CIDR only'
 Write-Host '     Okno v Kitai: readiness + hardened ingress + generative RAG disabled'
 Write-Host '     MGC Languages: readiness + hardened nginx ingress + server TTS disabled'
 Write-Host '     Ports: TCP 3000 and 8080 only through the configured host boundary'
+Write-Host '     Evidence: timestamped acceptance.json + SHA-256 receipt was written'
 exit 0
