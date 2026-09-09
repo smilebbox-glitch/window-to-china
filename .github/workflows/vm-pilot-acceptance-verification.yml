@@ -10,7 +10,10 @@ on:
       - 'scripts/accept-both-vm.ps1'
       - 'scripts/write-vm-acceptance-receipt.sh'
       - 'scripts/write-vm-acceptance-receipt.ps1'
+      - 'scripts/readiness-both-vm.sh'
+      - 'scripts/readiness-both-vm.ps1'
       - 'ACCEPT_BOTH_VM.bat'
+      - 'READINESS_BOTH_VM.bat'
       - 'MGC_VM_CONTROL.bat'
       - 'scripts/vm-control.sh'
       - 'scripts/start-both-vm.sh'
@@ -20,6 +23,7 @@ on:
       - 'scripts/host-firewall-preflight.sh'
       - 'scripts/host-firewall-preflight.ps1'
       - 'tests/vm-pilot-acceptance.test.mjs'
+      - 'tests/vm-pilot-readiness.test.mjs'
       - '.env.vm.example'
       - 'compose.yaml'
       - 'compose.vm.yaml'
@@ -30,7 +34,7 @@ permissions:
 jobs:
   acceptance-smoke:
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    timeout-minutes: 40
     steps:
       - name: Checkout Okno v Kitai
         uses: actions/checkout@v4
@@ -48,22 +52,23 @@ jobs:
         with:
           node-version: '22.13.0'
 
-      - name: Verify acceptance contract
+      - name: Verify acceptance and readiness contracts
         working-directory: window-to-china
-        run: node --test tests/vm-pilot-acceptance.test.mjs
+        run: node --test tests/vm-pilot-acceptance.test.mjs tests/vm-pilot-readiness.test.mjs
 
-      - name: Parse acceptance launchers
+      - name: Parse Linux operator launchers
         working-directory: window-to-china
         shell: bash
-        run: bash -n scripts/accept-both-vm.sh scripts/write-vm-acceptance-receipt.sh scripts/start-both-vm.sh scripts/status-both-vm.sh scripts/host-firewall-preflight.sh
+        run: bash -n scripts/accept-both-vm.sh scripts/write-vm-acceptance-receipt.sh scripts/readiness-both-vm.sh scripts/start-both-vm.sh scripts/status-both-vm.sh scripts/host-firewall-preflight.sh
 
-      - name: Parse Windows acceptance launcher
+      - name: Parse Windows operator launchers
         working-directory: window-to-china
         shell: pwsh
         run: |
           $files = @(
             'scripts/accept-both-vm.ps1',
             'scripts/write-vm-acceptance-receipt.ps1',
+            'scripts/readiness-both-vm.ps1',
             'scripts/start-both-vm.ps1',
             'scripts/status-both-vm.ps1',
             'scripts/host-firewall-preflight.ps1'
@@ -125,6 +130,37 @@ jobs:
           test "$(node -p "JSON.parse(require('fs').readFileSync('$RECEIPT_DIR/acceptance.json','utf8')).okno_commit")" = "$(git rev-parse HEAD)"
           test "$(node -p "JSON.parse(require('fs').readFileSync('$RECEIPT_DIR/acceptance.json','utf8')).mgc_languages_commit")" = "$(git -C ../mgc-languages rev-parse HEAD)"
           test -z "$(grep -Ei 'RAG_API_KEY|ADMIN_API_TOKEN|SCHEDULER_TOKEN|POSTGRES_PASSWORD' "$RECEIPT_DIR/acceptance.json" || true)"
+
+      - name: Verify current pilot readiness report
+        working-directory: window-to-china
+        shell: bash
+        env:
+          MGC_VM_ALLOWED_CIDR: 10.250.0.0/24
+          MGC_VM_ACCEPTANCE_ROOT: ${{ runner.temp }}/mgc-vm-acceptance
+          MGC_VM_BACKUP_ROOT: ${{ runner.temp }}/mgc-vm-backups-empty
+        run: |
+          bash scripts/readiness-both-vm.sh | tee readiness-current.txt
+          grep -q 'Acceptance is CURRENT' readiness-current.txt
+          grep -q 'PILOT READINESS: CURRENT ACCEPTANCE / SERVICES READY' readiness-current.txt
+
+      - name: Prove repository drift invalidates acceptance
+        working-directory: window-to-china
+        shell: bash
+        env:
+          MGC_VM_ALLOWED_CIDR: 10.250.0.0/24
+          MGC_VM_ACCEPTANCE_ROOT: ${{ runner.temp }}/mgc-vm-acceptance
+          MGC_VM_BACKUP_ROOT: ${{ runner.temp }}/mgc-vm-backups-empty
+        run: |
+          git config user.name 'MGC CI Drift Probe'
+          git config user.email 'ci-drift-probe@example.invalid'
+          git commit --allow-empty -m 'ci: simulate post-acceptance drift' >/dev/null
+          if bash scripts/readiness-both-vm.sh > readiness-stale.txt 2>&1; then
+            echo '[NO-GO] Readiness unexpectedly accepted a revision that was never admitted.' >&2
+            cat readiness-stale.txt
+            exit 1
+          fi
+          grep -q 'ACCEPTANCE STALE' readiness-stale.txt
+          grep -q 'PILOT READINESS: ATTENTION REQUIRED' readiness-stale.txt
 
       - name: Cleanup MGC Languages
         if: always()
