@@ -62,7 +62,7 @@ test("readiness confirms writable runtime data and current migrations", async ()
 test("news API returns the v1.7.9 source catalog and deduplicated feed contract", async () => {
   const { response, payload } = await json("/api/news", 40_000);
   assert.equal(response.status, 200, `/api/news returned HTTP ${response.status}`);
-  assert.equal(payload?.sourceCatalogVersion, 4);
+  assert.equal(payload?.sourceCatalogVersion, 5);
   assert.ok(Array.isArray(payload?.news));
   assert.ok(Array.isArray(payload?.sourceBreakdown));
   assert.ok(Number.isInteger(payload?.rawCount));
