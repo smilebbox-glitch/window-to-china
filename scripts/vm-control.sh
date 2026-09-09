@@ -40,6 +40,8 @@ while true; do
   R. READINESS       Current status + acceptance drift + backup
   O. OPS REPORT      Read-only IT health/capacity/backup report
   D. DAILY OPS       Run/install/status daily backup + health check
+  V. VERIFY BACKUP   Non-destructive restoreability drill now
+  W. WEEKLY VERIFY   Run/install/status weekly restoreability drill
   5. BACKUP          Create verified backup of both DBs
   6. DIAGNOSTICS     Create secret-safe diagnostics bundle
   7. UPDATE          Backup + safe fast-forward update
@@ -58,6 +60,8 @@ EOF
     r|R) run readiness-both-vm.sh ;;
     o|O) run ops-report-both-vm.sh ;;
     d|D) run_sudo manage-daily-vm-health.sh ;;
+    v|V) run verify-backup-both-vm.sh ;;
+    w|W) run_sudo manage-weekly-backup-verify.sh ;;
     5) run backup-both-vm.sh ;;
     6) run diagnostics-both-vm.sh ;;
     7) run update-both-vm.sh ;;
