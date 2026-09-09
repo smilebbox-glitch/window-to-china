@@ -1,0 +1,12 @@
+services:
+  china-auto-radar:
+    environment:
+      RAG_API_URL: ""
+      RAG_API_KEY: ""
+      RAG_MODEL: ""
+    mem_limit: ${APP_MEMORY_LIMIT:-768m}
+    cpus: ${APP_CPU_LIMIT:-1.25}
+
+  china-auto-radar-scheduler:
+    mem_limit: ${SCHEDULER_MEMORY_LIMIT:-96m}
+    cpus: ${SCHEDULER_CPU_LIMIT:-0.15}
