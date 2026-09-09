@@ -73,6 +73,8 @@ jobs:
         run: npm ci
       - name: Run build and automated tests
         run: npm test
+      - name: Run current pilot regression gate
+        run: npm run test:latest
 
   build-and-smoke:
     needs: automated-tests
