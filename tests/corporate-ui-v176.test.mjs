@@ -9,12 +9,12 @@ const hero = read("components/corporate-page-hero.tsx");
 const css = read("app/globals.css");
 const executive = read("app/executive/page.tsx");
 const search = read("components/global-search.tsx");
+const analysis = read("app/analysis/page.tsx");
 
 const pageFiles = [
   "app/news/page.tsx",
   "app/trucks/page.tsx",
   "app/market/page.tsx",
-  "app/analysis/page.tsx",
   "app/decision/page.tsx",
   "app/executive/page.tsx",
   "app/calendar/page.tsx",
@@ -25,14 +25,15 @@ const pageFiles = [
 const premiumIntelligencePages = [
   "app/news/page.tsx",
   "app/trucks/page.tsx",
-  "app/analysis/page.tsx",
   "app/calendar/page.tsx",
 ];
 
 test("approved corporate shell uses simplified left navigation and no retired right rail", () => {
-  for (const route of ["/news", "/trucks", "/market", "/analysis", "/calendar", "/travel-guide"]) {
+  for (const route of ["/news", "/trucks", "/market", "/calendar", "/travel-guide"]) {
     assert.ok(shell.includes(`href: "${route}"`), route);
   }
+  assert.equal(shell.includes('href: "/analysis"'), false);
+  assert.match(analysis, /redirect\("\/news"\)/u);
   for (const retired of ["Ключевые темы", "Популярные разделы", "Быстрые действия", "Состояние источников"]) {
     assert.equal(shell.includes(retired), false, retired);
   }
@@ -45,15 +46,15 @@ test("approved corporate shell uses simplified left navigation and no retired ri
   assert.ok(shell.includes("corporate-topbar"));
 });
 
-test("corporate home is live-data driven and keeps strategic focus", () => {
+test("corporate home is live-data driven and focused on core pilot content", () => {
   assert.ok(home.includes('fetch("/api/news"'));
-  for (const entity of ["VOYAH", "EVOLUTE", "Моторинвест", "ЭВИА", "GWM", "SHACMAN"]) assert.ok(home.includes(entity), entity);
   assert.ok(home.includes("Требует внимания"));
   assert.ok(home.includes("Executive Brief"));
   assert.ok(home.includes("Продажи автомобилей в России"));
   assert.ok(home.includes("Truck Radar"));
   assert.ok(home.includes("SourceTrustBadge"));
   assert.ok(home.includes("sourceType"));
+  assert.equal(home.includes("Стратегический фокус"), false);
 });
 
 test("retired design blocks stay removed from corporate home", () => {
@@ -67,6 +68,7 @@ test("retired design blocks stay removed from corporate home", () => {
     "Состояние источников",
     "Ключевые темы",
     "Популярные разделы",
+    "Часть источников временно недоступна",
   ]) assert.equal(home.includes(retired), false, retired);
 });
 
