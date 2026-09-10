@@ -72,10 +72,10 @@ test("pilot degradation uses explicit error-plus-stale ratio threshold", () => {
 
 test("v1.7.9 bounded source deadlines are passed to Docker", () => {
   for (const token of [
-    "NEWS_SOURCE_CONCURRENCY: ${NEWS_SOURCE_CONCURRENCY:-4}",
-    "NEWS_FETCH_TIMEOUT_MS: ${NEWS_FETCH_TIMEOUT_MS:-8000}",
+    "NEWS_SOURCE_CONCURRENCY: ${NEWS_SOURCE_CONCURRENCY:-6}",
+    "NEWS_FETCH_TIMEOUT_MS: ${NEWS_FETCH_TIMEOUT_MS:-9000}",
     "NEWS_TRANSLATE_TIMEOUT_MS: ${NEWS_TRANSLATE_TIMEOUT_MS:-6500}",
-    "NEWS_SOURCE_DEADLINE_MS: ${NEWS_SOURCE_DEADLINE_MS:-12000}",
-    "NEWS_REQUEST_DEADLINE_MS: ${NEWS_REQUEST_DEADLINE_MS:-26000}",
+    "NEWS_SOURCE_DEADLINE_MS: ${NEWS_SOURCE_DEADLINE_MS:-14000}",
+    "NEWS_REQUEST_DEADLINE_MS: ${NEWS_REQUEST_DEADLINE_MS:-32000}",
   ]) assert.ok(compose.includes(token), token);
 });
