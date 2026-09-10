@@ -70,3 +70,12 @@ test("calendar verifier is safe for legacy Windows PowerShell encoding", () => {
   assert.ok(calendarVerifier.includes("\\u0412\\u0020\\u043a"));
   assert.equal([...calendarVerifier].some((character) => character.codePointAt(0) > 127), false);
 });
+
+test("calendar runtime verifier ignores hydration strings but validates visible UI and direct Trip.com hotel links", () => {
+  assert.match(calendarVerifier, /\$visibleHtml = \[regex\]::Replace\(\$html/u);
+  assert.match(calendarVerifier, /\$visibleHtml -match \$removedCalendarPattern/u);
+  assert.match(calendarVerifier, /script\/hydration payload/u);
+  assert.match(calendarVerifier, /directTripHotelPattern/u);
+  assert.match(calendarVerifier, /hotel-detail-/u);
+  assert.match(calendarVerifier, /runtimeTripMatches\.Count -eq 0/u);
+});
