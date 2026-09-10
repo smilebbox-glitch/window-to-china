@@ -31,18 +31,20 @@ test("Truck Radar covers China and Russia commercial vehicle segments", () => {
   assert.ok(ranking.includes("rankCommercialVehicleNews"));
 });
 
-test("Truck Radar UI communicates impact without pretending article counts are market share", () => {
+test("Truck Radar UI keeps business impact while removing secondary screenshot panels", () => {
   assert.ok(truckRadar.includes("Грузовой радар"));
   assert.ok(truckRadar.includes("Китай ↔ Россия"));
+  assert.ok(truckRadar.includes("Ключевые грузовые сигналы"));
   assert.ok(truckRadar.includes("Почему важно"));
   assert.ok(truckRadar.includes("Что проверить"));
-  assert.ok(truckRadar.includes("Это не доля рынка"));
-  assert.ok(truckRadar.includes("TCO"));
+  assert.equal(truckRadar.includes("Бренд-радар"), false);
+  assert.equal(truckRadar.includes("Что отслеживаем"), false);
 });
 
-test("Truck Radar and department ranking are reachable in product UI", () => {
+test("Truck Radar remains reachable while RAG analysis is hidden for the pilot", () => {
   assert.ok(shell.includes('href: "/trucks"'));
   assert.ok(truckPage.includes("TruckRadar"));
-  assert.ok(analysisPage.includes("IntelligenceBrief"));
+  assert.equal(shell.includes('href: "/analysis"'), false);
+  assert.match(analysisPage, /redirect\("\/news"\)/u);
   assert.ok(brief.includes("Что действительно важно для компании"));
 });
