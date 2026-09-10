@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { autoEvents, eventGuidance, type AutoEvent } from "@/lib/data";
+import { getTripHotels, type TripHotelOption } from "@/lib/trip-hotels";
 import {
   eventTravelPlans,
   travelPriceNotice,
@@ -70,35 +71,6 @@ function statusOf(event: AutoEvent, today: string) {
   if (event.end < today) return "past" as const;
   if (event.start <= today && event.end >= today) return "now" as const;
   return "upcoming" as const;
-}
-
-function toIcsDate(value: string, addOneDay = false) {
-  const date = parseDate(value);
-  if (addOneDay) date.setUTCDate(date.getUTCDate() + 1);
-  return date.toISOString().slice(0, 10).replaceAll("-", "");
-}
-
-function downloadIcs(event: AutoEvent) {
-  const content = [
-    "BEGIN:VCALENDAR",
-    "VERSION:2.0",
-    "PRODID:-//Окно в Китай//RU",
-    "BEGIN:VEVENT",
-    `UID:${event.id}@okno-v-kitay`,
-    `DTSTART;VALUE=DATE:${toIcsDate(event.start)}`,
-    `DTEND;VALUE=DATE:${toIcsDate(event.end, true)}`,
-    `SUMMARY:${event.name.replaceAll(",", "\\,")}`,
-    `LOCATION:${event.venue.replaceAll(",", "\\,")}, ${event.city}`,
-    `DESCRIPTION:${event.note.replaceAll("\n", "\\n")}\\n${event.url}`,
-    "END:VEVENT",
-    "END:VCALENDAR",
-  ].join("\r\n");
-  const url = URL.createObjectURL(new Blob([content], { type: "text/calendar;charset=utf-8" }));
-  const anchor = document.createElement("a");
-  anchor.href = url;
-  anchor.download = `${event.id}.ics`;
-  anchor.click();
-  URL.revokeObjectURL(url);
 }
 
 export function EventCalendar() {
@@ -200,6 +172,7 @@ export function EventCalendar() {
                 const status = statusOf(event, today);
                 const guidance = eventGuidance[event.id];
                 const travelPlan = eventTravelPlans[event.id];
+                const tripHotels = getTripHotels(event.id);
                 return (
                   <article
                     key={event.id}
@@ -252,7 +225,9 @@ export function EventCalendar() {
                           <EventDetail icon={Ticket} label="Билет на 1 человека" text={guidance.ticketPrice} />
                         </div>
                       )}
-                      {travelPlan && status !== "past" && <EventTravelDetails plan={travelPlan} />}
+                      {travelPlan && status !== "past" && (
+                        <EventTravelDetails plan={travelPlan} hotels={tripHotels} />
+                      )}
                       <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-xs text-slate-500">
                         <span className="inline-flex items-center gap-1.5">
                           <Clock3 className="size-3.5" /> {formatRange(event)}
@@ -266,22 +241,26 @@ export function EventCalendar() {
                     <div className="flex items-end justify-between gap-3 sm:w-48 sm:flex-col sm:items-end">
                       <span className="text-xs text-slate-600">{event.source}</span>
                       <div className="flex flex-wrap justify-end gap-2">
-                        <FavoriteButton item={{itemType:"event",itemId:event.id,title:event.name,url:event.url,metadata:{city:event.city,start:event.start,end:event.end}}} className="border-white/10 bg-white/4 text-slate-300 hover:bg-white/8 hover:text-white"/>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={() => downloadIcs(event)}
-                          aria-label={`Добавить ${event.shortName} в календарь`}
-                          title="Скачать .ics"
-                          className="cursor-pointer border-white/10 bg-white/4 text-slate-300 hover:bg-white/8 hover:text-white"
-                        >
-                          <CalendarPlus /> В календарь
-                        </Button>
+                        <FavoriteButton
+                          item={{
+                            itemType: "event",
+                            itemId: event.id,
+                            title: event.name,
+                            url: event.url,
+                            metadata: { city: event.city, start: event.start, end: event.end },
+                          }}
+                          className="border-white/10 bg-white/4 text-slate-300 hover:bg-white/8 hover:text-white"
+                        />
                         <Button
                           asChild
                           className="cursor-pointer bg-cyan-300 text-[#071011] hover:bg-cyan-200"
                         >
-                          <a href={guidance?.registrationUrl ?? event.url} target="_blank" rel="noopener noreferrer" aria-label={`Регистрация на ${event.shortName}`}>
+                          <a
+                            href={guidance?.registrationUrl ?? event.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            aria-label={`Регистрация на ${event.shortName}`}
+                          >
                             Регистрация <ArrowUpRight />
                           </a>
                         </Button>
@@ -298,7 +277,6 @@ export function EventCalendar() {
               )}
             </div>
           </div>
-
         </section>
       </div>
     </main>
@@ -316,7 +294,7 @@ function EventDetail({ icon: Icon, label, text }: { icon: typeof Ticket; label: 
   );
 }
 
-function EventTravelDetails({ plan }: { plan: EventTravelPlan }) {
+function EventTravelDetails({ plan, hotels }: { plan: EventTravelPlan; hotels: TripHotelOption[] }) {
   return (
     <details className="group/travel mt-5 overflow-hidden rounded-xl border border-violet-300/15 bg-violet-300/[0.035]">
       <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-sm font-semibold text-violet-200 marker:hidden">
@@ -335,7 +313,9 @@ function EventTravelDetails({ plan }: { plan: EventTravelPlan }) {
             <p className="mt-2 text-sm font-medium text-slate-200">{plan.flightPrice}</p>
             <p className="mt-1 text-xs text-slate-500">{plan.travelWindow}</p>
             <div className="mt-3 border-t border-white/7 pt-3">
-              <p className="text-xs font-semibold text-slate-300">Из Шереметьево до площадки: {plan.journeyFromSvo}</p>
+              <p className="text-xs font-semibold text-slate-300">
+                Из Шереметьево до площадки: {plan.journeyFromSvo}
+              </p>
               <p className="mt-1 text-xs leading-5 text-slate-500">{plan.journeyBreakdown}</p>
             </div>
             <a
@@ -349,23 +329,42 @@ function EventTravelDetails({ plan }: { plan: EventTravelPlan }) {
           </div>
 
           <div className="rounded-xl border border-white/8 bg-[#071011]/70 p-4">
-            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.1em] text-violet-300">
-              <Hotel className="size-4" /> Рядом с площадкой
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.1em] text-violet-300">
+                <Hotel className="size-4" /> Рядом с площадкой
+              </div>
+              <span className="text-[11px] font-medium text-slate-500">Данные Trip.com</span>
             </div>
-            <p className="mt-2 text-sm font-medium text-slate-200">{plan.stayBudget}</p>
-            <div className="mt-3 space-y-2">
-              {plan.hotels.map((hotel) => (
+            <p className="mt-2 text-xs leading-5 text-slate-500">
+              Рейтинг, отзывы, расстояние и адрес — по данным Trip.com. Стоимость зависит от дат поездки.
+            </p>
+            <div className="mt-3 space-y-3">
+              {hotels.map((hotel) => (
                 <a
                   key={hotel.name}
-                  href={hotel.bookingUrl}
+                  href={hotel.tripUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-start justify-between gap-3 text-xs text-slate-400 hover:text-white"
+                  className="block rounded-lg border border-white/7 bg-white/[0.025] p-3 transition-colors hover:border-violet-300/25 hover:bg-white/[0.045]"
                 >
-                  <span>{hotel.name} · {hotel.chineseName}</span>
-                  <span className="shrink-0 text-violet-300">{hotel.nightlyPrice}</span>
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <span className="text-xs font-semibold text-slate-200">{hotel.name}</span>
+                    <span className="shrink-0 text-xs font-semibold text-violet-300">
+                      {hotel.rating} · {hotel.reviews}
+                    </span>
+                  </div>
+                  <span className="mt-1.5 block text-xs leading-5 text-slate-400">{hotel.proximity}</span>
+                  <span className="mt-1 block text-[11px] leading-4 text-slate-600">{hotel.address}</span>
+                  <span className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-violet-300">
+                    Актуальная цена на Trip.com <ArrowUpRight className="size-3.5" />
+                  </span>
                 </a>
               ))}
+              {hotels.length === 0 && (
+                <p className="text-xs leading-5 text-slate-500">
+                  Проверенная подборка Trip.com для этой площадки пока не опубликована.
+                </p>
+              )}
             </div>
           </div>
 
@@ -389,12 +388,28 @@ function EventTravelDetails({ plan }: { plan: EventTravelPlan }) {
             <div className="mt-3 space-y-3">
               {plan.attractions.map((place) => (
                 <div key={place.chineseName} className="text-xs text-slate-400">
-                  <span className="font-medium text-slate-200">{place.name} · {place.chineseName}</span>
+                  <span className="font-medium text-slate-200">
+                    {place.name} · {place.chineseName}
+                  </span>
                   <span className="mt-0.5 block text-slate-600">{place.addressZh}</span>
                   <span className="mt-1 block leading-5 text-slate-500">{place.note}</span>
                   <span className="mt-1.5 flex gap-3">
-                    <a href={place.wikipediaUrl} target="_blank" rel="noopener noreferrer" className="font-semibold text-orange-300 hover:text-orange-200">Wikipedia</a>
-                    <a href={place.mapUrl} target="_blank" rel="noopener noreferrer" className="font-semibold text-cyan-300 hover:text-cyan-200">Карта</a>
+                    <a
+                      href={place.wikipediaUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-semibold text-orange-300 hover:text-orange-200"
+                    >
+                      Wikipedia
+                    </a>
+                    <a
+                      href={place.mapUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-semibold text-cyan-300 hover:text-cyan-200"
+                    >
+                      Карта
+                    </a>
                   </span>
                 </div>
               ))}
@@ -404,7 +419,10 @@ function EventTravelDetails({ plan }: { plan: EventTravelPlan }) {
 
         <div className="mt-4 flex flex-col gap-3 border-t border-white/7 pt-4 text-xs leading-5 text-slate-600 sm:flex-row sm:items-start sm:justify-between">
           <p className="max-w-3xl">{travelPriceNotice}</p>
-          <Link href="/travel-guide" className="inline-flex shrink-0 items-center gap-1.5 font-semibold text-cyan-300 hover:text-cyan-200">
+          <Link
+            href="/travel-guide"
+            className="inline-flex shrink-0 items-center gap-1.5 font-semibold text-cyan-300 hover:text-cyan-200"
+          >
             Все правила <ArrowUpRight className="size-3.5" />
           </Link>
         </div>
