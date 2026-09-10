@@ -12,6 +12,7 @@ const trucks = read("components/truck-radar.tsx");
 const calendar = read("components/event-calendar.tsx");
 const travel = read("components/travel-guide.tsx");
 const styles = read("app/globals.css");
+const calendarVerifier = read("scripts/verify-calendar-ui.ps1");
 
 test("current home uses executive intelligence layout without retired market hero actions", () => {
   assert.equal(home.includes("Исследовать рынок"), false);
@@ -61,4 +62,11 @@ test("travel section eyebrow labels keep safe horizontal padding", () => {
     assert.ok(travel.includes(`eyebrow="${label}"`), `${label} missing from travel guide`);
   }
   assert.match(styles, /\.corporate-page-travel > main > div > section > div:first-child > p\[class\*="uppercase"\] \{ padding-left:8px; padding-right:8px; \}/u);
+});
+
+test("calendar verifier is safe for legacy Windows PowerShell encoding", () => {
+  assert.match(calendarVerifier, /Get-Content \$calendarPath -Raw -Encoding UTF8/u);
+  assert.match(calendarVerifier, /Get-Content \$hotelsPath -Raw -Encoding UTF8/u);
+  assert.ok(calendarVerifier.includes("\\u0412\\u0020\\u043a"));
+  assert.equal([...calendarVerifier].some((character) => character.codePointAt(0) > 127), false);
 });
