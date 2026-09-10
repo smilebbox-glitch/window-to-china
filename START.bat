@@ -6,11 +6,30 @@ echo ==============================================
 echo   Okno v Kitai - LAN start
 echo ==============================================
 
-where git >nul 2>nul
-if "%ERRORLEVEL%"=="0" if exist ".git" (
+if exist ".git" (
+  where git >nul 2>nul
+  if errorlevel 1 (
+    echo.
+    echo ERROR: This is a Git checkout, but Git is not available in PATH.
+    echo START will not launch an unverified older local copy.
+    echo Install/repair Git, then run START.bat again.
+    pause
+    exit /b 1
+  )
+
   echo Updating project from GitHub...
   git pull --ff-only origin main
-  if not "%ERRORLEVEL%"=="0" echo WARNING: Git update was skipped. Starting current local copy.
+  if errorlevel 1 (
+    echo.
+    echo ERROR: Could not update the project from GitHub.
+    echo START will not launch an older local copy.
+    echo Resolve the Git/network issue above, then run START.bat again.
+    pause
+    exit /b 1
+  )
+
+  echo Active source revision:
+  git rev-parse --short=12 HEAD
 )
 
 echo Checking local configuration...

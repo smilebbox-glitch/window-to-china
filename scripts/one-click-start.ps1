@@ -121,26 +121,41 @@ if ($bindAddress -eq '0.0.0.0' -and $allowPublic -ne 'YES') {
     Fail 'APP_BIND_ADDRESS=0.0.0.0 requires ALLOW_PUBLIC_BIND=YES and trusted network/firewall controls.'
 }
 
+$hasGitCheckout = Test-Path (Join-Path $Root '.git')
+$sourceRevision = 'package'
+if ($hasGitCheckout -and (Get-Command git -ErrorAction SilentlyContinue)) {
+    try { $sourceRevision = (& git rev-parse --short=12 HEAD 2>$null).Trim() } catch {}
+    if ([string]::IsNullOrWhiteSpace($sourceRevision)) { $sourceRevision = 'package' }
+}
+
 Stage 'Validating Docker Compose'
 & docker compose config *> $null
 if ($LASTEXITCODE -ne 0) { Fail 'docker compose config validation failed.' }
 
-if (Test-Path 'okno-v-kitai-image.tar') {
+$offlineImage = Join-Path $Root 'okno-v-kitai-image.tar'
+$forceOffline = (Get-EnvValue 'USE_OFFLINE_IMAGE') -eq 'YES'
+$useOfflineImage = (Test-Path $offlineImage) -and ((-not $hasGitCheckout) -or $forceOffline)
+
+if ($useOfflineImage) {
     Stage 'Loading offline Docker image'
-    & docker load -i 'okno-v-kitai-image.tar'
+    & docker load -i $offlineImage
     if ($LASTEXITCODE -ne 0) { Fail 'docker load failed.' }
     $appVersion = Get-EnvValue 'APP_VERSION'; if (-not $appVersion) { $appVersion = $targetVersion }
     $expectedImage = "okno-v-kitai:$appVersion"
     & docker image inspect $expectedImage *> $null
     if ($LASTEXITCODE -ne 0) { Fail "Offline image does not provide expected tag $expectedImage." }
-    Stage 'Starting services without rebuild'
-    & docker compose up -d --no-build
+    Stage 'Starting services from the intentional offline image'
+    & docker compose up -d --no-build --force-recreate
 } else {
-    Stage 'Building application image'
+    if (Test-Path $offlineImage) {
+        Write-Host 'Ignoring okno-v-kitai-image.tar because this is a Git source checkout.' -ForegroundColor Yellow
+        Write-Host 'Building the current source revision instead. Set USE_OFFLINE_IMAGE=YES only for an intentional offline deployment.' -ForegroundColor Yellow
+    }
+    Stage "Building current application source ($sourceRevision)"
     & docker compose build
     if ($LASTEXITCODE -ne 0) { Fail 'Docker build failed. Check registry/network access and the build log above.' }
-    Stage 'Starting web + scheduler'
-    & docker compose up -d
+    Stage 'Starting current web + scheduler'
+    & docker compose up -d --force-recreate
 }
 if ($LASTEXITCODE -ne 0) { Fail 'docker compose up failed.' }
 
@@ -172,6 +187,7 @@ $lanBase = if ($lanIp) { "http://${lanIp}:$port" } else { '' }
 $adminToken = Get-EnvValue 'ADMIN_API_TOKEN'
 $access = @(
     "Okno v Kitai Pilot $targetVersion",
+    "Source revision: $sourceRevision",
     "Local URL: $localBase"
 )
 if ($lanBase) { $access += "LAN URL: $lanBase" }
@@ -180,6 +196,7 @@ $access += ('Generated: ' + [DateTime]::UtcNow.ToString('yyyy-MM-ddTHH:mm:ssZ'))
 [System.IO.File]::WriteAllLines((Join-Path $Root '.pilot-access.txt'), $access, [System.Text.UTF8Encoding]::new($false))
 
 Stage 'READY'
+Write-Host "Source revision: $sourceRevision" -ForegroundColor Green
 Write-Host "This PC: $localBase" -ForegroundColor Green
 if ($lanBase) {
     Write-Host "Other PCs on the same LAN: $lanBase" -ForegroundColor Green

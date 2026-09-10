@@ -114,25 +114,45 @@ if [[ "$bind_address" == "0.0.0.0" && "$allow_public" != "YES" ]]; then
   fail "APP_BIND_ADDRESS=0.0.0.0 requires ALLOW_PUBLIC_BIND=YES and trusted network/firewall controls."
 fi
 
+has_git_checkout=0
+[[ -d .git ]] && has_git_checkout=1
+source_revision="package"
+if (( has_git_checkout )) && command -v git >/dev/null 2>&1; then
+  source_revision="$(git rev-parse --short=12 HEAD 2>/dev/null || printf 'package')"
+fi
+
 say "Running host preflight"
 bash scripts/host-preflight.sh
 
 say "Validating Docker Compose"
 docker compose config >/dev/null
 
-if [[ -f okno-v-kitai-image.tar ]]; then
+offline_image="okno-v-kitai-image.tar"
+force_offline="$(get_env USE_OFFLINE_IMAGE)"
+use_offline_image=0
+if [[ -f "$offline_image" ]]; then
+  if (( ! has_git_checkout )) || [[ "$force_offline" == "YES" ]]; then
+    use_offline_image=1
+  fi
+fi
+
+if (( use_offline_image )); then
   say "Loading offline Docker image"
-  docker load -i okno-v-kitai-image.tar
+  docker load -i "$offline_image"
   app_version="$(get_env APP_VERSION)"; app_version="${app_version:-$target_version}"
   expected_image="okno-v-kitai:${app_version}"
   docker image inspect "$expected_image" >/dev/null 2>&1 || fail "Offline image does not provide expected tag $expected_image."
-  say "Starting services without rebuild"
-  docker compose up -d --no-build
+  say "Starting services from the intentional offline image"
+  docker compose up -d --no-build --force-recreate
 else
-  say "Building application image"
+  if [[ -f "$offline_image" ]]; then
+    printf 'Ignoring okno-v-kitai-image.tar because this is a Git source checkout.\n'
+    printf 'Building the current source revision instead. Set USE_OFFLINE_IMAGE=YES only for an intentional offline deployment.\n'
+  fi
+  say "Building current application source ($source_revision)"
   docker compose build
-  say "Starting web + scheduler"
-  docker compose up -d
+  say "Starting current web + scheduler"
+  docker compose up -d --force-recreate
 fi
 
 say "Waiting for application readiness"
@@ -176,6 +196,7 @@ lan_url=""
 admin_token="$(get_env ADMIN_API_TOKEN)"
 {
   printf 'Okno v Kitai Pilot %s\n' "$target_version"
+  printf 'Source revision: %s\n' "$source_revision"
   printf 'Local URL: %s\n' "$local_url"
   [[ -n "$lan_url" ]] && printf 'LAN URL: %s\n' "$lan_url"
   if [[ "$auth_mode" == "disabled" ]]; then
@@ -188,6 +209,7 @@ admin_token="$(get_env ADMIN_API_TOKEN)"
 chmod 600 .env .pilot-access.txt 2>/dev/null || true
 
 say "READY"
+printf 'Source revision: %s\n' "$source_revision"
 printf 'This PC: %s\n' "$local_url"
 if [[ -n "$lan_url" ]]; then
   printf 'Other PCs on the same LAN: %s\n' "$lan_url"

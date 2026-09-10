@@ -25,6 +25,32 @@ test('one-click launchers bootstrap secrets and support offline image', async ()
   }
 });
 
+test('Git checkout prefers fresh source and cannot silently start a stale offline image', async () => {
+  const [bat, sh, ps, sw] = await Promise.all([
+    t('START.bat'),
+    t('scripts/one-click-start.sh'),
+    t('scripts/one-click-start.ps1'),
+    t('public/sw.js'),
+  ]);
+
+  assert.doesNotMatch(bat, /Starting current local copy/u);
+  assert.match(bat, /git pull --ff-only origin main/u);
+  assert.match(bat, /if errorlevel 1/u);
+  assert.match(bat, /START will not launch an older local copy/u);
+
+  for (const src of [sh, ps]) {
+    assert.match(src, /USE_OFFLINE_IMAGE/u);
+    assert.match(src, /Git source checkout/u);
+    assert.match(src, /--force-recreate/u);
+    assert.match(src, /Source revision/u);
+  }
+
+  assert.match(sh, /\[\[ -d \.git \]\]/u);
+  assert.match(ps, /Test-Path \(Join-Path \$Root '\.git'\)/u);
+  assert.match(sw, /v179-3/u);
+  assert.match(sw, /Application JavaScript and CSS are network-first/u);
+});
+
 test('LAN access is enabled by default and launchers expose a LAN URL', async () => {
   const [compose, env, sh, ps, winLan] = await Promise.all([
     t('compose.yaml'),
