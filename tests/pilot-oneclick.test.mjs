@@ -63,7 +63,9 @@ test('Windows downloaded source package cannot silently use a stale calendar ima
   assert.match(bat, /verify-calendar-ui\.ps1" -Runtime/u);
   assert.match(bat, /docker compose down/u);
 
-  assert.match(verifier, /В календарь/u);
+  assert.match(verifier, /Get-Content \$calendarPath -Raw -Encoding UTF8/u);
+  assert.ok(verifier.includes('\\u0412\\u0020\\u043a'), 'verifier must use ASCII-safe Unicode escapes for the removed calendar label');
+  assert.equal([...verifier].some((character) => character.codePointAt(0) > 127), false);
   assert.match(verifier, /hotel\\\.tripUrl|hotel\.tripUrl/u);
   assert.match(verifier, /trip\\\.com|trip\.com/u);
   assert.match(verifier, /STALE RUNTIME DETECTED/u);
