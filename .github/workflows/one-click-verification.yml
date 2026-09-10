@@ -157,6 +157,30 @@ jobs:
         env:
           BASE_URL: http://127.0.0.1:3000
         run: node --test tests/pwa-runtime.mjs
+      - name: Capture pilot UI preview
+        run: |
+          mkdir -p pilot-preview
+          BROWSER="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || command -v chromium-browser || true)"
+          if [ -z "$BROWSER" ]; then
+            echo "No headless browser available on runner" >&2
+            exit 1
+          fi
+          for page in home market calendar news trucks; do
+            case "$page" in
+              home) url="http://127.0.0.1:3000/" ;;
+              *) url="http://127.0.0.1:3000/$page" ;;
+            esac
+            "$BROWSER" --headless=new --no-sandbox --disable-gpu --hide-scrollbars \
+              --window-size=1600,1800 --virtual-time-budget=12000 \
+              --screenshot="pilot-preview/${page}.png" "$url"
+          done
+      - name: Upload pilot UI preview
+        uses: actions/upload-artifact@v4
+        with:
+          name: okno-v-kitai-pilot-preview
+          path: pilot-preview/*.png
+          if-no-files-found: error
+          retention-days: 7
       - name: Show status
         run: ./status.sh
       - name: Diagnostics
