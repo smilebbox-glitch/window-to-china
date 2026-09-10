@@ -11,7 +11,7 @@
     "build": "bash scripts/build-verified.sh",
     "start": "vinext start",
     "test": "npm run build && node --test tests/*.test.mjs",
-    "test:latest": "node --test tests/current-pilot-regressions.test.mjs tests/news-received-time-v179.test.mjs tests/web-notifications.test.mjs tests/pilot-ui-functionality-v180.test.mjs tests/mobile-pwa-ux-v179.test.mjs tests/it-vm-handoff-v179.test.mjs",
+    "test:latest": "node --test tests/current-pilot-regressions.test.mjs tests/news-received-time-v179.test.mjs tests/web-notifications.test.mjs tests/pilot-ui-functionality-v180.test.mjs tests/mobile-pwa-ux-v179.test.mjs tests/it-vm-handoff-v179.test.mjs tests/fx-news-quality-v1710.test.mjs",
     "test:mobile": "node --test tests/mobile-pwa-ux-v179.test.mjs",
     "test:it-vm": "node --test tests/it-vm-handoff-v179.test.mjs",
     "test:runtime": "node --test tests/runtime-smoke.mjs",

@@ -59,9 +59,24 @@ function compactSummary(value: string, title: string) {
   const shortened = withoutDots.slice(0, 166).replace(/\s+\S*$/u, "").replace(/[,:;–—-]+$/u, "").trim();
   return `${shortened}.`;
 }
+function isDisplayableNews(item: NewsWithReceipt) {
+  const title = item.title.replace(/\s+/gu, " ").trim();
+  const summary = item.summary.replace(/\s+/gu, " ").trim();
+  const originalTitle = (item.originalTitle ?? "").replace(/\s+/gu, " ").trim();
+  const combined = `${title} ${summary} ${originalTitle}`;
+  if (!/\p{L}{3}/u.test(title)) return false;
+  if (summary.length < 24) return false;
+  if (/не удалось (?:получить|загрузить|извлечь|прочитать).{0,40}(?:текст|новост|материал)|текст (?:недоступен|не получен)|content unavailable|failed to (?:load|fetch|extract|read)|unable to (?:load|fetch|extract|read)/iu.test(summary)) return false;
+  const replacementChars = combined.match(/�/gu)?.length ?? 0;
+  if (replacementChars >= 2 || /\?{6,}/u.test(combined)) return false;
+  return true;
+}
 function mergeNews(live: NewsWithReceipt[]) {
   const merged = new Map<string, NewsWithReceipt>();
-  for (const item of [...live, ...seedNews]) if (!merged.has(item.url)) merged.set(item.url, item);
+  for (const item of [...live, ...seedNews]) {
+    if (!isDisplayableNews(item) || merged.has(item.url)) continue;
+    merged.set(item.url, item);
+  }
   return [...merged.values()];
 }
 function rateNews(item: NewsWithReceipt): RatedNews {
@@ -96,7 +111,7 @@ export function NewsDashboard() {
   const [marketFilter, setMarketFilter] = useState<MarketFilter>("Все рынки");
   const [quickView, setQuickView] = useState<QuickView>("none");
   const [query, setQuery] = useState("");
-  const [news, setNews] = useState<NewsWithReceipt[]>(seedNews);
+  const [news, setNews] = useState<NewsWithReceipt[]>(seedNews.filter(isDisplayableNews));
   const [status, setStatus] = useState<"loading" | "live" | "partial" | "offline">("loading");
 
   const loadLiveNews = useCallback(async () => {
@@ -108,7 +123,7 @@ export function NewsDashboard() {
       setNews(mergeNews(payload.news));
       setStatus(payload.errors.length === 0 ? "live" : "partial");
     } catch {
-      setNews(seedNews);
+      setNews(seedNews.filter(isDisplayableNews));
       setStatus("offline");
     }
   }, []);
