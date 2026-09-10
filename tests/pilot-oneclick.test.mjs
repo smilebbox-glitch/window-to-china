@@ -51,6 +51,24 @@ test('Git checkout prefers fresh source and cannot silently start a stale offlin
   assert.match(sw, /Application JavaScript and CSS are network-first/u);
 });
 
+test('Windows downloaded source package cannot silently use a stale calendar image', async () => {
+  const [bat, verifier] = await Promise.all([
+    t('START.bat'),
+    t('scripts/verify-calendar-ui.ps1'),
+  ]);
+
+  assert.match(bat, /Source package mode detected/u);
+  assert.match(bat, /okno-v-kitai-image\.tar\.disabled-by-start/u);
+  assert.match(bat, /verify-calendar-ui\.ps1/u);
+  assert.match(bat, /verify-calendar-ui\.ps1" -Runtime/u);
+  assert.match(bat, /docker compose down/u);
+
+  assert.match(verifier, /В календарь/u);
+  assert.match(verifier, /hotel\\\.tripUrl|hotel\.tripUrl/u);
+  assert.match(verifier, /trip\\\.com|trip\.com/u);
+  assert.match(verifier, /STALE RUNTIME DETECTED/u);
+});
+
 test('LAN access is enabled by default and launchers expose a LAN URL', async () => {
   const [compose, env, sh, ps, winLan] = await Promise.all([
     t('compose.yaml'),
