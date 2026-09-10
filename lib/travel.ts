@@ -126,18 +126,18 @@ const shanghaiHongqiaoHotels: HotelOption[] = [
 
 const beijingHotels: HotelOption[] = [
   {
-    name: "Crowne Plaza Beijing International Airport",
-    chineseName: "北京临空皇冠假日酒店",
-    proximity: "район аэропорта и CIEC Shunyi",
+    name: "Grand Skylight International Hotel Beijing",
+    chineseName: "北京格兰云天国际酒店",
+    proximity: "около 0,5 км — примерно 7 минут пешком до Beijing Etrong / 北人亦创国际会展中心",
     nightlyPrice: "7 000–13 000 ₽ / ночь",
-    bookingUrl: "https://www.trip.com/hotels/list?city=1&searchWord=Crowne%20Plaza%20Beijing%20International%20Airport",
+    bookingUrl: "https://www.trip.com/hotels/list?city=1&searchWord=Grand%20Skylight%20International%20Hotel%20Beijing",
   },
   {
-    name: "CITIC Hotel Beijing Airport",
-    chineseName: "北京国都大饭店",
-    proximity: "короткая поездка до выставочного центра",
-    nightlyPrice: "5 000–9 000 ₽ / ночь",
-    bookingUrl: "https://www.trip.com/hotels/list?city=1&searchWord=CITIC%20Hotel%20Beijing%20Airport",
+    name: "Pullman Beijing South",
+    chineseName: "北京兴基雅高铂尔曼饭店",
+    proximity: "около 0,8 км — примерно 10–12 минут пешком до Beijing Etrong / 北人亦创国际会展中心",
+    nightlyPrice: "6 000–12 000 ₽ / ночь",
+    bookingUrl: "https://www.trip.com/hotels/list?city=1&searchWord=Pullman%20Beijing%20South",
   },
 ];
 
@@ -284,9 +284,9 @@ export const eventTravelPlans: Record<string, EventTravelPlan> = {
     nights: 5,
     flightPrice: "45 000–75 000 ₽ туда-обратно",
     flightUrl: "https://www.aviasales.ru/routes/mow/bjs",
-    journeyFromSvo: "примерно 11,5–13 часов",
-    journeyBreakdown: "2,5 часа до вылета + 7 ч 45 мин прямой рейс + 1–1,5 часа на границу и багаж + 20–30 минут до CIEC Shunyi.",
-    stayBudget: "25 000–65 000 ₽ за 5 ночей",
+    journeyFromSvo: "примерно 12–14,5 часов",
+    journeyBreakdown: "2,5 часа до вылета + прямой рейс до Пекина + 1–1,5 часа на границу и багаж + ориентировочно 45–70 минут до Beijing Etrong International Exhibition & Convention Center в Ичжуане.",
+    stayBudget: "30 000–65 000 ₽ за 5 ночей",
     hotels: beijingHotels,
     attractions: beijingAttractions,
   },
