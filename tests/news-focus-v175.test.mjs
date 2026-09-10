@@ -17,15 +17,18 @@ test("focus detector covers Russian, English and Chinese aliases", () => {
   }
 });
 
-test("news dashboard exposes focus entities as filters and priority inputs", () => {
-  assert.ok(dashboard.includes("...focusEntities"));
+test("news dashboard still uses strategic focus for ranking and badges without a top tab strip", () => {
   assert.ok(dashboard.includes("detectFocusEntities"));
   assert.ok(dashboard.includes("focusScore(item)"));
-  assert.ok(dashboard.includes("item.focusEntities.includes(activeFilter)"));
-  assert.ok(dashboard.includes("SHACMAN, GWM, EVOLUTE, VOYAH, Моторинвест, ЭВИА"));
+  assert.ok(dashboard.includes("focusEntities: entities"));
+  assert.ok(dashboard.includes("item.focusEntities.length > 0"));
+  assert.ok(dashboard.includes("item.focusEntities.map"));
+  assert.equal(dashboard.includes("TabsList"), false);
+  assert.equal(dashboard.includes("...focusEntities"), false);
 });
 
-test("industry tab excludes all strategic focus entities", () => {
-  assert.ok(dashboard.includes('if (activeFilter === "Отрасль") return item.focusEntities.length === 0'));
-  assert.ok(dashboard.includes('if (activeFilter === "В фокусе") return item.focusEntities.length > 0'));
+test("retired industry and focus tabs stay removed from pilot UI", () => {
+  assert.equal(dashboard.includes('activeFilter === "Отрасль"'), false);
+  assert.equal(dashboard.includes('activeFilter === "В фокусе"'), false);
+  assert.equal(dashboard.includes("item.focusEntities.includes(activeFilter)"), false);
 });
