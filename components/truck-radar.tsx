@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { ArrowUpRight, BatteryCharging, Clock3, Factory, Gauge, RefreshCw, Route, Search, ShieldAlert, Truck } from "lucide-react";
+import { ArrowUpRight, BatteryCharging, Clock3, Factory, RefreshCw, Route, Search, Truck } from "lucide-react";
 import type { NewsItem } from "@/lib/data";
 import { rankCommercialVehicleNews, type TruckSegment } from "@/lib/intelligence-ranking";
 import { SourceTrustBadge } from "@/components/source-trust-badge";
@@ -64,7 +64,7 @@ export function TruckRadar() {
 
   useEffect(() => {
     void load();
-    const timer = window.setInterval(() => void load(), 15 * 60 * 1000);
+    const timer = window.setInterval(() => void load(), 5 * 60 * 1000);
     return () => window.clearInterval(timer);
   }, []);
 
@@ -80,7 +80,7 @@ export function TruckRadar() {
       if (q && !`${item.title} ${item.summary} ${item.source} ${truck.brands.map((brand) => brand.brand).join(" ")}`.toLocaleLowerCase("ru-RU").includes(q)) return false;
       return true;
     });
-  }, [market, news, query, ranked, segment]);
+  }, [market, query, ranked, segment]);
 
   const metrics = useMemo(() => ({
     china: ranked.filter((item) => item.commercialVehicle.focusMarkets.includes("Китай")).length,
@@ -88,18 +88,6 @@ export function TruckRadar() {
     cross: ranked.filter((item) => item.commercialVehicle.focusMarkets.includes("Китай") && item.commercialVehicle.focusMarkets.includes("Россия")).length,
     newEnergy: ranked.filter((item) => item.commercialVehicle.powertrains.some((powertrain) => ["Электро", "Battery swap", "Водород", "Гибрид"].includes(powertrain))).length,
   }), [ranked]);
-
-  const brandMentions = useMemo(() => {
-    const map = new Map<string, { brand: string; origin: string; count: number }>();
-    for (const item of ranked) {
-      for (const brand of item.commercialVehicle.brands) {
-        const current = map.get(brand.brand) ?? { brand: brand.brand, origin: brand.origin, count: 0 };
-        current.count += 1;
-        map.set(brand.brand, current);
-      }
-    }
-    return [...map.values()].sort((a, b) => b.count - a.count || a.brand.localeCompare(b.brand)).slice(0, 8);
-  }, [ranked]);
 
   return <main className="min-h-[calc(100vh-4rem)] bg-[#eef1f5] text-zinc-950">
     <div className="mx-auto max-w-[1560px] px-4 py-6 sm:px-6 lg:px-8 lg:py-9">
@@ -122,7 +110,7 @@ export function TruckRadar() {
         </div>
       </section>
 
-      <section className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1fr)_330px]">
+      <section className="mt-6">
         <div className="min-w-0">
           <div className="border border-zinc-300 bg-white p-4 shadow-sm">
             <div className="flex flex-wrap items-center gap-2">
@@ -174,11 +162,6 @@ export function TruckRadar() {
             })}
           </div>
         </div>
-
-        <aside className="space-y-4">
-          <div className="border border-zinc-300 bg-white p-5 shadow-sm"><div className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.14em] text-zinc-500"><Gauge className="size-4 text-[#285fff]" /> Бренд-радар</div><p className="mt-2 text-xs leading-5 text-zinc-500">Количество упоминаний в отобранных грузовых сигналах. Это не доля рынка.</p><div className="mt-4 space-y-2">{brandMentions.length === 0 ? <div className="text-sm text-zinc-400">Нет данных</div> : brandMentions.map((item) => <div key={item.brand} className="flex items-center justify-between border-b border-zinc-100 py-2"><div><div className="text-sm font-bold">{item.brand}</div><div className="text-xs text-zinc-400">{item.origin}</div></div><div className="text-lg font-black">{item.count}</div></div>)}</div></div>
-          <div className="border border-zinc-300 bg-[#101114] p-5 text-white"><div className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.14em] text-zinc-400"><ShieldAlert className="size-4 text-orange-400" /> Что отслеживаем</div><ul className="mt-4 space-y-3 text-sm leading-5 text-zinc-300"><li>HCV / MCV / LCV и седельные тягачи</li><li>SHACMAN, SITRAK/SINOTRUK, FAW, Dongfeng, Foton, JAC, SANY, XCMG</li><li>KAMAZ, УРАЛ, GAZ, Sollers</li><li>Дизель, LNG/CNG, EV, battery swap, hydrogen, hybrid</li><li>Локализация, сертификация, компоненты, сервис и TCO-сигналы</li><li>Импорт/экспорт и применимость китайской техники в России</li></ul></div>
-        </aside>
       </section>
     </div>
   </main>;
