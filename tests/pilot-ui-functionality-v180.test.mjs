@@ -13,6 +13,9 @@ const marketDashboard = read("components/market-dashboard.tsx");
 const brandLogo = read("components/brand-logo.tsx");
 const eventCalendar = read("components/event-calendar.tsx");
 const travelGuide = read("components/travel-guide.tsx");
+const newsDashboard = read("components/news-dashboard.tsx");
+const truckRadar = read("components/truck-radar.tsx");
+const analysisPage = read("app/analysis/page.tsx");
 const globalCss = read("app/globals.css");
 
 const visibleNavigation = [
@@ -20,7 +23,6 @@ const visibleNavigation = [
   ["/news", "Новости"],
   ["/trucks", "Коммерческий транспорт"],
   ["/market", "Рынок"],
-  ["/analysis", "Аналитика"],
   ["/calendar", "Выставки и события"],
   ["/travel-guide", "Перед поездкой"],
 ];
@@ -30,7 +32,6 @@ const visibleRouteFiles = {
   "/news": "app/news/page.tsx",
   "/trucks": "app/trucks/page.tsx",
   "/market": "app/market/page.tsx",
-  "/analysis": "app/analysis/page.tsx",
   "/calendar": "app/calendar/page.tsx",
   "/travel-guide": "app/travel-guide/page.tsx",
 };
@@ -43,9 +44,11 @@ test("simplified pilot navigation contains only approved user sections", () => {
   for (const retired of [
     'label: "Решения"',
     'label: "Руководство"',
+    'label: "Аналитика"',
     '<span>Сервис</span>',
     'aria-label="Язык интерфейса"',
     'aria-label="Уведомления"',
+    '⌘ K',
   ]) {
     assert.equal(shell.includes(retired), false, `retired control returned: ${retired}`);
   }
@@ -62,6 +65,11 @@ test("decision and executive routes stay available internally but hidden from na
   assert.equal(exists("app/executive/page.tsx"), true);
   assert.equal(shell.includes('href: "/decision"'), false);
   assert.equal(shell.includes('href: "/executive"'), false);
+});
+
+test("pilot RAG analysis is not exposed", () => {
+  assert.equal(shell.includes('href: "/analysis"'), false);
+  assert.match(analysisPage, /redirect\("\/news"\)/u);
 });
 
 test("top search submits to the dedicated global search route", () => {
@@ -92,23 +100,34 @@ test("pilot test-mode warning remains readable and explicit", () => {
   assert.match(shell, /text-\[#18345f\]/u);
 });
 
-test("home uses the approved executive intelligence design", () => {
+test("home uses the approved simplified pilot design", () => {
   assert.equal(corporateHome.includes("Исследовать рынок"), false);
   assert.equal(corporateHome.includes("Рынок и аналитика"), false);
+  assert.equal(corporateHome.includes("Стратегический фокус"), false);
+  assert.equal(corporateHome.includes("ExecutiveKpi"), false);
+  assert.equal(corporateHome.includes("Часть источников временно недоступна"), false);
   assert.match(corporateHome, /Окно в Китай/u);
   assert.match(corporateHome, /Требует внимания/u);
   assert.match(corporateHome, /Executive Brief/u);
   assert.match(corporateHome, /Что изменилось с вашего визита/u);
 });
 
-test("market sales use local brand visuals and keep GWM focus", () => {
+test("news and truck pages remove screenshot-only secondary panels", () => {
+  assert.equal(newsDashboard.includes("TabsList"), false);
+  assert.equal(newsDashboard.includes("В фокусе"), false);
+  assert.equal(truckRadar.includes("Бренд-радар"), false);
+  assert.equal(truckRadar.includes("Что отслеживаем"), false);
+});
+
+test("market sales use real brand image sources and keep GWM focus", () => {
   assert.match(marketDashboard, /BrandLogo/u);
   assert.match(marketDashboard, /Фокус группы/u);
   assert.match(marketDashboard, /GWM в России/u);
+  assert.match(brandLogo, /officialDomains/u);
+  assert.match(brandLogo, /google\.com\/s2\/favicons/u);
   assert.match(brandLogo, /HAVAL/u);
   assert.match(brandLogo, /TANK/u);
   assert.match(brandLogo, /WEY/u);
-  assert.equal(brandLogo.includes("https://"), false);
 });
 
 test("event travel details remain readable in the corporate light theme", () => {
