@@ -51,6 +51,21 @@ test('Git checkout prefers fresh source and cannot silently start a stale offlin
   assert.match(sw, /Application JavaScript and CSS are network-first/u);
 });
 
+test('production builds cannot inherit stale vinext output from the host or a previous build', async () => {
+  const [dockerignore, gitignore, build] = await Promise.all([
+    t('.dockerignore'),
+    t('.gitignore'),
+    t('scripts/build-verified.sh'),
+  ]);
+
+  assert.match(dockerignore, /^\.vinext$/mu);
+  assert.match(gitignore, /^\/\.vinext\/$/mu);
+  assert.match(build, /Cleaning previous build output/u);
+  assert.match(build, /SITES_PROJECT_ROOT\}\/\.vinext/u);
+  assert.match(build, /SITES_PROJECT_ROOT\}\/\.next/u);
+  assert.match(build, /SITES_PROJECT_ROOT\}\/dist/u);
+});
+
 test('Windows downloaded source package cannot silently use a stale calendar image', async () => {
   const [bat, verifier] = await Promise.all([
     t('START.bat'),
