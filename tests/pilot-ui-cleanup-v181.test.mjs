@@ -11,7 +11,7 @@ const news = read("components/news-dashboard.tsx");
 const notes = read("components/managed-content-panel.tsx");
 const logos = read("components/brand-logo.tsx");
 const calendar = read("components/event-calendar.tsx");
-const travel = read("lib/travel.ts");
+const tripHotels = read("lib/trip-hotels.ts");
 
 test("pilot navigation stays clean and RAG/analysis is hidden", () => {
   assert.equal(shell.includes('href: "/analysis"'), false);
@@ -50,11 +50,14 @@ test("market brand marks use official brand domains instead of letter-only place
   assert.match(logos, /google\.com\/s2\/favicons/u);
 });
 
-test("event travel cards provide active hotel links and proximity metadata", () => {
-  assert.match(calendar, /href=\{hotel\.bookingUrl\}/u);
-  assert.match(travel, /proximity:/u);
-  assert.match(travel, /Kerry Hotel Pudong Shanghai/u);
-  assert.match(travel, /InterContinental Shanghai Hongqiao NECC/u);
-  assert.match(travel, /The Westin Pazhou/u);
-  assert.match(travel, /Pullman Beijing South/u);
+test("event travel cards use Trip.com hotel links and proximity metadata", () => {
+  assert.match(calendar, /href=\{hotel\.tripUrl\}/u);
+  assert.match(calendar, /getTripHotels\(event\.id\)/u);
+  assert.match(calendar, /Данные Trip\.com/u);
+  assert.match(tripHotels, /proximity:/u);
+  assert.match(tripHotels, /Kerry Hotel Pudong Shanghai/u);
+  assert.match(tripHotels, /InterContinental Hotels SHANGHAI HONGQIAO NECC by IHG/u);
+  assert.match(tripHotels, /The Westin Pazhou/u);
+  assert.match(tripHotels, /Pullman Beijing South/u);
+  assert.ok((tripHotels.match(/https:\/\/www\.trip\.com\/hotels\//gu) ?? []).length >= 10);
 });
