@@ -18,6 +18,16 @@ if [[ ! -x "${vinext}" ]]; then
   exit 69
 fi
 
+# Never let artifacts from an earlier local/container build survive into the
+# production image. This matters especially on Windows, where a previously
+# generated .vinext tree can otherwise be copied into the Docker context and
+# make the runtime serve UI that no longer exists in the checked-out source.
+echo "Cleaning previous build output..."
+rm -rf \
+  "${SITES_PROJECT_ROOT}/.vinext" \
+  "${SITES_PROJECT_ROOT}/.next" \
+  "${SITES_PROJECT_ROOT}/dist"
+
 echo "Running bounded vinext build..."
 timeout \
   --signal=TERM \

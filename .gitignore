@@ -17,6 +17,9 @@
 /.next/
 /out/
 
+# vinext / Vite generated output
+/.vinext/
+
 # misc
 .DS_Store
 *.pem
