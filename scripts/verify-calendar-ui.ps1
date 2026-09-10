@@ -55,11 +55,25 @@ if ($response.StatusCode -lt 200 -or $response.StatusCode -ge 300) {
     Fail "Calendar runtime returned HTTP $($response.StatusCode)."
 }
 $html = $response.Content
-if ($html -match $removedCalendarPattern) {
-    Fail 'STALE RUNTIME DETECTED: the running container still renders the removed calendar control.'
+
+# Vinext/React can retain text strings inside hydration scripts even when the
+# corresponding control is no longer rendered. Checking the complete HTML text
+# therefore produced a false stale-runtime alarm on Windows. Inspect only markup
+# outside script/style payloads when deciding whether the removed control is visible.
+$visibleHtml = [regex]::Replace($html, '(?is)<script\b[^>]*>.*?</script>', '')
+$visibleHtml = [regex]::Replace($visibleHtml, '(?is)<style\b[^>]*>.*?</style>', '')
+if ($visibleHtml -match $removedCalendarPattern) {
+    Fail 'STALE RUNTIME DETECTED: visible calendar markup still contains the removed calendar control.'
 }
-if ($html -notmatch 'trip\.com') {
-    Fail 'STALE RUNTIME DETECTED: the running calendar does not contain Trip.com hotel links.'
+if ($html -match $removedCalendarPattern) {
+    Write-Host 'INFO runtime: removed label exists only inside a script/hydration payload; visible markup is clean.' -ForegroundColor DarkGray
 }
 
-Write-Host "PASS runtime: $url renders current calendar UI with Trip.com links" -ForegroundColor Green
+# Require a direct hotel-detail URL, not just an incidental mention of trip.com.
+$directTripHotelPattern = 'https://www\.trip\.com/hotels/(?:v2/)?[^"''<>\s]*hotel-detail-\d+'
+$runtimeTripMatches = [regex]::Matches($html, $directTripHotelPattern, [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)
+if ($runtimeTripMatches.Count -eq 0) {
+    Fail 'STALE RUNTIME DETECTED: the running calendar does not contain direct Trip.com hotel-detail links.'
+}
+
+Write-Host "PASS runtime: $url renders clean calendar markup + $($runtimeTripMatches.Count) direct Trip.com hotel link(s)" -ForegroundColor Green
