@@ -33,7 +33,7 @@ const defaultSources: Record<SourceKey, boolean> = {
   "news.autostat": true,
   "news.chinaPortals": true,
   "translate.google": true,
-  "rag.model": true,
+  "rag.model": false,
 };
 
 function defaultConfig(): RuntimeConfig {
