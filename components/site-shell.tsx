@@ -7,7 +7,6 @@ import type { FormEvent } from "react";
 import { MaintenanceBanner } from "@/components/maintenance-banner";
 import { ExecutiveTheme } from "@/components/executive-theme";
 import {
-  BarChart3,
   BriefcaseBusiness,
   Building2,
   CalendarDays,
@@ -26,13 +25,12 @@ const navigation = [
   { href: "/news", label: "Новости", displayLabel: "Новости и сигналы", icon: Newspaper },
   { href: "/trucks", label: "Коммерческий транспорт", displayLabel: "Коммерческий транспорт", icon: Truck },
   { href: "/market", label: "Рынок", displayLabel: "Рынок и продажи", icon: ChartNoAxesCombined },
-  { href: "/analysis", label: "Аналитика", displayLabel: "Аналитика", icon: BarChart3 },
   { href: "/calendar", label: "Выставки и события", displayLabel: "Выставки и события", icon: CalendarDays },
   { href: "/travel-guide", label: "Перед поездкой", displayLabel: "Перед поездкой", icon: BriefcaseBusiness },
 ] as const;
 
-const primaryMobileNavigation = [navigation[0], navigation[1], navigation[3], navigation[5]] as const;
-const mobileMoreNavigation = [navigation[2], navigation[4], navigation[6]] as const;
+const primaryMobileNavigation = [navigation[0], navigation[1], navigation[3], navigation[4]] as const;
+const mobileMoreNavigation = [navigation[2], navigation[5]] as const;
 
 function isActive(pathname: string, href: string) {
   if (href === "/") return pathname === "/";
@@ -71,14 +69,12 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
           <form onSubmit={submitSearch} className="hidden w-full max-w-[760px] md:block lg:ml-1">
             <label className="relative block">
               <Search className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-[#6480a4]" />
-              <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Поиск по новостям, компаниям, моделям, выставкам..." className="h-10 w-full rounded-xl border border-[#d9e6f2] bg-[#f4f8fc] pl-11 pr-16 text-sm text-[#142a56] outline-none transition placeholder:text-[#8ea0b8] focus:border-[#2483ff] focus:bg-white focus:ring-4 focus:ring-[#2483ff]/10" />
-              <span className="pointer-events-none absolute right-3 top-1/2 hidden -translate-y-1/2 rounded-md border border-[#d9e6f2] bg-white px-1.5 py-0.5 text-[10px] font-bold text-[#7d90a8] sm:inline-flex">⌘ K</span>
+              <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Поиск по новостям, компаниям, моделям, выставкам..." className="h-10 w-full rounded-xl border border-[#d9e6f2] bg-[#f4f8fc] pl-11 pr-4 text-sm text-[#142a56] outline-none transition placeholder:text-[#8ea0b8] focus:border-[#2483ff] focus:bg-white focus:ring-4 focus:ring-[#2483ff]/10" />
             </label>
           </form>
 
           <div className="ml-auto flex shrink-0 items-center gap-2.5 pr-12 lg:pr-0">
             <Link href="/search" className="mobile-top-search md:hidden" aria-label="Открыть поиск"><Search className="size-[18px]" /></Link>
-            <div className="hidden items-center gap-2 rounded-full bg-[#eefaf6] px-3 py-1.5 text-[11px] font-black text-[#087458] lg:flex"><span className="signal-dot !size-1.5" /> Live</div>
             <div className="hidden items-center gap-2 rounded-xl border border-[#e2ebf3] bg-white px-2.5 py-1.5 lg:flex">
               <span className="grid size-8 place-items-center rounded-full bg-[#0d2b5c] text-[11px] font-black text-white">M</span>
               <span className="pr-1"><span className="block text-xs font-black text-[#122657]">MGC</span><span className="block text-[9px] text-[#7c90aa]">Корпоративный пилот</span></span>
