@@ -10,6 +10,7 @@ const brandLogo = read("components/brand-logo.tsx");
 const notifications = read("components/web-notifications.tsx");
 const trucks = read("components/truck-radar.tsx");
 const calendar = read("components/event-calendar.tsx");
+const activeCalendar = read("components/pilot-event-calendar.tsx");
 const travel = read("components/travel-guide.tsx");
 const styles = read("app/globals.css");
 const calendarVerifier = read("scripts/verify-calendar-ui.ps1");
@@ -71,11 +72,14 @@ test("calendar verifier is safe for legacy Windows PowerShell encoding", () => {
   assert.equal([...calendarVerifier].some((character) => character.codePointAt(0) > 127), false);
 });
 
-test("calendar runtime verifier ignores hydration strings but validates visible UI and direct Trip.com hotel links", () => {
-  assert.match(calendarVerifier, /\$visibleHtml = \[regex\]::Replace\(\$html/u);
-  assert.match(calendarVerifier, /\$visibleHtml -match \$removedCalendarPattern/u);
-  assert.match(calendarVerifier, /script\/hydration payload/u);
+test("calendar runtime verifier validates the mounted Trip.com calendar with a positive DOM marker", () => {
+  assert.match(activeCalendar, /data-calendar-ui="trip-direct-v1"/u);
+  assert.match(activeCalendar, /data-trip-hotel-link="true"/u);
+  assert.match(calendarVerifier, /components\\pilot-event-calendar\.tsx/u);
+  assert.match(calendarVerifier, /data-calendar-ui=\["''\]trip-direct-v1\["''\]/u);
   assert.match(calendarVerifier, /directTripHotelPattern/u);
+  assert.match(calendarVerifier, /\[regex\]::Matches\(\$visibleHtml/u);
   assert.match(calendarVerifier, /hotel-detail-/u);
   assert.match(calendarVerifier, /runtimeTripMatches\.Count -eq 0/u);
+  assert.equal(calendarVerifier.includes("$visibleHtml -match $removedCalendarPattern"), false);
 });
