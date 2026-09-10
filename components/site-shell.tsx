@@ -93,7 +93,7 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
             {navigation.map((item) => {
               const Icon = item.icon;
               const active = isActive(pathname, item.href);
-              return <Link key={item.href} href={item.href} className={`corporate-nav-item ${active ? "is-active" : ""}`}><Icon className="size-[18px]" /><span>{item.displayLabel}</span>{item.href === "/news" && <span className="ml-auto rounded-full bg-[#f1464f] px-2 py-0.5 text-[9px] font-black text-white">LIVE</span>}</Link>;
+              return <Link key={item.href} href={item.href} className={`corporate-nav-item ${active ? "is-active" : ""}`}><Icon className="size-[18px]" /><span>{item.displayLabel}</span></Link>;
             })}
           </nav>
 
