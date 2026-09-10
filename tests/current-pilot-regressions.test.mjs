@@ -23,14 +23,15 @@ test("current home uses executive intelligence layout without retired market her
   assert.match(home, /rankNews\(news\)/u);
 });
 
-test("market dashboard renders local brand visuals without external logo CDN dependency", () => {
+test("market dashboard renders real automotive brand marks with graceful fallback", () => {
   assert.match(market, /BrandLogo/u);
   assert.match(market, /Продажи автомобильных марок в России/u);
-  assert.match(brandLogo, /const brandVisuals/u);
+  assert.match(brandLogo, /const officialDomains/u);
+  assert.match(brandLogo, /google\.com\/s2\/favicons/u);
   assert.match(brandLogo, /HAVAL/u);
   assert.match(brandLogo, /TANK/u);
   assert.match(brandLogo, /WEY/u);
-  assert.equal(brandLogo.includes("https://"), false);
+  assert.match(brandLogo, /onError/u);
 });
 
 test("notification bell stays visually separated from the corporate pilot badge", () => {
