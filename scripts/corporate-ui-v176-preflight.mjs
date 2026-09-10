@@ -25,12 +25,12 @@ const shell = read("components/site-shell.tsx");
 const home = read("components/corporate-home.tsx");
 const css = read("app/globals.css");
 const executive = read("app/executive/page.tsx");
+const analysis = read("app/analysis/page.tsx");
 const globalSearch = read("components/global-search.tsx");
 const pages = {
   news: read("app/news/page.tsx"),
   trucks: read("app/trucks/page.tsx"),
   market: read("app/market/page.tsx"),
-  analysis: read("app/analysis/page.tsx"),
   decision: read("app/decision/page.tsx"),
   executive,
   calendar: read("app/calendar/page.tsx"),
@@ -38,18 +38,23 @@ const pages = {
   search: read("app/search/page.tsx"),
 };
 
-for (const route of ["/news", "/trucks", "/market", "/analysis", "/calendar", "/travel-guide"]) {
+for (const route of ["/news", "/trucks", "/market", "/calendar", "/travel-guide"]) {
   check(shell.includes(`href: "${route}"`), `corporate sidebar missing ${route}`);
 }
+check(!shell.includes('href: "/analysis"'), "pilot navigation must not expose analysis/RAG");
+check(analysis.includes('redirect("/news")'), "legacy analysis route must redirect safely to /news");
 
 for (const retired of [
   'label: "Решения"',
   'label: "Руководство"',
+  'label: "Аналитика"',
   '<span>Сервис</span>',
   'aria-label="Язык интерфейса"',
   'aria-label="Уведомления"',
+  "Стратегический фокус",
+  "⌘ K",
 ]) {
-  check(!shell.includes(retired), `retired shell control returned: ${retired}`);
+  check(!shell.includes(retired) && !home.includes(retired), `retired pilot control returned: ${retired}`);
 }
 
 for (const token of ["corporate-topbar", "corporate-sidebar", "corporate-nav-item", "corporate-mark"]) {
@@ -75,16 +80,18 @@ const forbiddenHome = [
   "Состояние источников",
   "Ключевые темы",
   "Популярные разделы",
+  "Ключевые сигналы",
+  "Стратегический фокус",
+  "Часть источников временно недоступна",
 ];
 for (const token of forbiddenHome) check(!home.includes(token), `retired home block returned: ${token}`);
 
-const forbiddenShell = ["Ключевые темы", "Популярные разделы", "Быстрые действия", "Состояние источников"];
-for (const token of forbiddenShell) check(!shell.includes(token), `retired right sidebar returned: ${token}`);
+const forbiddenShell = ["Ключевые темы", "Популярные разделы", "Быстрые действия", "Состояние источников", "⌘ K"];
+for (const token of forbiddenShell) check(!shell.includes(token), `retired shell control returned: ${token}`);
 
 check(!executive.includes("ExecutiveOperationsPanel"), "Executive View must not render Pilot Operations/GO panel");
 check(!home.includes("bg-red") && !home.includes("#ef") || !home.includes("Смотреть новости"), "red news CTA must stay retired");
 check(home.includes("/api/news"), "corporate home must use live news API");
-check(home.includes("VOYAH") && home.includes("EVOLUTE") && home.includes("Моторинвест") && home.includes("ЭВИА"), "corporate home must keep strategic focus entities");
 check(shell.includes("Корпоративный пилот"), "pilot identity missing from shell");
 check(shell.includes("/search?q="), "top search must route to global search");
 check(globalSearch.includes('fetch("/api/news"'), "global search must query live news API");
@@ -98,4 +105,4 @@ if (failures.length) {
   process.exit(1);
 }
 
-console.log("GO: corporate UI; simplifiedShell=on; globalSearch=on; readablePilotNotice=on; rightSidebar=off; retiredWidgets=off; executiveOpsPanel=off; liveHome=on");
+console.log("GO: corporate UI; simplifiedShell=on; ragPilotUi=hidden; strategicFocusChips=off; globalSearch=on; readablePilotNotice=on; rightSidebar=off; retiredWidgets=off; executiveOpsPanel=off; liveHome=on");
