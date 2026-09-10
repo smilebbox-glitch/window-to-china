@@ -113,13 +113,13 @@ export function NewsDashboard() {
   const loadLiveNews = useCallback(async () => {
     setStatus((current) => current === "live" ? current : "loading");
     try {
-      const response = await fetch("/api/news", { cache: "no-store", signal: AbortSignal.timeout(18000) });
+      const response = await fetch("/api/news", { cache: "no-store", signal: AbortSignal.timeout(32000) });
       if (!response.ok) throw new Error();
       const payload = await response.json() as LiveResponse;
       setNews(mergeNews(payload.news));
       setStatus(payload.errors.length === 0 ? "live" : "partial");
     } catch {
-      setNews(seedNews.filter(isDisplayableNews));
+      setNews((current) => current.length ? current : seedNews.filter(isDisplayableNews));
       setStatus("offline");
     }
   }, []);
