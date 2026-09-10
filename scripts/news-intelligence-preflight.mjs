@@ -61,11 +61,11 @@ for (const token of ["outbound_redirect_https_upgrade", "outbound_translate_rate
   check(outbound.includes(token), `outbound reliability missing ${token}`);
 }
 for (const token of [
-  "NEWS_SOURCE_CONCURRENCY=4", "NEWS_FETCH_TIMEOUT_MS=8000", "NEWS_TRANSLATE_TIMEOUT_MS=6500",
-  "NEWS_SOURCE_DEADLINE_MS=12000", "NEWS_REQUEST_DEADLINE_MS=26000",
+  "NEWS_SOURCE_CONCURRENCY=6", "NEWS_FETCH_TIMEOUT_MS=9000", "NEWS_TRANSLATE_TIMEOUT_MS=6500",
+  "NEWS_SOURCE_DEADLINE_MS=14000", "NEWS_REQUEST_DEADLINE_MS=32000", "NEWS_CACHE_TTL_SECONDS=300",
   "NEWS_AGGREGATE_LIVE_QUALITY_MIN=75", "TRANSLATE_MIN_INTERVAL_MS=180", "TRANSLATE_MAX_ATTEMPTS=2",
 ]) check(env.includes(token), `.env.example missing ${token}`);
-for (const token of ["NEWS_AGGREGATE_LIVE_QUALITY_MIN", "TRANSLATE_MIN_INTERVAL_MS", "TRANSLATE_MAX_ATTEMPTS"]) {
+for (const token of ["NEWS_AGGREGATE_LIVE_QUALITY_MIN", "TRANSLATE_MIN_INTERVAL_MS", "TRANSLATE_MAX_ATTEMPTS", "NEWS_CACHE_TTL_SECONDS"]) {
   check(compose.includes(token), `compose missing ${token}`);
 }
 
@@ -90,7 +90,8 @@ check(shell.includes('href: "/trucks"'), "Truck Radar is missing from main navig
 check(shell.includes('href: "/news"'), "News route is missing from main navigation");
 check(truckRadar.includes("Грузовой радар"), "Truck Radar UI is missing");
 check(truckRadar.includes("Почему важно") && truckRadar.includes("Что проверить"), "Truck Radar lacks business impact/action blocks");
-check(analysisPage.includes("IntelligenceBrief"), "department intelligence ranking is not surfaced on analysis page");
+check(analysisPage.includes('redirect("/news")'), "pilot analysis route must redirect to the news feed while RAG is hidden");
+check(!shell.includes('href: "/analysis"'), "RAG analysis must stay hidden from pilot navigation");
 
 if (failures.length) {
   console.error("NO-GO: v1.7.9 intelligence/reliability preflight failed");
@@ -98,4 +99,4 @@ if (failures.length) {
   process.exit(1);
 }
 
-console.log(`GO: v1.7.9 intelligence/reliability pipeline; curatedSources=${ids.length}; uniqueUrls=${urls.length}; strategicFocus=6; truckRadar=on; translationThrottle=on; autostatFallback=on; receiptTimestamp=on; aggregateQualityGate=on`);
+console.log(`GO: v1.7.9 intelligence/reliability pipeline; curatedSources=${ids.length}; uniqueUrls=${urls.length}; strategicFocus=6; truckRadar=on; ragPilotUi=hidden; translationThrottle=on; autostatFallback=on; receiptTimestamp=on; aggregateQualityGate=on`);
