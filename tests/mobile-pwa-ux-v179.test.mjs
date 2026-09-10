@@ -14,8 +14,8 @@ const layout = read("app/layout.tsx");
 const manifest = JSON.parse(read("public/manifest.json"));
 
 test("mobile shell exposes a five-action app navigation with compact overflow", () => {
-  assert.match(siteShell, /primaryMobileNavigation\s*=\s*\[navigation\[0\], navigation\[1\], navigation\[3\], navigation\[5\]\]/);
-  assert.match(siteShell, /mobileMoreNavigation\s*=\s*\[navigation\[2\], navigation\[4\], navigation\[6\]\]/);
+  assert.match(siteShell, /primaryMobileNavigation\s*=\s*\[navigation\[0\], navigation\[1\], navigation\[3\], navigation\[4\]\]/);
+  assert.match(siteShell, /mobileMoreNavigation\s*=\s*\[navigation\[2\], navigation\[5\]\]/);
   assert.match(siteShell, /className="corporate-mobile-nav mobile-app-nav lg:hidden"/);
   assert.match(siteShell, /aria-label="Основная мобильная навигация"/);
   assert.match(siteShell, />Ещё<\/span>/u);
