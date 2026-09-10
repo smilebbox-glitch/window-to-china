@@ -12,7 +12,7 @@ const corporateHome = read("components/corporate-home.tsx");
 const marketDashboard = read("components/market-dashboard.tsx");
 const brandLogo = read("components/brand-logo.tsx");
 const pilotEventCalendar = read("components/pilot-event-calendar.tsx");
-const pilotEventHotels = read("lib/pilot-event-hotels.ts");
+const tripHotels = read("lib/trip-hotels.ts");
 const calendarPage = read("app/calendar/page.tsx");
 const travelGuide = read("components/travel-guide.tsx");
 const managedContent = read("components/managed-content-panel.tsx");
@@ -139,19 +139,22 @@ test("market sales use real brand image sources and keep GWM focus", () => {
   assert.match(brandLogo, /WEY/u);
 });
 
-test("pilot calendar uses verified nearby hotels with direct links", () => {
+test("pilot calendar uses Trip.com hotels with direct hotel-detail links", () => {
   assert.match(calendarPage, /PilotEventCalendar/u);
-  for (const label of ["Перелёт, проверенные отели и подготовка", "Перелёт из Москвы", "Отели рядом с площадкой", "Документы"]) {
+  for (const label of ["Перелёт, отели Trip.com и подготовка", "Перелёт из Москвы", "Отели рядом с площадкой — Trip.com", "Документы"]) {
     assert.ok(pilotEventCalendar.includes(label), `${label} missing from pilot event travel details`);
   }
+  assert.equal(pilotEventCalendar.includes("В календарь"), false);
+  assert.equal(pilotEventCalendar.includes("downloadIcs"), false);
+  assert.match(pilotEventCalendar, /getTripHotels\(event\.id\)/u);
+  assert.match(pilotEventCalendar, /hotel\.tripUrl/u);
   assert.match(pilotEventCalendar, /hotel\.proximity/u);
-  assert.match(pilotEventCalendar, /hotel\.bookingUrl/u);
-  assert.match(pilotEventHotels, /Beijing Etrong International Exhibition/u);
-  assert.match(pilotEventHotels, /all\.accor\.com\/hotel\/7025/u);
-  assert.match(pilotEventHotels, /ihg\.com\/intercontinental/u);
-  assert.match(pilotEventHotels, /marriott\.com\/en-us\/hotels\/canwi-the-westin-pazhou/u);
-  assert.match(pilotEventHotels, /langhamhotels\.com/u);
-  assert.match(pilotEventHotels, /primusshanghai\.cn/u);
+  assert.match(pilotEventCalendar, /hotel\.rating/u);
+  assert.match(pilotEventCalendar, /hotel\.reviews/u);
+  assert.match(pilotEventCalendar, /hotel\.address/u);
+  assert.match(pilotEventCalendar, /data-calendar-ui="trip-direct-v1"/u);
+  assert.match(tripHotels, /trip\.com\/hotels/u);
+  assert.match(tripHotels, /hotel-detail-/u);
 });
 
 test("corporate notes use dark readable typography", () => {
