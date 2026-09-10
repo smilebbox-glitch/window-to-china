@@ -1,5 +1,5 @@
 const CACHE_PREFIX = "okno-v-kitai-pwa-";
-const CACHE_NAME = `${CACHE_PREFIX}v179-2`;
+const CACHE_NAME = `${CACHE_PREFIX}v179-3`;
 
 const PRECACHE = [
   "/offline.html",
@@ -73,10 +73,31 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  const isStaticAsset =
+  // Application JavaScript and CSS are network-first so a newly deployed UI
+  // is visible immediately. Cached code is used only when the server cannot be reached.
+  const isCodeAsset =
     url.pathname.startsWith("/_next/static/") ||
-    /\.(?:css|js|json|woff2?|png|svg|ico)$/.test(url.pathname);
+    /\.(?:css|js)$/.test(url.pathname);
 
+  if (isCodeAsset) {
+    event.respondWith(
+      caches.open(CACHE_NAME).then(async (cache) => {
+        try {
+          const response = await fetch(request);
+          if (response.ok && response.type === "basic") {
+            await cache.put(request, response.clone());
+          }
+          return response;
+        } catch {
+          const cached = await cache.match(request);
+          return cached || Response.error();
+        }
+      }),
+    );
+    return;
+  }
+
+  const isStaticAsset = /\.(?:json|woff2?|png|svg|ico)$/.test(url.pathname);
   if (!isStaticAsset) return;
 
   event.respondWith(
