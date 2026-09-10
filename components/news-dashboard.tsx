@@ -6,13 +6,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { seedNews, type Market, type NewsItem } from "@/lib/data";
-import { detectFocusEntities, focusEntities, focusScore, type FocusEntity } from "@/lib/news-focus";
+import { detectFocusEntities, focusScore, type FocusEntity } from "@/lib/news-focus";
 import { FavoriteButton } from "@/components/favorite-button";
 import { SourceTrustBadge } from "@/components/source-trust-badge";
 
-type Filter = "Все" | "В фокусе" | FocusEntity | "Отрасль";
 type Priority = "Критично" | "Высокая" | "Средняя" | "Фоновая";
 type PriorityFilter = "Все уровни" | Priority;
 type Topic = "Стратегия" | "Геополитика" | "Локализация" | "Продажи" | "Поставки" | "Технологии";
@@ -23,7 +21,6 @@ type NewsWithReceipt = NewsItem & { receivedAt?: string };
 type RatedNews = NewsWithReceipt & { score: number; priority: Priority; topics: Topic[]; focusEntities: FocusEntity[] };
 type LiveResponse = { news: NewsWithReceipt[]; sourceCount: number; totalSources: number; errors: string[] };
 
-const filters: Filter[] = ["Все", "В фокусе", ...focusEntities, "Отрасль"];
 const priorities: PriorityFilter[] = ["Все уровни", "Критично", "Высокая", "Средняя", "Фоновая"];
 const topics: TopicFilter[] = ["Все темы", "Стратегия", "Геополитика", "Локализация", "Продажи", "Поставки", "Технологии"];
 const markets: MarketFilter[] = ["Все рынки", "Россия", "Китай", "Международный"];
@@ -105,7 +102,6 @@ function focusClass(entity: FocusEntity) {
 }
 
 export function NewsDashboard() {
-  const [activeFilter, setActiveFilter] = useState<Filter>("Все");
   const [priorityFilter, setPriorityFilter] = useState<PriorityFilter>("Все уровни");
   const [topicFilter, setTopicFilter] = useState<TopicFilter>("Все темы");
   const [marketFilter, setMarketFilter] = useState<MarketFilter>("Все рынки");
@@ -130,7 +126,7 @@ export function NewsDashboard() {
 
   useEffect(() => {
     const initialLoad = window.setTimeout(() => void loadLiveNews(), 0);
-    const interval = window.setInterval(() => void loadLiveNews(), 15 * 60 * 1000);
+    const interval = window.setInterval(() => void loadLiveNews(), 5 * 60 * 1000);
     return () => { window.clearTimeout(initialLoad); window.clearInterval(interval); };
   }, [loadLiveNews]);
 
@@ -139,26 +135,20 @@ export function NewsDashboard() {
     const normalizedQuery = query.trim().toLocaleLowerCase("ru-RU");
     return ratedNews
       .filter((item) => quickView === "none" || (quickView === "critical" ? item.priority === "Критично" : quickView === "strategic" ? item.topics.includes("Стратегия") || item.topics.includes("Геополитика") : item.focusEntities.length > 0))
-      .filter((item) => {
-        if (activeFilter === "Все") return true;
-        if (activeFilter === "В фокусе") return item.focusEntities.length > 0;
-        if (activeFilter === "Отрасль") return item.focusEntities.length === 0;
-        return item.focusEntities.includes(activeFilter);
-      })
       .filter((item) => priorityFilter === "Все уровни" || item.priority === priorityFilter)
       .filter((item) => topicFilter === "Все темы" || item.topics.includes(topicFilter))
       .filter((item) => marketFilter === "Все рынки" || item.market === marketFilter)
       .filter((item) => !normalizedQuery || `${item.title} ${item.summary} ${item.source} ${item.focusEntities.join(" ")}`.toLocaleLowerCase("ru-RU").includes(normalizedQuery))
       .sort((a, b) => +new Date(b.publishedAt) - +new Date(a.publishedAt));
-  }, [activeFilter, marketFilter, priorityFilter, query, quickView, ratedNews, topicFilter]);
+  }, [marketFilter, priorityFilter, query, quickView, ratedNews, topicFilter]);
 
   const counts = useMemo(() => ({
     critical: ratedNews.filter((item) => item.priority === "Критично").length,
     strategic: ratedNews.filter((item) => item.topics.includes("Стратегия") || item.topics.includes("Геополитика")).length,
     focus: ratedNews.filter((item) => item.focusEntities.length > 0).length,
   }), [ratedNews]);
-  const hasActiveFilters = quickView !== "none" || activeFilter !== "Все" || priorityFilter !== "Все уровни" || topicFilter !== "Все темы" || marketFilter !== "Все рынки" || query.length > 0;
-  function resetFilters() { setQuickView("none"); setActiveFilter("Все"); setPriorityFilter("Все уровни"); setTopicFilter("Все темы"); setMarketFilter("Все рынки"); setQuery(""); }
+  const hasActiveFilters = quickView !== "none" || priorityFilter !== "Все уровни" || topicFilter !== "Все темы" || marketFilter !== "Все рынки" || query.length > 0;
+  function resetFilters() { setQuickView("none"); setPriorityFilter("Все уровни"); setTopicFilter("Все темы"); setMarketFilter("Все рынки"); setQuery(""); }
   function showQuickView(view: Exclude<QuickView, "none">) {
     resetFilters();
     setQuickView(view);
@@ -177,7 +167,7 @@ export function NewsDashboard() {
         <FilterSelect value={topicFilter} values={topics} onChange={(value) => setTopicFilter(value as TopicFilter)} />
         <FilterSelect value={marketFilter} values={markets} onChange={(value) => setMarketFilter(value as MarketFilter)} />
         <div className="relative"><Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-zinc-400" /><Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Поиск" aria-label="Поиск по новостям" className="h-11 rounded-none border-zinc-300 bg-white pl-9 text-zinc-950 placeholder:text-zinc-400" /></div>
-      </div><Tabs value={activeFilter} onValueChange={(value) => setActiveFilter(value as Filter)} className="mt-4"><TabsList className="h-auto max-w-full justify-start overflow-x-auto rounded-none bg-zinc-100 p-1">{filters.map((filter) => <TabsTrigger key={filter} value={filter} className="min-h-10 flex-none rounded-none px-4 text-zinc-500 data-[state=active]:bg-[#111216] data-[state=active]:text-white">{filter}</TabsTrigger>)}</TabsList></Tabs></div>
+      </div></div>
       <div className="mb-3 flex items-center justify-between text-sm text-zinc-500"><span>{filteredNews.length} материалов после фильтрации</span><LiveStatus status={status} /></div>
       {filteredNews.length ? <div className="divide-y divide-zinc-200 border border-zinc-300 bg-white">{filteredNews.map((item, index) => <NewsRow key={item.id} item={item} index={index} />)}</div> : <div className="border border-dashed border-zinc-300 bg-white px-6 py-20 text-center"><Search className="mx-auto size-8 text-zinc-300" /><h2 className="mt-4 font-semibold">Ничего не найдено</h2><p className="mt-2 text-sm text-zinc-500">Измените фильтры или покажите всю ленту.</p><Button type="button" onClick={resetFilters} className="mt-5 rounded-none bg-[#111216] text-white hover:bg-[#285fff]">Показать все новости</Button></div>}
     </div></section>
