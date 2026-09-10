@@ -1,5 +1,6 @@
 .git
 .next
+.vinext
 .sites-runtime
 .ci-runtime
 .wrangler
