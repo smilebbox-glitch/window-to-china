@@ -48,16 +48,17 @@ const routeFiles = {
   "/search": "app/search/page.tsx",
 };
 
-test("pilot exposes all approved user routes", () => {
+test("pilot keeps route files required by the application", () => {
   for (const route of userRoutes) {
     assert.equal(exists(routeFiles[route]), true, `${route} route file is missing`);
   }
 });
 
-test("corporate navigation reaches all visible main pilot sections", () => {
-  for (const href of ["/", "/news", "/trucks", "/market", "/analysis", "/calendar", "/travel-guide"]) {
+test("corporate navigation reaches all visible main pilot sections and hides RAG analysis", () => {
+  for (const href of ["/", "/news", "/trucks", "/market", "/calendar", "/travel-guide"]) {
     assert.ok(shell.includes(`href: \"${href}\"`) || shell.includes(`href=\"${href}\"`), `navigation missing ${href}`);
   }
+  assert.equal(shell.includes('href: "/analysis"'), false);
   assert.doesNotMatch(shell, /label:\s*["']Решения["']/u);
   assert.doesNotMatch(shell, /label:\s*["']Руководство["']/u);
   assert.match(shell, /\/search\?q=/u);
@@ -72,6 +73,8 @@ test("approved corporate home keeps retired design widgets removed", () => {
     "Ключевые темы",
     "Популярные разделы",
     "Смотреть новости",
+    "Стратегический фокус",
+    "Часть источников временно недоступна",
   ]) {
     assert.equal(corporateHome.includes(retired), false, `retired widget returned: ${retired}`);
   }
@@ -83,8 +86,8 @@ test("news backend refreshes every five minutes by default", () => {
   assert.match(refreshRoute, /\/api\/news\?refresh=1/);
 });
 
-test("open news page refreshes its live feed every fifteen minutes", () => {
-  assert.match(newsDashboard, /15 \* 60 \* 1000/);
+test("open news page refreshes its live feed every five minutes", () => {
+  assert.match(newsDashboard, /5 \* 60 \* 1000/);
   assert.match(newsDashboard, /fetch\("\/api\/news"/);
   assert.match(newsPage, /NewsDashboardLive/);
 });
