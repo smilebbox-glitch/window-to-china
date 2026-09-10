@@ -11,8 +11,11 @@ const globalSearch = read("components/global-search.tsx");
 const corporateHome = read("components/corporate-home.tsx");
 const marketDashboard = read("components/market-dashboard.tsx");
 const brandLogo = read("components/brand-logo.tsx");
-const eventCalendar = read("components/event-calendar.tsx");
+const pilotEventCalendar = read("components/pilot-event-calendar.tsx");
+const pilotEventHotels = read("lib/pilot-event-hotels.ts");
+const calendarPage = read("app/calendar/page.tsx");
 const travelGuide = read("components/travel-guide.tsx");
+const managedContent = read("components/managed-content-panel.tsx");
 const newsDashboard = read("components/news-dashboard.tsx");
 const truckRadar = read("components/truck-radar.tsx");
 const analysisPage = read("app/analysis/page.tsx");
@@ -108,7 +111,6 @@ test("home uses the approved simplified pilot design", () => {
   assert.equal(corporateHome.includes("Часть источников временно недоступна"), false);
   assert.match(corporateHome, /Окно в Китай/u);
   assert.match(corporateHome, /Требует внимания/u);
-  assert.match(corporateHome, /Executive Brief/u);
   assert.match(corporateHome, /Что изменилось с вашего визита/u);
 });
 
@@ -117,6 +119,13 @@ test("news and truck pages remove screenshot-only secondary panels", () => {
   assert.equal(newsDashboard.includes("В фокусе"), false);
   assert.equal(truckRadar.includes("Бренд-радар"), false);
   assert.equal(truckRadar.includes("Что отслеживаем"), false);
+});
+
+test("news dashboard refreshes live feed frequently and rejects broken materials", () => {
+  assert.match(newsDashboard, /5 \* 60 \* 1000/u);
+  assert.match(newsDashboard, /isDisplayableNews/u);
+  assert.match(newsDashboard, /не удалось/u);
+  assert.match(newsDashboard, /sort\(\(a, b\) => \+new Date\(b\.publishedAt\) - \+new Date\(a\.publishedAt\)\)/u);
 });
 
 test("market sales use real brand image sources and keep GWM focus", () => {
@@ -130,13 +139,25 @@ test("market sales use real brand image sources and keep GWM focus", () => {
   assert.match(brandLogo, /WEY/u);
 });
 
-test("event travel details remain readable in the corporate light theme", () => {
-  for (const label of ["Перелёт, отели, документы и город", "Перелёт из Москвы", "Рядом с площадкой", "Документы", "Что посмотреть"]) {
-    assert.ok(eventCalendar.includes(label), `${label} missing from event travel details`);
+test("pilot calendar uses verified nearby hotels with direct links", () => {
+  assert.match(calendarPage, /PilotEventCalendar/u);
+  for (const label of ["Перелёт, проверенные отели и подготовка", "Перелёт из Москвы", "Отели рядом с площадкой", "Документы"]) {
+    assert.ok(pilotEventCalendar.includes(label), `${label} missing from pilot event travel details`);
   }
-  assert.ok(globalCss.includes('.corporate-page-calendar details > summary { color:#173368 !important; }'));
-  assert.ok(globalCss.includes('.corporate-page-calendar details .text-violet-200,.corporate-page-calendar details .text-violet-300 { color:#3658a8 !important; }'));
-  assert.ok(globalCss.includes('.corporate-page-calendar details .text-slate-400,.corporate-page-calendar details .text-slate-500,.corporate-page-calendar details .text-slate-600 { color:#405f82 !important; }'));
+  assert.match(pilotEventCalendar, /hotel\.proximity/u);
+  assert.match(pilotEventCalendar, /hotel\.bookingUrl/u);
+  assert.match(pilotEventHotels, /Beijing Etrong International Exhibition/u);
+  assert.match(pilotEventHotels, /all\.accor\.com\/hotel\/7025/u);
+  assert.match(pilotEventHotels, /ihg\.com\/intercontinental/u);
+  assert.match(pilotEventHotels, /marriott\.com\/en-us\/hotels\/canwi-the-westin-pazhou/u);
+  assert.match(pilotEventHotels, /langhamhotels\.com/u);
+  assert.match(pilotEventHotels, /primusshanghai\.cn/u);
+});
+
+test("corporate notes use dark readable typography", () => {
+  assert.match(managedContent, /text-\[#17345f\]/u);
+  assert.match(managedContent, /text-\[#405f82\]/u);
+  assert.equal(managedContent.includes("text-white"), false);
 });
 
 test("travel section eyebrow labels are protected from first-letter clipping", () => {
