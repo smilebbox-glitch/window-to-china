@@ -7,26 +7,20 @@ import {
   ArrowRight,
   CalendarDays,
   CheckCircle2,
-  Clock3,
-  Gauge,
-  Radar,
   Sparkles,
   TrendingUp,
   Truck,
-  Zap,
 } from "lucide-react";
 import { autoEvents, type NewsItem } from "@/lib/data";
 import { detectFocusEntities } from "@/lib/news-focus";
 import { rankCommercialVehicleNews, rankNews, type RankedNewsItem } from "@/lib/intelligence-ranking";
-import { marketBrands, marketTotals } from "@/lib/market-data";
+import { marketBrands } from "@/lib/market-data";
 import { BrandLogo } from "@/components/brand-logo";
 import { SourceTrustBadge } from "@/components/source-trust-badge";
 
 type NewsResponse = { news?: NewsItem[]; errors?: string[] };
 
 const number = new Intl.NumberFormat("ru-RU");
-const compact = new Intl.NumberFormat("ru-RU", { notation: "compact", maximumFractionDigits: 1 });
-const strategicFocus = ["VOYAH", "EVOLUTE", "Моторинвест", "ЭВИА", "GWM", "SHACMAN"] as const;
 
 function levelTone(item: RankedNewsItem) {
   if (item.intelligence.level === "Критично") return "critical";
@@ -45,16 +39,27 @@ export function CorporateHome() {
   const [visitReady, setVisitReady] = useState(false);
 
   useEffect(() => {
-    const controller = new AbortController();
-    fetch("/api/news", { cache: "no-store", signal: AbortSignal.any([controller.signal, AbortSignal.timeout(18000)]) })
-      .then(async (response) => {
+    let active = true;
+
+    const loadNews = async () => {
+      try {
+        const response = await fetch("/api/news", { cache: "no-store", signal: AbortSignal.timeout(18000) });
         if (!response.ok) throw new Error();
         const payload = await response.json() as NewsResponse;
+        if (!active) return;
         setNews(payload.news ?? []);
         setStatus(payload.errors?.length ? "partial" : "live");
-      })
-      .catch(() => setStatus("offline"));
-    return () => controller.abort();
+      } catch {
+        if (active) setStatus("offline");
+      }
+    };
+
+    void loadNews();
+    const interval = window.setInterval(() => void loadNews(), 5 * 60 * 1000);
+    return () => {
+      active = false;
+      window.clearInterval(interval);
+    };
   }, []);
 
   useEffect(() => {
@@ -74,9 +79,6 @@ export function CorporateHome() {
 
   const ranked = useMemo(() => rankNews(news), [news]);
   const attention = useMemo(() => ranked.filter((item) => item.intelligence.score >= 64).slice(0, 3), [ranked]);
-  const criticalCount = useMemo(() => ranked.filter((item) => item.intelligence.level === "Критично").length, [ranked]);
-  const highCount = useMemo(() => ranked.filter((item) => item.intelligence.level === "Высокий приоритет").length, [ranked]);
-  const focusCount = useMemo(() => news.filter((item) => detectFocusEntities(item).some((entity) => entity === "GWM" || entity === "SHACMAN")).length, [news]);
   const newSinceVisit = useMemo(() => previousVisit ? news.filter((item) => Date.parse(item.publishedAt) > Date.parse(previousVisit)).length : 0, [news, previousVisit]);
   const truckSignals = useMemo(() => rankCommercialVehicleNews(news).slice(0, 3), [news]);
   const marketLeaders = useMemo(() => marketBrands.filter((item) => item.sales2026Ytd !== null).sort((a, b) => (b.sales2026Ytd ?? 0) - (a.sales2026Ytd ?? 0)).slice(0, 8), []);
@@ -98,23 +100,8 @@ export function CorporateHome() {
             <h1 className="corp-title">Окно в Китай</h1>
             <p className="mt-2 text-xl font-semibold tracking-[-0.02em] text-white/90 sm:text-2xl">Автопром. Рынки. Реальные возможности.</p>
             <p className="corp-subtitle max-w-[760px]">От новостей к управленческому сигналу: рынок, локализация, коммерческий транспорт, технологии и события Китая в одном корпоративном контуре.</p>
-            <div className="mt-5 flex flex-wrap gap-2">
-              <Link href="/analysis" className="inline-flex items-center gap-2 rounded-xl bg-[#167df6] px-4 py-2.5 text-sm font-black text-white shadow-[0_8px_24px_rgba(22,125,246,.25)] transition hover:bg-[#0f70e6]">Ключевые сигналы <ArrowRight className="size-4" /></Link>
-              <Link href="/executive" className="inline-flex items-center gap-2 rounded-xl border border-white/30 bg-white/10 px-4 py-2.5 text-sm font-bold text-white backdrop-blur-sm transition hover:bg-white/15">Executive Brief</Link>
-            </div>
-            <div className="mt-4 flex flex-wrap items-center gap-1.5">
-              <span className="mr-1 text-[9px] font-black uppercase tracking-[.14em] text-white/55">Стратегический фокус</span>
-              {strategicFocus.map((entity) => <span key={entity} className="rounded-full border border-white/20 bg-white/10 px-2.5 py-1 text-[9px] font-black text-white/85 backdrop-blur-sm">{entity}</span>)}
-            </div>
           </div>
           <div className="corp-tagline">Точные данные.<br />Быстрые решения.</div>
-        </section>
-
-        <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <ExecutiveKpi icon={AlertTriangle} label="Критические сигналы" value={String(criticalCount)} note="требуют внимания" tone="red" />
-          <ExecutiveKpi icon={Zap} label="Высокий приоритет" value={String(highCount)} note="в текущей ленте" tone="orange" />
-          <ExecutiveKpi icon={Radar} label="GWM + SHACMAN" value={String(focusCount)} note="сигналов в фокусе" tone="blue" />
-          <ExecutiveKpi icon={Gauge} label="Рынок 2026" value={compact.format(marketTotals.sales2026Ytd)} note="легковых за янв–июль" tone="green" />
         </section>
 
         <section className="grid gap-4 xl:grid-cols-[minmax(0,1.35fr)_minmax(330px,.65fr)]">
@@ -124,7 +111,7 @@ export function CorporateHome() {
                 <div className="flex items-center gap-2"><AlertTriangle className="size-5 text-[#e44949]" /><h2 className="corp-section-title !text-[20px]">Требует внимания</h2></div>
                 <p className="mt-1 text-xs text-[#7186a2]">Ранжирование по влиянию на руководство, производство, закупки, R&D и логистику</p>
               </div>
-              <Link href="/analysis" className="corp-section-link inline-flex items-center gap-1">Все сигналы <ArrowRight className="size-4" /></Link>
+              <Link href="/news" className="corp-section-link inline-flex items-center gap-1">Вся лента <ArrowRight className="size-4" /></Link>
             </div>
 
             <div className="divide-y divide-[#e8eff5]">
@@ -144,7 +131,7 @@ export function CorporateHome() {
                       <a href={item.url} target="_blank" rel="noreferrer" className="line-clamp-2 text-[15px] font-black leading-5 text-[#112b5b] transition hover:text-[#147efb]">{item.title}</a>
                       <p className="mt-1 line-clamp-2 text-xs leading-5 text-[#6f84a0]">{item.intelligence.whyItMatters}</p>
                     </div>
-                    <Link href="/analysis" className="hidden rounded-xl border border-[#dce8f3] bg-[#f7faff] px-3 py-2 text-xs font-bold text-[#17416f] transition hover:border-[#b9d8f5] hover:bg-white sm:inline-flex">Разобрать</Link>
+                    <Link href="/news" className="hidden rounded-xl border border-[#dce8f3] bg-[#f7faff] px-3 py-2 text-xs font-bold text-[#17416f] transition hover:border-[#b9d8f5] hover:bg-white sm:inline-flex">К ленте</Link>
                   </article>
                 );
               })}
@@ -225,26 +212,7 @@ export function CorporateHome() {
             </section>
           </div>
         </section>
-
-        <section className="corp-card flex flex-wrap items-center gap-4 px-4 py-4 sm:px-5">
-          <div className="flex items-center gap-2 text-xs text-[#69809e]"><Clock3 className="size-4" /><span>{status === "loading" ? "Обновляем ленту…" : status === "offline" ? "Живая лента временно недоступна" : status === "partial" ? "Часть источников временно недоступна" : `Загружено материалов: ${news.length}`}</span></div>
-          <div className="ml-auto flex flex-wrap items-center gap-2">
-            <Link href="/travel-guide" className="rounded-xl border border-[#d9e6f1] bg-white px-3 py-2 text-xs font-bold text-[#234a75] hover:bg-[#f6faff]">Подготовиться к поездке</Link>
-            <Link href="/analysis" className="rounded-xl border border-[#d9e6f1] bg-white px-3 py-2 text-xs font-bold text-[#234a75] hover:bg-[#f6faff]">Открыть аналитику</Link>
-            <Link href="/market" className="rounded-xl bg-[#0e315c] px-3 py-2 text-xs font-black text-white hover:bg-[#0a274c]">Рынок и продажи</Link>
-          </div>
-        </section>
       </div>
     </main>
-  );
-}
-
-function ExecutiveKpi({ icon: Icon, label, value, note, tone }: { icon: typeof Gauge; label: string; value: string; note: string; tone: "red" | "orange" | "blue" | "green" }) {
-  return (
-    <article className={`executive-kpi executive-kpi-${tone}`}>
-      <div className="flex items-center justify-between gap-3"><span className={`executive-kpi-icon executive-kpi-icon-${tone}`}><Icon className="size-5" /></span><ArrowRight className="size-4 opacity-35" /></div>
-      <div className="mt-3 flex items-end gap-3"><p className="text-4xl font-black tracking-[-0.05em] text-[#102a58]">{value}</p><p className="pb-1 text-xs font-semibold text-[#7186a2]">{note}</p></div>
-      <p className="mt-2 text-xs font-black uppercase tracking-[.08em] text-[#4f6a89]">{label}</p>
-    </article>
   );
 }
