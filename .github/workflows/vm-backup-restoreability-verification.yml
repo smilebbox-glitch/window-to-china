@@ -1,0 +1,154 @@
+name: VM backup restoreability verification
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/vm-backup-restoreability-verification.yml'
+      - 'scripts/verify-backup-both-vm.sh'
+      - 'scripts/verify-backup-both-vm.ps1'
+      - 'scripts/manage-weekly-backup-verify.sh'
+      - 'scripts/manage-weekly-backup-verify.ps1'
+      - 'VERIFY_BACKUP_BOTH_VM.bat'
+      - 'WEEKLY_BACKUP_VERIFY.bat'
+      - 'MGC_VM_CONTROL.bat'
+      - 'scripts/vm-control.sh'
+      - 'scripts/backup-both-vm.sh'
+      - 'scripts/backup-both-vm.ps1'
+      - 'tests/backup-restoreability-verification.test.mjs'
+      - 'compose.yaml'
+      - 'compose.vm.yaml'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/vm-backup-restoreability-verification.yml'
+      - 'scripts/verify-backup-both-vm.sh'
+      - 'scripts/verify-backup-both-vm.ps1'
+      - 'scripts/manage-weekly-backup-verify.sh'
+      - 'scripts/manage-weekly-backup-verify.ps1'
+      - 'VERIFY_BACKUP_BOTH_VM.bat'
+      - 'WEEKLY_BACKUP_VERIFY.bat'
+      - 'MGC_VM_CONTROL.bat'
+      - 'scripts/vm-control.sh'
+      - 'scripts/backup-both-vm.sh'
+      - 'scripts/backup-both-vm.ps1'
+      - 'tests/backup-restoreability-verification.test.mjs'
+      - 'compose.yaml'
+      - 'compose.vm.yaml'
+
+permissions:
+  contents: read
+
+jobs:
+  restoreability-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - name: Checkout Okno v Kitai
+        uses: actions/checkout@v4
+        with:
+          path: window-to-china
+
+      - name: Checkout MGC Languages main
+        uses: actions/checkout@v4
+        with:
+          repository: smilebbox-glitch/mgc-languages
+          ref: main
+          path: mgc-languages
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.13.0'
+
+      - name: Verify restoreability contracts
+        working-directory: window-to-china
+        run: node --test tests/backup-restoreability-verification.test.mjs
+
+      - name: Parse Linux restoreability operators
+        working-directory: window-to-china
+        shell: bash
+        run: bash -n scripts/verify-backup-both-vm.sh scripts/manage-weekly-backup-verify.sh scripts/vm-control.sh
+
+      - name: Parse Windows restoreability operators
+        working-directory: window-to-china
+        shell: pwsh
+        run: |
+          $files = @(
+            'scripts/verify-backup-both-vm.ps1',
+            'scripts/manage-weekly-backup-verify.ps1'
+          )
+          foreach ($file in $files) {
+            $tokens = $null
+            $errors = $null
+            [System.Management.Automation.Language.Parser]::ParseFile(
+              (Resolve-Path $file).Path,
+              [ref]$tokens,
+              [ref]$errors
+            ) | Out-Null
+            if ($errors.Count -gt 0) {
+              $errors | ForEach-Object { Write-Error ('{0}: {1}' -f $file, $_.Message) }
+              exit 1
+            }
+          }
+
+      - name: Start both CPU-only no-AI services
+        working-directory: window-to-china
+        shell: bash
+        env:
+          MGC_VM_ALLOWED_CIDR: 10.250.0.0/24
+        run: |
+          chmod +x ../mgc-languages/scripts/start-vm.sh ../mgc-languages/scripts/entrypoint.sh
+          bash scripts/start-both-vm.sh
+
+      - name: Create real verified dual-service backup
+        working-directory: window-to-china
+        shell: bash
+        env:
+          MGC_VM_BACKUP_ROOT: ${{ runner.temp }}/mgc-vm-backups
+          MGC_VM_BACKUP_RETENTION_DAYS: '14'
+        run: bash scripts/backup-both-vm.sh
+
+      - name: Restore backup into isolated disposable verification databases
+        working-directory: window-to-china
+        shell: bash
+        env:
+          MGC_VM_BACKUP_ROOT: ${{ runner.temp }}/mgc-vm-backups
+          MGC_VM_BACKUP_VERIFY_ROOT: ${{ runner.temp }}/mgc-vm-backup-verification
+        run: |
+          bash scripts/verify-backup-both-vm.sh | tee backup-restoreability.txt
+          VERIFY_DIR="$(find "$MGC_VM_BACKUP_VERIFY_ROOT" -mindepth 1 -maxdepth 1 -type d -name '20??????T??????Z' | sort | tail -n1)"
+          test -n "$VERIFY_DIR"
+          test -s "$VERIFY_DIR/verification.json"
+          test -s "$VERIFY_DIR/verification.txt"
+          test -s "$VERIFY_DIR/checksums.sha256"
+          (cd "$VERIFY_DIR" && sha256sum -c checksums.sha256)
+          node --input-type=module - "$VERIFY_DIR/verification.json" <<'NODE'
+          import fs from 'node:fs';
+          const report = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
+          if (report.profile !== 'dual-vm-cpu-only-no-ai') process.exit(2);
+          if (report.result !== 'GO') process.exit(3);
+          if (report.sqlite_integrity !== 'passed') process.exit(4);
+          if (report.postgres_restore !== 'passed') process.exit(5);
+          if (!(report.postgres_public_tables > 0)) process.exit(6);
+          if (report.postgres_image !== 'postgres:16.4-alpine') process.exit(7);
+          if (report.compatibility_role_app !== 'NOLOGIN') process.exit(8);
+          NODE
+          grep -q 'Compatibility role app: NOLOGIN' backup-restoreability.txt
+          grep -q 'BACKUP RESTOREABILITY: VERIFIED WITHOUT MODIFYING PILOT DATABASES' backup-restoreability.txt
+          test -z "$(grep -REi 'RAG_API_KEY|ADMIN_API_TOKEN|SCHEDULER_TOKEN|POSTGRES_PASSWORD|OIDC_CLIENT_SECRET' "$VERIFY_DIR" || true)"
+          if docker ps -a --format '{{.Names}}' | grep -q '^mgc-backup-verify-'; then
+            echo '[NO-GO] Disposable verification database container was not cleaned up.' >&2
+            docker ps -a
+            exit 1
+          fi
+
+      - name: Cleanup MGC Languages
+        if: always()
+        working-directory: mgc-languages
+        run: docker compose --env-file .env.vm -f docker-compose.lan.yml -f docker-compose.vm.yml down -v --remove-orphans || true
+
+      - name: Cleanup Okno v Kitai
+        if: always()
+        working-directory: window-to-china
+        run: docker compose --env-file .env.vm -f compose.yaml -f compose.vm.yaml down -v --remove-orphans || true
