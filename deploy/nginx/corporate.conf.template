@@ -107,7 +107,10 @@ server {
         proxy_http_version 1.1;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        # $proxy_add_x_forwarded_for APPENDS to whatever the client sent, so the first
+        # value stays client-controlled. The app reads the first value as the client
+        # identity, so overwrite the header with the real peer address instead.
+        proxy_set_header X-Forwarded-For $remote_addr;
         proxy_set_header X-Forwarded-Proto https;
         proxy_set_header X-Forwarded-Host $host;
         proxy_set_header X-Auth-Request-Redirect https://$host$request_uri;
@@ -143,7 +146,10 @@ server {
         proxy_http_version 1.1;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        # $proxy_add_x_forwarded_for APPENDS to whatever the client sent, so the first
+        # value stays client-controlled. The app reads the first value as the client
+        # identity, so overwrite the header with the real peer address instead.
+        proxy_set_header X-Forwarded-For $remote_addr;
         proxy_set_header X-Forwarded-Proto https;
         proxy_set_header X-Forwarded-Host $host;
         proxy_set_header X-Request-ID $request_id;

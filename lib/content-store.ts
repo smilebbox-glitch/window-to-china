@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { getPilotDb } from "@/lib/pilot-db";
+import { APP_VERSION } from "@/lib/app-version";
 
 export type ContentStatus = "draft" | "published" | "archived";
 export type ContentItem = {
@@ -80,7 +81,7 @@ export function exportContentBundle(actor: string, section?: string): ContentBun
     schema: 1,
     createdAt: new Date().toISOString(),
     createdBy: actor.slice(0, 160),
-    appVersion: process.env.APP_VERSION || "1.6.1-pilot",
+    appVersion: APP_VERSION,
     items,
   };
 }

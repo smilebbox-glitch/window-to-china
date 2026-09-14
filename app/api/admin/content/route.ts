@@ -1,5 +1,5 @@
 import { writeAudit } from "@/lib/audit";
-import { authorize } from "@/lib/auth";
+import { authorize, hasRole } from "@/lib/auth";
 import { archiveContent, listContent, upsertContent, type ContentStatus } from "@/lib/content-store";
 import { logSecurityEvent } from "@/lib/logger";
 import { checkRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
@@ -14,7 +14,7 @@ export async function GET(request: Request) {
   const limit = checkRateLimit({ context, scope: "admin-content-read", limit: Number(process.env.RATE_LIMIT_READ_PER_MINUTE || 120), actor: auth.principal.subject });
   if (!limit.allowed) return jsonWithContext(context, { error: "Слишком много запросов." }, { status: 429, headers: rateLimitHeaders(limit) });
   const section = new URL(request.url).searchParams.get("section")?.trim().slice(0,80) || undefined;
-  return jsonWithContext(context, { items: listContent(section, true) }, { headers: { "cache-control": "no-store", ...rateLimitHeaders(limit) } });
+  return jsonWithContext(context, { items: listContent(section, hasRole(auth.principal, "editor")) }, { headers: { "cache-control": "no-store", ...rateLimitHeaders(limit) } });
 }
 
 export async function POST(request: Request) {

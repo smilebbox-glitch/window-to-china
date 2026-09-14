@@ -78,10 +78,20 @@ export function schedulerLockStatus() {
     .map((row) => ({ lockName: String(row.lock_name), owner: String(row.owner), acquiredAt: String(row.acquired_at), expiresAt: String(row.expires_at), active: Date.parse(String(row.expires_at)) > Date.now() }));
 }
 
-export function sourceSlaStatus() {
+export type SourceSlaEntry = {
+  sourceKey: string;
+  scope: string;
+  status: "MET" | "BREACHED" | "NO_DATA";
+  ageSeconds: number | null;
+  qualityScore: number | null;
+  maxAgeSeconds: number;
+  minQuality: number;
+};
+
+export function sourceSlaStatus(): SourceSlaEntry[] {
   const policy = governancePolicy();
   const snapshots = sourceReliabilitySummary(200).snapshots;
-  return Object.entries(policy.sla).flatMap(([sourceKey, rule]) => {
+  return Object.entries(policy.sla).flatMap(([sourceKey, rule]): SourceSlaEntry[] => {
     const matches = snapshots.filter((item) => item.sourceKey === sourceKey);
     if (!matches.length) return [{ sourceKey, scope: "", status: "NO_DATA", ageSeconds: null, qualityScore: null, ...rule }];
     const latestByScope = new Map<string, (typeof matches)[number]>();

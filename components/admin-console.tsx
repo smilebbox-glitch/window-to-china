@@ -22,15 +22,18 @@ type Status = {
   requestId: string;
   uptimeSeconds: number;
   principal: { subject: string; role: string; authenticated: boolean; mode: string };
-  auth: { mode: string; proxySecretConfigured: boolean; adminTokenConfigured: boolean };
-  integrations: { ragConfigured: boolean; outbound: { hosts: string[]; httpHosts: string[] } };
-  operations: {
+  // `restricted` is true until the caller proves an identity (ADMIN_API_TOKEN in
+  // pilot mode, SSO in proxy mode). The blocks below are absent in that state.
+  restricted: boolean;
+  auth: { mode: string; proxySecretConfigured?: boolean; adminTokenConfigured?: boolean };
+  integrations?: { ragConfigured: boolean; outbound: { hosts: string[]; httpHosts: string[] } };
+  operations?: {
     audit: { integrity: string; hmacConfigured: boolean; maxBytes: number };
     rateLimit: { implementation: string; note: string };
     backup: { format: string; schema: number; secretsIncluded: boolean };
   };
   runtime: { updatedAt: string; updatedBy: string; sources: Record<string, boolean> };
-  external: Array<{ host: string; requests: number; failures: number; lastStatus: number; lastDurationMs: number; lastSuccessAt: string; lastFailureAt: string }>;
+  external?: Array<{ host: string; requests: number; failures: number; lastStatus: number; lastDurationMs: number; lastSuccessAt: string; lastFailureAt: string }>;
 };
 
 type AuditRecord = {
@@ -241,7 +244,7 @@ export function AdminConsole() {
             <dt className="text-zinc-500">Роль</dt><dd className="text-right font-semibold uppercase text-[#8aa5ff]">{status?.principal.role || "—"}</dd>
             <dt className="text-zinc-500">Версия</dt><dd className="text-right font-mono text-zinc-300">{status?.version || "—"}</dd>
             <dt className="text-zinc-500">Uptime</dt><dd className="text-right text-zinc-300">{status ? fmtUptime(status.uptimeSeconds) : "—"}</dd>
-            <dt className="text-zinc-500">Audit integrity</dt><dd className="text-right font-mono text-xs text-zinc-300">{status?.operations.audit.integrity || "—"}</dd>
+            <dt className="text-zinc-500">Audit integrity</dt><dd className="text-right font-mono text-xs text-zinc-300">{status?.operations?.audit.integrity || "—"}</dd>
             <dt className="text-zinc-500">Request ID</dt><dd className="truncate text-right font-mono text-[11px] text-zinc-500">{status?.requestId || "—"}</dd>
           </dl>
         </section>
@@ -262,7 +265,7 @@ export function AdminConsole() {
         <section className="border border-white/10 bg-[#14161a] p-5 sm:p-6">
           <div className="flex items-center gap-2"><Activity className="size-5 text-[#6f91ff]" /><h2 className="text-lg font-black text-white">Внешние интеграции</h2></div>
           <div className="mt-4 space-y-2">
-            {status?.external.length ? status.external.map((item) => (
+            {status?.external?.length ? status.external.map((item) => (
               <div key={item.host} className="grid grid-cols-[1fr_auto] gap-3 border-b border-white/6 py-2 text-sm last:border-0">
                 <div><p className="font-semibold text-zinc-200">{item.host}</p><p className="mt-0.5 text-xs text-zinc-600">{item.requests} запросов · {item.failures} ошибок</p></div>
                 <div className="text-right"><p className={item.lastStatus >= 200 && item.lastStatus < 400 ? "text-emerald-400" : "text-amber-400"}>{item.lastStatus || "—"}</p><p className="text-xs text-zinc-600">{item.lastDurationMs} ms</p></div>
@@ -273,7 +276,7 @@ export function AdminConsole() {
 
         <section className="border border-white/10 bg-[#14161a] p-5 sm:p-6">
           <h2 className="text-lg font-black text-white">Outbound allow-list</h2>
-          <div className="mt-3 flex flex-wrap gap-1.5">{status?.integrations.outbound.hosts.map((host) => <span key={host} className="border border-white/8 bg-black/15 px-2 py-1 font-mono text-[11px] text-zinc-500">{host}</span>)}</div>
+          <div className="mt-3 flex flex-wrap gap-1.5">{status?.integrations?.outbound.hosts.map((host) => <span key={host} className="border border-white/8 bg-black/15 px-2 py-1 font-mono text-[11px] text-zinc-500">{host}</span>)}</div>
         </section>
       </div>
       <div className="xl:col-span-2 space-y-5">

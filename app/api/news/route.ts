@@ -367,7 +367,7 @@ async function fetchWebsitePortal(source: NewsWebsiteSource, requestSignal?: Abo
       return rightTruck - leftTruck || rightBrand - leftBrand || right.title.length - left.title.length;
     })
     .slice(0, source.maxCandidates ?? 2);
-  const enriched = await Promise.all(ranked.map(async (candidate) => {
+  const enriched = await Promise.all(ranked.map(async (candidate): Promise<NewsItem | null> => {
     const article = await fetchWebsiteArticle(source, candidate, requestSignal);
     if (!article) return null;
     return {

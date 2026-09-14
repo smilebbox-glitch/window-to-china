@@ -86,6 +86,21 @@ export function hasRole(principal: Principal, minimum: Exclude<Role, "none">) {
   return rank[principal.role] >= rank[minimum];
 }
 
+/**
+ * With AUTH_MODE=disabled an anonymous request is still granted the `viewer`
+ * role so the pilot UI works without SSO. That makes `viewer` the wrong gate for
+ * operational internals — filesystem paths, the outbound allow-list, which
+ * secrets are configured, process metadata, configuration-validation findings.
+ *
+ * Those blocks are only included for a principal that actually proved an
+ * identity: a corporate SSO subject in proxy mode, or the local ADMIN_API_TOKEN
+ * in pilot mode. Read endpoints stay reachable at `viewer` so the console shell
+ * and the admin-token form still render.
+ */
+export function revealsOperationalDetail(principal: Principal) {
+  return principal.authenticated;
+}
+
 export function authorize(request: Request, minimum: Exclude<Role, "none">, requestId = "") {
   const principal = resolvePrincipal(request);
   if (!hasRole(principal, minimum)) {

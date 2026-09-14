@@ -1,4 +1,4 @@
-import { authorize } from "@/lib/auth";
+import { authorize, revealsOperationalDetail } from "@/lib/auth";
 import { contentCounts } from "@/lib/content-store";
 import { governancePolicy, schedulerLockStatus, sourceSlaStatus } from "@/lib/governance";
 import { migrationStatus, pilotDbStatus } from "@/lib/pilot-db";
@@ -20,11 +20,19 @@ export async function GET(request: Request) {
   const expired = reliability.snapshots.filter((item) => item.state === "expired").length;
   const stale = reliability.snapshots.filter((item) => item.state === "stale").length;
   const serviceLevel = expired ? "DEGRADED" : stale ? "STALE" : reliability.snapshots.length ? "HEALTHY" : "WARMING_UP";
+  // The SQLite path and "is the scheduler token set" are operator-only: together
+  // they map the internal contour and point at a missing secret.
+  const operational = revealsOperationalDetail(auth.principal);
+  const database = pilotDbStatus();
   return jsonWithContext(context, {
     serviceLevel,
+    restricted: !operational,
     pilotOperations: pilotOperationsStatus(),
-    database: pilotDbStatus(),
-    scheduler: { configured: Boolean(process.env.SCHEDULER_TOKEN?.trim()), intervalSeconds: Number(process.env.SCHEDULER_INTERVAL_SECONDS || 300), locks: schedulerLockStatus() },
+    database: operational ? database : { ...database, path: "" },
+    scheduler: {
+      ...(operational ? { configured: Boolean(process.env.SCHEDULER_TOKEN?.trim()), locks: schedulerLockStatus() } : {}),
+      intervalSeconds: Number(process.env.SCHEDULER_INTERVAL_SECONDS || 300),
+    },
     governance: { policy: governancePolicy(), migrations: migrationStatus(), sla: sourceSlaStatus() },
     content: contentCounts(),
     newsSources: validateNewsSourceCatalog(),

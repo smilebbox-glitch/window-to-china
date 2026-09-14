@@ -120,14 +120,15 @@ export function writeAudit(args: Parameters<typeof appendAudit>[0]) {
 }
 
 function verifyRecord(record: AuditRecord, expectedPrevious: string) {
-  const { hash: _hash, ...base } = record;
+  const base: Omit<AuditRecord, "hash"> = { ...record };
+  delete (base as Partial<AuditRecord>).hash;
   const calculated = hashPayload(base, record.hashAlgorithm).hash;
   return record.previousHash === expectedPrevious && calculated === record.hash;
 }
 
 export async function readAuditTail(limit = 50) {
   const bounded = Math.max(1, Math.min(200, limit));
-  let records: AuditRecord[] = [];
+  const records: AuditRecord[] = [];
   let parseErrors = 0;
   for (const path of [`${auditPath}.1`, auditPath]) {
     try {

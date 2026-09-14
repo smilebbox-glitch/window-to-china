@@ -42,6 +42,32 @@ if (-not (Test-Path $EnvFile)) {
     Write-Host 'Created .env.vm with generated local secrets.' -ForegroundColor Green
 }
 
+$vmPort = '3000'
+$portLine = Select-String -LiteralPath $EnvFile -Pattern '^APP_PORT=' | Select-Object -First 1
+if ($portLine) { $vmPort = ($portLine.Line -split '=', 2)[1] }
+if ($env:APP_PORT) { $vmPort = $env:APP_PORT }
+if ($vmPort -ne '3000') { throw 'VM firewall gate supports APP_PORT=3000 only.' }
+
+Write-Host 'Checking host firewall before VM startup...' -ForegroundColor Cyan
+$firewallPreflight = Join-Path $Root 'scripts\host-firewall-preflight.ps1'
+if (-not (Test-Path $firewallPreflight)) { throw "Host firewall preflight not found: $firewallPreflight" }
+$firewallArgs = @('-NoProfile','-ExecutionPolicy','Bypass','-File',$firewallPreflight)
+$oldCidr = $env:MGC_VM_ALLOWED_CIDR
+$oldContract = $env:MGC_VM_FIREWALL_CONTRACT_ONLY
+try {
+    if ($env:GITHUB_ACTIONS -eq 'true' -and $env:GITHUB_RUN_ID) {
+        $env:APP_BIND_ADDRESS = '127.0.0.1'
+        if (-not $env:MGC_VM_ALLOWED_CIDR) { $env:MGC_VM_ALLOWED_CIDR = '10.250.0.0/24' }
+        $env:MGC_VM_FIREWALL_CONTRACT_ONLY = '1'
+        $firewallArgs += '-ContractOnly'
+    }
+    & powershell.exe @firewallArgs
+    if ($LASTEXITCODE -ne 0) { throw "Host firewall preflight failed with exit code $LASTEXITCODE. Run CONFIGURE_VM_FIREWALL.bat as Administrator before starting the pilot." }
+} finally {
+    if ($null -eq $oldCidr) { Remove-Item Env:MGC_VM_ALLOWED_CIDR -ErrorAction SilentlyContinue } else { $env:MGC_VM_ALLOWED_CIDR = $oldCidr }
+    if ($null -eq $oldContract) { Remove-Item Env:MGC_VM_FIREWALL_CONTRACT_ONLY -ErrorAction SilentlyContinue } else { $env:MGC_VM_FIREWALL_CONTRACT_ONLY = $oldContract }
+}
+
 $composeArgs = @('compose','--env-file','.env.vm','-f','compose.yaml','-f','compose.vm.yaml')
 Write-Host 'Validating CPU-only / no-AI VM configuration...' -ForegroundColor Cyan
 & docker @composeArgs config *> $null

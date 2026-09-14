@@ -1,5 +1,5 @@
 import { writeAudit } from "@/lib/audit";
-import { authorize } from "@/lib/auth";
+import { authorize, revealsOperationalDetail } from "@/lib/auth";
 import { validatePilotConfiguration } from "@/lib/config-validation";
 import { governancePolicy, schedulerLockStatus, sourceSlaStatus } from "@/lib/governance";
 import { migrationStatus } from "@/lib/pilot-db";
@@ -16,7 +16,12 @@ export async function GET(request: Request) {
   const limit = checkRateLimit({ context, scope: "governance-read", limit: Number(process.env.RATE_LIMIT_READ_PER_MINUTE || 120), actor: auth.principal.subject });
   if (!limit.allowed) return jsonWithContext(context, { error: "Слишком много запросов." }, { status: 429, headers: rateLimitHeaders(limit) });
   const runtime = await loadRuntimeConfig();
-  return jsonWithContext(context, { maintenance: runtime.maintenance, policy: governancePolicy(), migrations: migrationStatus(), locks: schedulerLockStatus(), sla: sourceSlaStatus(), validation: validatePilotConfiguration() }, { headers: { "cache-control": "no-store", ...rateLimitHeaders(limit) } });
+  // `validation` names the secrets that are still weak or unset, and `locks`
+  // carries scheduler owner identifiers. Both are operator-only.
+  const operational = revealsOperationalDetail(auth.principal)
+    ? { locks: schedulerLockStatus(), validation: validatePilotConfiguration() }
+    : {};
+  return jsonWithContext(context, { maintenance: runtime.maintenance, policy: governancePolicy(), migrations: migrationStatus(), sla: sourceSlaStatus(), restricted: !revealsOperationalDetail(auth.principal), ...operational }, { headers: { "cache-control": "no-store", ...rateLimitHeaders(limit) } });
 }
 
 export async function PUT(request: Request) {

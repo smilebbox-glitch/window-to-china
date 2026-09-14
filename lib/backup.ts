@@ -1,4 +1,5 @@
 import { loadRuntimeConfig, saveMaintenanceConfig, saveRuntimeConfig, sourceKeys, type SourceKey } from "@/lib/runtime-config";
+import { APP_VERSION } from "@/lib/app-version";
 
 export const backupFormat = "okno-v-kitai-runtime-backup" as const;
 
@@ -21,7 +22,7 @@ export async function createRuntimeBackup(createdBy: string): Promise<RuntimeBac
     schema: 2,
     createdAt: new Date().toISOString(),
     createdBy: createdBy.slice(0, 160),
-    appVersion: process.env.APP_VERSION || "1.6.1-pilot",
+    appVersion: APP_VERSION,
     runtime: { sources: { ...current.sources }, maintenance: { ...current.maintenance } },
   };
 }

@@ -28,14 +28,21 @@ const quickQuestions = [
   { text: "Сравни продажи основных автомобильных брендов за 2025 год и январь–июль 2026 года.", focus: "Все" },
 ] as const;
 
-export function AnalysisWorkbench() {
+/**
+ * `seeds` is the offline fallback corpus. AnalysisWorkbenchLive passes an empty
+ * array instead of splicing the shared `seedNews` module array during render.
+ */
+export function AnalysisWorkbench({ seeds = seedNews }: { seeds?: NewsItem[] } = {}) {
   const [focus, setFocus] = useState<AnalysisFocus>("SHACMAN");
   const [market, setMarket] = useState<AnalysisMarket>("Все рынки");
   const [period, setPeriod] = useState<AnalysisPeriod>("365");
-  const [query, setQuery] = useState(quickQuestions[0].text);
+  // `quickQuestions` is `as const`, so an unannotated useState would narrow the
+  // state type to the first preset's literal and reject both the textarea input
+  // and the other presets.
+  const [query, setQuery] = useState<string>(quickQuestions[0].text);
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [loading, setLoading] = useState(false);
-  const [corpus, setCorpus] = useState<NewsItem[]>(seedNews);
+  const [corpus, setCorpus] = useState<NewsItem[]>(seeds);
   const [indexStatus, setIndexStatus] = useState<"loading" | "live" | "partial" | "fallback">("loading");
   const [error, setError] = useState("");
 
@@ -45,14 +52,14 @@ export function AnalysisWorkbench() {
       const response = await fetch("/api/news", { cache: "no-store", signal: AbortSignal.timeout(14_000) });
       if (!response.ok) throw new Error();
       const payload = await response.json() as { news: NewsItem[]; errors: string[] };
-      const merged = [...new Map([...payload.news, ...seedNews].map((item) => [item.url, item])).values()];
+      const merged = [...new Map([...payload.news, ...seeds].map((item) => [item.url, item])).values()];
       setCorpus(merged);
       setIndexStatus(payload.errors.length ? "partial" : "live");
     } catch {
-      setCorpus(seedNews);
+      setCorpus(seeds);
       setIndexStatus("fallback");
     }
-  }, []);
+  }, [seeds]);
 
   useEffect(() => {
     const initial = window.setTimeout(() => void loadCorpus(), 0);

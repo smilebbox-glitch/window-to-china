@@ -119,7 +119,7 @@ export function WebNotifications() {
   async function fetchNotifications(deliver = false, enabled = preferences.notificationsEnabled) {
     const response = await fetch("/api/user/notifications", { cache: "no-store" });
     if (!response.ok) return;
-    const payload = await response.json() as { notifications?: UserNotification[]; unread?: number };
+    const payload = (await response.json()) as { notifications?: UserNotification[]; unread?: number };
     const incoming = Array.isArray(payload.notifications) ? payload.notifications : [];
     setNotifications(incoming);
     setUnread(Number(payload.unread || 0));
@@ -146,14 +146,14 @@ export function WebNotifications() {
 
     let next = EMPTY_SUBSCRIPTIONS;
     if (preferencesResponse.ok) {
-      const payload = await preferencesResponse.json() as { subscriptions?: Partial<SubscriptionState> };
+      const payload = (await preferencesResponse.json()) as { subscriptions?: Partial<SubscriptionState> };
       next = { ...EMPTY_SUBSCRIPTIONS, ...(payload.subscriptions || {}) };
       setPreferences(next);
       setDraft(next);
     }
 
     if (notificationsResponse.ok) {
-      const payload = await notificationsResponse.json() as { notifications?: UserNotification[]; unread?: number };
+      const payload = (await notificationsResponse.json()) as { notifications?: UserNotification[]; unread?: number };
       const incoming = Array.isArray(payload.notifications) ? payload.notifications : [];
       setNotifications(incoming);
       setUnread(Number(payload.unread || 0));
@@ -187,7 +187,7 @@ export function WebNotifications() {
       setStatus("Не удалось сохранить настройки уведомлений.");
       return false;
     }
-    const payload = await response.json() as { subscriptions?: SubscriptionState };
+    const payload = (await response.json()) as { subscriptions?: SubscriptionState };
     const saved = payload.subscriptions ? { ...EMPTY_SUBSCRIPTIONS, ...payload.subscriptions } : next;
     setPreferences(saved);
     setDraft(saved);
@@ -275,9 +275,16 @@ export function WebNotifications() {
               <div>
                 <p className={styles.notificationEyebrow}>Intelligence alerts</p>
                 <p className={styles.notificationTitle}>Персональный радар сигналов</p>
-                <p className={styles.notificationSubtitle}>Получайте только те изменения, которые совпадают с выбранными компаниями и сегментами автопрома.</p>
+                <p className={styles.notificationSubtitle}>
+                  Получайте только те изменения, которые совпадают с выбранными компаниями и сегментами автопрома.
+                </p>
               </div>
-              <button type="button" onClick={() => setOpen(false)} className="grid size-8 shrink-0 place-items-center rounded-xl border border-white/15 bg-white/10 text-white transition hover:bg-white/20" aria-label="Закрыть">
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                className="grid size-8 shrink-0 place-items-center rounded-xl border border-white/15 bg-white/10 text-white transition hover:bg-white/20"
+                aria-label="Закрыть"
+              >
                 <X className="size-4" />
               </button>
             </div>
@@ -286,12 +293,18 @@ export function WebNotifications() {
           <div className="max-h-[calc(100vh-90px)] overflow-y-auto p-4 sm:p-5">
             <div className="flex items-center justify-between gap-3 rounded-2xl border border-[#dce8f3] bg-[#f8fbff] p-3.5">
               <div className="flex min-w-0 items-center gap-3">
-                <span className={`grid size-10 shrink-0 place-items-center rounded-xl ${draft.notificationsEnabled ? "bg-[#e8f7f2] text-[#0a9d78]" : "bg-[#eef3f8] text-[#72869f]"}`}>
+                <span
+                  className={`grid size-10 shrink-0 place-items-center rounded-xl ${draft.notificationsEnabled ? "bg-[#e8f7f2] text-[#0a9d78]" : "bg-[#eef3f8] text-[#72869f]"}`}
+                >
                   {draft.notificationsEnabled ? <Bell className="size-4" /> : <BellOff className="size-4" />}
                 </span>
                 <div>
                   <p className="text-sm font-black text-[#173368]">Intelligence Alerts</p>
-                  <p className="mt-0.5 text-[11px] font-semibold text-[#7a90aa]">{draft.notificationsEnabled ? "Активны · новые сигналы будут проверяться автоматически" : "Выключены · внутренний радар не отправляет сигналы"}</p>
+                  <p className="mt-0.5 text-[11px] font-semibold text-[#7a90aa]">
+                    {draft.notificationsEnabled
+                      ? "Активны · новые сигналы будут проверяться автоматически"
+                      : "Выключены · внутренний радар не отправляет сигналы"}
+                  </p>
                 </div>
               </div>
               <button
@@ -301,7 +314,9 @@ export function WebNotifications() {
                 className={`relative h-7 w-12 shrink-0 rounded-full transition ${draft.notificationsEnabled ? "bg-[#147efb]" : "bg-[#c9d6e2]"}`}
                 aria-label={draft.notificationsEnabled ? "Выключить уведомления" : "Включить уведомления"}
               >
-                <span className={`absolute top-1 size-5 rounded-full bg-white shadow transition ${draft.notificationsEnabled ? "left-6" : "left-1"}`} />
+                <span
+                  className={`absolute top-1 size-5 rounded-full bg-white shadow transition ${draft.notificationsEnabled ? "left-6" : "left-1"}`}
+                />
               </button>
             </div>
 
@@ -317,11 +332,20 @@ export function WebNotifications() {
             </div>
 
             <div className={styles.notificationSection}>
-              <div className="flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.1em] text-[#5f7897]"><Settings2 className="size-4 text-[#147efb]" /> Компании и бренды</div>
-              <p className="mt-1 text-xs leading-5 text-[#8496aa]">Выберите компании, по которым сигнал должен попасть в ваш персональный поток.</p>
+              <div className="flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.1em] text-[#5f7897]">
+                <Settings2 className="size-4 text-[#147efb]" /> Компании и бренды
+              </div>
+              <p className="mt-1 text-xs leading-5 text-[#8496aa]">
+                Выберите компании, по которым сигнал должен попасть в ваш персональный поток.
+              </p>
               <div className="mt-3 flex flex-wrap gap-2">
                 {COMPANY_OPTIONS.map((company) => (
-                  <button key={company} type="button" onClick={() => setDraft((value) => ({ ...value, brands: toggle(value.brands, company) }))} className={`rounded-full border px-3 py-1.5 text-xs font-bold transition ${draft.brands.includes(company) ? "border-[#2587ff] bg-[#eaf4ff] text-[#147efb] shadow-sm" : "border-[#dce7f0] bg-white text-[#587391] hover:border-[#a9c9e8] hover:text-[#173368]"}`}>
+                  <button
+                    key={company}
+                    type="button"
+                    onClick={() => setDraft((value) => ({ ...value, brands: toggle(value.brands, company) }))}
+                    className={`rounded-full border px-3 py-1.5 text-xs font-bold transition ${draft.brands.includes(company) ? "border-[#2587ff] bg-[#eaf4ff] text-[#147efb] shadow-sm" : "border-[#dce7f0] bg-white text-[#587391] hover:border-[#a9c9e8] hover:text-[#173368]"}`}
+                  >
                     {company}
                   </button>
                 ))}
@@ -330,24 +354,42 @@ export function WebNotifications() {
 
             <div className={styles.notificationSection}>
               <div className="text-[11px] font-black uppercase tracking-[0.1em] text-[#5f7897]">Сегменты автопрома</div>
-              <p className="mt-1 text-xs leading-5 text-[#8496aa]">Сегменты работают вместе с выбранными брендами и позволяют не превращать уведомления в ещё одну новостную ленту.</p>
+              <p className="mt-1 text-xs leading-5 text-[#8496aa]">
+                Сегменты работают вместе с выбранными брендами и позволяют не превращать уведомления в ещё одну новостную ленту.
+              </p>
               <div className="mt-3 flex flex-wrap gap-2">
                 {SEGMENT_OPTIONS.map((segment) => (
-                  <button key={segment} type="button" onClick={() => setDraft((value) => ({ ...value, segments: toggle(value.segments, segment) }))} className={`rounded-full border px-3 py-1.5 text-xs font-bold transition ${draft.segments.includes(segment) ? "border-[#1ca98c] bg-[#e8f8f3] text-[#07846b] shadow-sm" : "border-[#dce7f0] bg-white text-[#587391] hover:border-[#a9c9e8] hover:text-[#173368]"}`}>
+                  <button
+                    key={segment}
+                    type="button"
+                    onClick={() => setDraft((value) => ({ ...value, segments: toggle(value.segments, segment) }))}
+                    className={`rounded-full border px-3 py-1.5 text-xs font-bold transition ${draft.segments.includes(segment) ? "border-[#1ca98c] bg-[#e8f8f3] text-[#07846b] shadow-sm" : "border-[#dce7f0] bg-white text-[#587391] hover:border-[#a9c9e8] hover:text-[#173368]"}`}
+                  >
                     {segment}
                   </button>
                 ))}
               </div>
             </div>
 
-            <button type="button" disabled={saving} onClick={() => void saveFilters()} className="mt-4 flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#0d2b5c] text-xs font-black text-white shadow-[0_8px_22px_rgba(13,43,92,.18)] transition hover:bg-[#17437f] disabled:opacity-50">
+            <button
+              type="button"
+              disabled={saving}
+              onClick={() => void saveFilters()}
+              className="mt-4 flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#0d2b5c] text-xs font-black text-white shadow-[0_8px_22px_rgba(13,43,92,.18)] transition hover:bg-[#17437f] disabled:opacity-50"
+            >
               <Save className="size-4" />
               Сохранить интересы {selectedCount ? `(${selectedCount})` : ""}
             </button>
 
-            {status && <div className="mt-3 flex gap-2 rounded-xl border border-[#dce8f3] bg-[#f7fbff] px-3 py-2.5 text-xs leading-5 text-[#4f6c8d]"><ShieldCheck className="mt-0.5 size-4 shrink-0 text-[#0b9b78]" />{status}</div>}
+            {status && (
+              <div className="mt-3 flex gap-2 rounded-xl border border-[#dce8f3] bg-[#f7fbff] px-3 py-2.5 text-xs leading-5 text-[#4f6c8d]">
+                <ShieldCheck className="mt-0.5 size-4 shrink-0 text-[#0b9b78]" />
+                {status}
+              </div>
+            )}
             <p className="mt-2 text-[10px] leading-4 text-[#8397ae]">
-              Внутренний колокольчик работает в web-версии. Системные уведомления требуют HTTPS/localhost и разрешения браузера. Текущий статус браузера: <b>{permission}</b>.
+              Внутренний колокольчик работает в web-версии. Системные уведомления требуют HTTPS/localhost и разрешения браузера. Текущий
+              статус браузера: <b>{permission}</b>.
             </p>
 
             <div className={styles.notificationSection}>
@@ -356,11 +398,23 @@ export function WebNotifications() {
                   <p className="text-[10px] font-black uppercase tracking-[0.1em] text-[#8397ae]">Signal stream</p>
                   <p className="mt-1 text-sm font-black text-[#173368]">Последние уведомления</p>
                 </div>
-                {unread > 0 && <button type="button" onClick={() => void markAllRead()} className="flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-bold text-[#147efb] hover:bg-[#edf6ff]"><Check className="size-3.5" />Прочитано</button>}
+                {unread > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => void markAllRead()}
+                    className="flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-bold text-[#147efb] hover:bg-[#edf6ff]"
+                  >
+                    <Check className="size-3.5" />
+                    Прочитано
+                  </button>
+                )}
               </div>
               <div className="mt-3 space-y-2">
                 {recentNotifications.map((note) => (
-                  <article key={note.id} className={`rounded-2xl border p-3.5 transition ${note.readAt ? "border-[#e5edf4] bg-white" : "border-[#b9d8f4] bg-[#f4faff] shadow-[0_6px_18px_rgba(20,126,251,.06)]"}`}>
+                  <article
+                    key={note.id}
+                    className={`rounded-2xl border p-3.5 transition ${note.readAt ? "border-[#e5edf4] bg-white" : "border-[#b9d8f4] bg-[#f4faff] shadow-[0_6px_18px_rgba(20,126,251,.06)]"}`}
+                  >
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
                         <div className="mb-1 flex items-center gap-2">
@@ -371,11 +425,28 @@ export function WebNotifications() {
                         <p className="mt-1 line-clamp-2 text-[11px] leading-4 text-[#6f86a4]">{note.body}</p>
                         <p className="mt-1.5 text-[10px] font-semibold text-[#93a3b5]">{formatTime(note.createdAt)}</p>
                       </div>
-                      {note.url && <a href={note.url} target="_blank" rel="noreferrer" className="grid size-8 shrink-0 place-items-center rounded-xl border border-[#dce8f3] bg-white text-[#147efb] transition hover:border-[#b8d6f2] hover:bg-[#eaf4ff]" aria-label="Открыть новость"><ExternalLink className="size-3.5" /></a>}
+                      {note.url && (
+                        <a
+                          href={note.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="grid size-8 shrink-0 place-items-center rounded-xl border border-[#dce8f3] bg-white text-[#147efb] transition hover:border-[#b8d6f2] hover:bg-[#eaf4ff]"
+                          aria-label="Открыть новость"
+                        >
+                          <ExternalLink className="size-3.5" />
+                        </a>
+                      )}
                     </div>
                   </article>
                 ))}
-                {!recentNotifications.length && <div className="rounded-2xl border border-dashed border-[#d8e4ee] bg-[#fbfdff] px-4 py-7 text-center"><Bell className="mx-auto size-5 text-[#a4b3c3]" /><p className="mt-2 text-xs font-semibold text-[#8a9db2]">Пока нет сигналов. Включите уведомления и выберите интересы.</p></div>}
+                {!recentNotifications.length && (
+                  <div className="rounded-2xl border border-dashed border-[#d8e4ee] bg-[#fbfdff] px-4 py-7 text-center">
+                    <Bell className="mx-auto size-5 text-[#a4b3c3]" />
+                    <p className="mt-2 text-xs font-semibold text-[#8a9db2]">
+                      Пока нет сигналов. Включите уведомления и выберите интересы.
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           </div>

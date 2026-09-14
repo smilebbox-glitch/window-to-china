@@ -107,8 +107,10 @@ test("fresh-first feed moved to dedicated news route while corporate home stays 
   assert.match(page, /CorporateHome/);
   assert.match(corporateHome, /fetch\("\/api\/news"/);
   assert.match(newsPage, /NewsDashboardLive/);
-  assert.match(liveDashboard, /seedNews\.splice\(0, seedNews\.length\)/);
-  assert.match(liveDashboard, /return <NewsDashboard \/>/);
+  // Fresh-first is expressed by passing an empty seed list, not by mutating the
+  // shared seedNews module array during render.
+  assert.doesNotMatch(liveDashboard, /seedNews\.splice/);
+  assert.match(liveDashboard, /return <NewsDashboard seeds=\{NO_SEEDS\} \/>/);
 });
 
 test("outbound SSRF policy explicitly allows curated focus sources and secure Autostat fallback", () => {

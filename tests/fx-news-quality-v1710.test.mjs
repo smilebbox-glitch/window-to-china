@@ -21,5 +21,5 @@ test("news feed suppresses incomplete or garbled cards", () => {
   assert.match(news, /не удалось/u);
   assert.match(news, /replacementChars >= 2/u);
   assert.match(news, /if \(!isDisplayableNews\(item\) \|\| merged\.has\(item\.url\)\) continue/u);
-  assert.match(news, /seedNews\.filter\(isDisplayableNews\)/u);
+  assert.match(news, /seeds\.filter\(isDisplayableNews\)/u);
 });

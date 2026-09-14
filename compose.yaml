@@ -26,12 +26,15 @@ services:
       PILOT_MIN_USEFUL_PCT: ${PILOT_MIN_USEFUL_PCT:-70}
       PILOT_MIN_REPEAT_PCT: ${PILOT_MIN_REPEAT_PCT:-40}
       METRICS_TOKEN: ${METRICS_TOKEN:-}
+      TRUSTED_PROXY: ${TRUSTED_PROXY:-0}
+      RATE_LIMIT_UNTRUSTED_GLOBAL_FACTOR: ${RATE_LIMIT_UNTRUSTED_GLOBAL_FACTOR:-10}
       OUTBOUND_ALLOWLIST: ${OUTBOUND_ALLOWLIST:-}
       OUTBOUND_ALLOW_HTTP_HOSTS: ${OUTBOUND_ALLOW_HTTP_HOSTS:-host.docker.internal}
       RUNTIME_CONFIG_PATH: /data/runtime-config.json
       PILOT_DB_PATH: /data/okno.sqlite
       AUDIT_LOG_PATH: /data/audit/audit.jsonl
       AUDIT_HMAC_KEY: ${AUDIT_HMAC_KEY:-}
+      USER_DATA_HMAC_KEY: ${USER_DATA_HMAC_KEY:-}
       AUDIT_MAX_BYTES: ${AUDIT_MAX_BYTES:-10485760}
       RATE_LIMIT_READ_PER_MINUTE: ${RATE_LIMIT_READ_PER_MINUTE:-120}
       RATE_LIMIT_EXPENSIVE_PER_MINUTE: ${RATE_LIMIT_EXPENSIVE_PER_MINUTE:-20}
@@ -60,7 +63,7 @@ services:
       SOURCE_SLA_FX_MIN_QUALITY: ${SOURCE_SLA_FX_MIN_QUALITY:-60}
       SOURCE_SLA_NEWS_SECONDS: ${SOURCE_SLA_NEWS_SECONDS:-3600}
       SOURCE_SLA_NEWS_MIN_QUALITY: ${SOURCE_SLA_NEWS_MIN_QUALITY:-50}
-      SCHEDULER_TOKEN: ${SCHEDULER_TOKEN:-change-me-before-pilot}
+      SCHEDULER_TOKEN: ${SCHEDULER_TOKEN:?SCHEDULER_TOKEN must be set to a long random secret. One-click launchers generate it into .env automatically.}
       SCHEDULER_INTERVAL_SECONDS: ${SCHEDULER_INTERVAL_SECONDS:-300}
       INTERNAL_APP_URL: http://127.0.0.1:3000
       WRANGLER_WRITE_LOGS: "false"
@@ -108,7 +111,7 @@ services:
       NODE_ENV: production
       APP_VERSION: ${APP_VERSION:-1.7.9-pilot}
       SCHEDULER_APP_URL: http://china-auto-radar:3000
-      SCHEDULER_TOKEN: ${SCHEDULER_TOKEN:-change-me-before-pilot}
+      SCHEDULER_TOKEN: ${SCHEDULER_TOKEN:?SCHEDULER_TOKEN must be set to a long random secret. One-click launchers generate it into .env automatically.}
       SCHEDULER_INTERVAL_SECONDS: ${SCHEDULER_INTERVAL_SECONDS:-300}
     restart: unless-stopped
     init: true

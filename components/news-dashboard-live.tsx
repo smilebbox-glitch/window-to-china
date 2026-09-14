@@ -1,9 +1,6 @@
 "use client";
 
 import { NewsDashboard } from "@/components/news-dashboard";
-import { seedNews } from "@/lib/data";
-
-let seedFeedRetired = false;
 
 /**
  * v1.7 fresh-first entrypoint.
@@ -14,12 +11,15 @@ let seedFeedRetired = false;
  *
  * For the corporate intelligence feed, stale-but-labelled API snapshots are safer
  * than hard-coded editorial seeds: the API has timestamps, source health and cache
- * state. Clear the legacy seed list before NewsDashboard initializes its local state.
+ * state.
+ *
+ * This used to be implemented by splicing the shared `seedNews` array empty during
+ * render. That mutated module state owned by `lib/data` for every other importer in
+ * the same bundle and made the render impure. Passing an explicit empty seed list is
+ * equivalent, local, and order-independent.
  */
+const NO_SEEDS: never[] = [];
+
 export function NewsDashboardLive() {
-  if (!seedFeedRetired) {
-    seedNews.splice(0, seedNews.length);
-    seedFeedRetired = true;
-  }
-  return <NewsDashboard />;
+  return <NewsDashboard seeds={NO_SEEDS} />;
 }

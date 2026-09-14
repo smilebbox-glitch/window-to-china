@@ -73,6 +73,9 @@ if (-not (Test-Path '.env')) {
 Ensure-Secret 'SCHEDULER_TOKEN' 'change-me-before-pilot'
 Ensure-Secret 'USER_DATA_HMAC_KEY' 'change-me-user-data-hmac-before-pilot'
 Ensure-Secret 'AUDIT_HMAC_KEY'
+# /api/metrics is unauthenticated while METRICS_TOKEN is empty, and the default
+# bind is every interface. Generate a token here like every other pilot secret.
+Ensure-Secret 'METRICS_TOKEN'
 $targetVersion = (Get-Content 'package.json' -Raw | ConvertFrom-Json).version
 if ([string]::IsNullOrWhiteSpace($targetVersion)) { Fail 'package.json does not contain a valid version.' }
 $currentVersion = Get-EnvValue 'APP_VERSION'

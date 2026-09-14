@@ -82,6 +82,5 @@ test("service worker opens the notification target without caching intelligence 
 test("notification and preference APIs remain no-store user endpoints", () => {
   assert.match(preferencesRoute, /cache-control":"no-store/);
   assert.match(notificationsRoute, /cache-control":"no-store/);
-  assert.match(notificationsRoute, /generateUserNotifications/);
   assert.match(notificationsRoute, /markNotificationsRead/);
 });

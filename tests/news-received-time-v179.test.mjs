@@ -29,7 +29,7 @@ test("main news UI shows exact Moscow receipt and publication time", () => {
   assert.match(dashboard, /item\.receivedAt \? formatDateTime\(item\.receivedAt\) : "нет данных"/u);
   assert.match(dashboard, /Опубликовано:/u);
   assert.match(dashboard, /formatDateTime\(item\.publishedAt\)/u);
-  assert.match(dashboard, /\[\.\.\.live, \.\.\.seedNews\]/u, "live item must override a matching seed item so receivedAt is not lost");
+  assert.match(dashboard, /\[\.\.\.live, \.\.\.seeds\]/u, "live item must override a matching seed item so receivedAt is not lost");
 });
 
 test("commercial vehicle feed preserves and displays the same receipt-time contract", () => {

@@ -70,6 +70,9 @@ fi
 ensure_secret SCHEDULER_TOKEN change-me-before-pilot
 ensure_secret USER_DATA_HMAC_KEY change-me-user-data-hmac-before-pilot
 ensure_secret AUDIT_HMAC_KEY
+# /api/metrics is unauthenticated while METRICS_TOKEN is empty, and the default
+# bind is every interface. Generate a token here like every other pilot secret.
+ensure_secret METRICS_TOKEN
 target_version="$(node -e "process.stdout.write(JSON.parse(require('fs').readFileSync('package.json','utf8')).version || '')")"
 [[ -n "$target_version" ]] || fail "package.json does not contain a valid version."
 current_version="$(get_env APP_VERSION)"

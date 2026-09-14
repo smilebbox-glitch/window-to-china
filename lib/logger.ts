@@ -1,3 +1,5 @@
+import { APP_VERSION } from "@/lib/app-version";
+
 type LogLevel = "info" | "warn" | "error";
 
 function sanitize(value: unknown): unknown {
@@ -20,7 +22,7 @@ export function logEvent(level: LogLevel, event: string, fields: Record<string, 
     timestamp: new Date().toISOString(),
     level,
     service: "okno-v-kitai",
-    version: process.env.APP_VERSION || "1.4.0-pilot",
+    version: APP_VERSION,
     event,
     ...(sanitize(fields) as Record<string, unknown>),
   });

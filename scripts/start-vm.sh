@@ -38,6 +38,19 @@ if [ ! -f "$ENV_FILE" ]; then
   echo "Created $ENV_FILE with generated local secrets."
 fi
 
+VM_PORT="${APP_PORT:-$(awk -F= '$1=="APP_PORT"{v=$2} END{print v}' "$ENV_FILE")}"; VM_PORT="${VM_PORT:-3000}"
+[ "$VM_PORT" = "3000" ] || { echo "[NO-GO] VM firewall gate supports APP_PORT=3000 only." >&2; exit 1; }
+
+echo "Checking host firewall before VM startup..."
+if [ "${GITHUB_ACTIONS:-}" = "true" ] && [ -n "${GITHUB_RUN_ID:-}" ]; then
+  export APP_BIND_ADDRESS=127.0.0.1
+  MGC_VM_ALLOWED_CIDR="${MGC_VM_ALLOWED_CIDR:-10.250.0.0/24}" \
+  MGC_VM_FIREWALL_CONTRACT_ONLY=1 \
+    bash "$ROOT/scripts/host-firewall-preflight.sh" --contract-only
+else
+  bash "$ROOT/scripts/host-firewall-preflight.sh"
+fi
+
 echo "Validating CPU-only / no-AI VM configuration..."
 $COMPOSE config >/dev/null
 

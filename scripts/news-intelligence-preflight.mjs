@@ -85,7 +85,10 @@ check(route.includes("runtime.sources[\"news.chinaPortals\"]"), "backward-compat
 check(page.includes("CorporateHome"), "home page is not using corporate live-data entrypoint");
 check(corporateHome.includes('fetch("/api/news"'), "corporate home is not connected to live news API");
 check(newsPage.includes("NewsDashboardLive"), "dedicated /news route is not using fresh-first dashboard entrypoint");
-check(liveDashboard.includes("seedNews.splice(0, seedNews.length)"), "legacy static seed stories can still be mixed into the live feed");
+// Fresh-first is now expressed by passing an empty seed list down as a prop
+// instead of splicing the shared `seedNews` module array during render.
+check(!liveDashboard.includes("seedNews.splice"), "fresh-first entrypoint must not mutate the shared seedNews module array");
+check(liveDashboard.includes("seeds={NO_SEEDS}"), "legacy static seed stories can still be mixed into the live feed");
 check(shell.includes('href: "/trucks"'), "Truck Radar is missing from main navigation");
 check(shell.includes('href: "/news"'), "News route is missing from main navigation");
 check(truckRadar.includes("Грузовой радар"), "Truck Radar UI is missing");
