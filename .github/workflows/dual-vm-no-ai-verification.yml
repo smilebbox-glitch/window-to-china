@@ -46,12 +46,12 @@ jobs:
     timeout-minutes: 65
     steps:
       - name: Checkout Okno v Kitai
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           path: window-to-china
 
       - name: Checkout MGC Languages main
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           repository: smilebbox-glitch/mgc-languages
           ref: main
